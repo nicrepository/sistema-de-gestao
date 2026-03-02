@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
-import { User, Task } from '@/types';
+import { User, Task, TimesheetEntry } from '@/types';
 import { Briefcase, Mail, CheckSquare, ShieldCheck, User as UserIcon, Search, Trash2, AlertCircle, CheckCircle, Plus, ChevronUp, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmationModal from './ConfirmationModal';
@@ -11,12 +11,12 @@ import { getUserStatus } from '@/utils/userStatus';
 
 const TeamList: React.FC = () => {
   const navigate = useNavigate();
-  const { users, tasks, projects, clients, timesheetEntries, deleteUser, loading } = useDataController();
+  const { users, tasks, projects, clients, timesheetEntries, deleteUser, loading, absences } = useDataController();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCargo, setSelectedCargo] = useState<'Todos' | string>('Todos');
   const [showInactive, setShowInactive] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Livre' | 'Ocupado' | 'Estudando' | 'Atrasado'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Livre' | 'Ocupado' | 'Estudando' | 'Atrasado' | 'Ausente'>('Todos');
 
   // Deletion state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -45,20 +45,20 @@ const TeamList: React.FC = () => {
   // Filter Logic
   const visibleUsers = useMemo(() => {
     return showInactive
-      ? users.filter(u => u.active === false)
-      : users.filter(u => u.active !== false);
+      ? users.filter((u: User) => u.active === false)
+      : users.filter((u: User) => u.active !== false);
   }, [users, showInactive]);
 
   const cargoOptions = useMemo(() => {
-    return Array.from(new Set(visibleUsers.map(user => user.cargo || 'Sem cargo informado')));
+    return Array.from(new Set(visibleUsers.map((user: User) => user.cargo || 'Sem cargo informado')));
   }, [visibleUsers]);
 
   // Memo para identificar desenvolvedores com atrasos
   const lateDevelopers = useMemo(() => {
     const devMap = new Map<string, { user: User; count: number }>();
-    tasks.forEach(t => {
+    tasks.forEach((t: Task) => {
       if (isTaskDelayed(t) && t.developerId) {
-        const u = users.find(user => user.id === t.developerId);
+        const u = users.find((user: User) => user.id === t.developerId);
         if (u) {
           const existing = devMap.get(t.developerId) || { user: u, count: 0 };
           devMap.set(t.developerId, { ...existing, count: existing.count + 1 });
@@ -69,7 +69,7 @@ const TeamList: React.FC = () => {
   }, [tasks, users]);
 
   const filteredUsers = useMemo(() => {
-    return visibleUsers.filter(user => {
+    return visibleUsers.filter((user: User) => {
       const matchesSearch =
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -77,36 +77,28 @@ const TeamList: React.FC = () => {
       const cargoValue = user.cargo || 'Sem cargo informado';
       const matchesCargo = selectedCargo === 'Todos' || cargoValue === selectedCargo;
 
-      const userAllTasks = tasks.filter(t => t.developerId === user.id);
-      const userActiveTasks = userAllTasks.filter(t => t.status !== 'Done');
+      const status = getUserStatus(user, tasks, projects, clients, absences);
+      const statusLabel = status.label;
 
-      // Status Logic using the same hierarchy as the card
-      const hasDelayed = userActiveTasks.some(isTaskDelayed);
-      const hasInProgress = userActiveTasks.some(t => t.status === 'In Progress');
-      const hasStudy = userActiveTasks.some(t => {
-        const p = projects.find(proj => proj.id === t.projectId);
-        return p?.name.toLowerCase().includes('treinamento') || p?.name.toLowerCase().includes('capacitação');
-      });
-
-      let userStatus: 'Livre' | 'Ocupado' | 'Estudando' | 'Atrasado' | 'Indisponível' = 'Livre';
-      const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead', 'developer'];
-      const isSystemCollaborator = (user.torre && user.torre !== 'N/A') || activeRoles.includes(user.role?.toLowerCase() || '');
-
-      if (!isSystemCollaborator) {
-        userStatus = 'Indisponível';
-      } else if (hasDelayed) {
-        userStatus = 'Atrasado';
-      } else if (hasInProgress) {
-        userStatus = 'Ocupado';
-      } else if (hasStudy) {
-        userStatus = 'Estudando';
+      // "Fora do Fluxo" deve estar somente no filtro "Todos"
+      if (statusLabel === 'Fora do Fluxo' && statusFilter !== 'Todos') {
+        return false;
       }
 
-      const matchesStatus = statusFilter === 'Todos' || userStatus === statusFilter;
+      let matchesStatus = true;
+      if (statusFilter !== 'Todos') {
+        if (statusFilter === 'Ausente') {
+          // Filtra por qualquer tipo de ausência (Férias, Atestado, etc.)
+          const absenceTypes = ['Férias', 'Atestado', 'Day Off', 'Feriado Local'];
+          matchesStatus = absenceTypes.includes(statusLabel);
+        } else {
+          matchesStatus = statusLabel === statusFilter;
+        }
+      }
 
       return matchesSearch && matchesCargo && matchesStatus;
     });
-  }, [visibleUsers, searchTerm, selectedCargo, statusFilter, tasks]);
+  }, [visibleUsers, searchTerm, selectedCargo, statusFilter, tasks, projects, clients, absences]);
 
 
   const getUserMissingDays = (userId: string) => {
@@ -119,13 +111,13 @@ const TeamList: React.FC = () => {
     let workDaysCount = 0;
     const foundDays = new Set<string>();
 
-    const userEntries = timesheetEntries.filter(e =>
+    const userEntries = timesheetEntries.filter((e: TimesheetEntry) =>
       e.userId === userId &&
       new Date(e.date).getMonth() === currentMonth &&
       new Date(e.date).getFullYear() === currentYear
     );
 
-    userEntries.forEach(e => foundDays.add(e.date));
+    userEntries.forEach((e: TimesheetEntry) => foundDays.add(e.date));
 
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     for (let d = new Date(firstDayOfMonth); d <= yesterday; d.setDate(d.getDate() + 1)) {
@@ -133,7 +125,7 @@ const TeamList: React.FC = () => {
       if (day >= 1 && day <= 5) workDaysCount++; // Mon-Fri
     }
 
-    const workedDays = userEntries.map(e => e.date).filter((v, i, a) => a.indexOf(v) === i).length;
+    const workedDays = userEntries.map((e: TimesheetEntry) => e.date).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).length;
     // Simplificação: apenas dias passados vs entradas únicas. 
     // Lógica completa requereria verificar feriados e map exato.
 
@@ -183,7 +175,7 @@ const TeamList: React.FC = () => {
                   { id: 'Estudando', label: 'Estudando', color: '#3b82f6' },
                   { id: 'Ocupado', label: 'Ocupados', color: '#f59e0b' },
                   { id: 'Atrasado', label: 'Atrasados', color: '#ef4444' },
-                  { id: 'Indisponível', label: 'Outros', color: 'var(--muted)' }
+                  { id: 'Ausente', label: 'Ausentes', color: 'var(--muted)' }
                 ].map((f) => {
                   const isActive = statusFilter === f.id;
                   return (
@@ -360,26 +352,7 @@ const TeamList: React.FC = () => {
                 <div
                   key={user.id}
                   className="p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col relative overflow-hidden"
-                  data-status={(() => {
-                    const hasDelayed = userActiveTasks.some(isTaskDelayed);
-                    const hasStudy = userActiveTasks.some(t => {
-                      const p = projects.find(proj => proj.id === t.projectId);
-                      const c = clients.find(cl => cl.id === p?.clientId);
-                      const isStudyProject = p?.name.toLowerCase().includes('treinamento') || p?.name.toLowerCase().includes('capacitação');
-                      const isNicLabs = c?.name.toLowerCase().includes('nic-labs');
-                      return isStudyProject && isNicLabs;
-                    });
-                    const hasInProgress = userActiveTasks.some(t => t.status === 'In Progress');
-
-                    const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead'];
-                    const isSystemCollaborator = (user.torre && user.torre !== 'N/A') || activeRoles.includes(user.role?.toLowerCase() || '');
-
-                    if (!isSystemCollaborator) return 'indisponível';
-                    if (hasDelayed) return 'atrasado';
-                    if (hasInProgress) return 'ocupado';
-                    if (hasStudy) return 'estudando';
-                    return 'livre';
-                  })()}
+                  data-status={getUserStatus(user, tasks, projects, clients, absences).label.toLowerCase()}
                   style={{
                     backgroundColor: 'var(--surface)',
                     borderColor: 'var(--border)'
@@ -396,7 +369,7 @@ const TeamList: React.FC = () => {
                   onClick={() => navigate(`/admin/team/${user.id}`)}
                 >
                   {(() => {
-                    const status = getUserStatus(user, tasks, projects, clients);
+                    const status = getUserStatus(user, tasks, projects, clients, absences);
                     const statusLabel = status.label;
                     const accentColor = status.color;
                     const accentBg = `${status.color}1A`; // 0.1 opacity

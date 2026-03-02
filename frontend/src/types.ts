@@ -21,6 +21,7 @@ export interface User {
   nivel?: string; // Nível de experiência
   dailyAvailableHours?: number; // Horas liberadas dia
   monthlyAvailableHours?: number; // Horas liberadas mês
+  atrasado?: boolean; // Indica se possui atrasos
 }
 
 export interface Client {

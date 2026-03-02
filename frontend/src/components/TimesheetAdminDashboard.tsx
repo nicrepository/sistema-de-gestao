@@ -3,8 +3,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { Building2, ArrowRight, Clock, Briefcase, Users, TrendingUp, BarChart3, CheckSquare, ChevronDown, ChevronUp, AlertCircle, AlertTriangle } from 'lucide-react';
-import { Project } from '@/types';
+import { Project, User, Absence, Task, Client, TimesheetEntry } from '@/types';
 import { formatDecimalToTime } from '@/utils/normalizers';
+import { getUserStatus } from '@/utils/userStatus';
 
 const TimesheetAdminDashboard: React.FC = () => {
    const [searchParams, setSearchParams] = useSearchParams();
@@ -31,7 +32,7 @@ const TimesheetAdminDashboard: React.FC = () => {
 
    // Aggregate Logic - Total de todas as horas
    const totalAllHours = useMemo(() => {
-      return entries.reduce((acc, curr) => acc + curr.totalHours, 0);
+      return entries.reduce((acc: number, curr: TimesheetEntry) => acc + curr.totalHours, 0);
    }, [entries]);
 
    // Status dos Colaboradores - verificar dias em dia
@@ -55,18 +56,18 @@ const TimesheetAdminDashboard: React.FC = () => {
       }
 
       const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead'];
-      const monitoredCollaborators = users.filter(u =>
+      const monitoredCollaborators = users.filter((u: User) =>
          u.active !== false && (u.torre !== 'N/A' || activeRoles.includes(u.role?.toLowerCase() || ''))
       );
 
-      return monitoredCollaborators.map(user => {
-         const userEntries = entries.filter(e =>
+      return monitoredCollaborators.map((user: User) => {
+         const userEntries = entries.filter((e: TimesheetEntry) =>
             e.userId === user.id &&
             new Date(e.date).getMonth() === currentMonth &&
             new Date(e.date).getFullYear() === currentYear
          );
 
-         const datesWithEntries = new Set(userEntries.map(e => e.date));
+         const datesWithEntries = new Set(userEntries.map((e: TimesheetEntry) => e.date));
 
          const isExempt = ['ceo', 'diretoria', 'executive'].includes(user.role?.toLowerCase() || '') || user.torre?.toLowerCase() === 'pmo';
          const missingDays = isExempt ? [] : workDaysUntilYesterday.filter(day => !datesWithEntries.has(day));
@@ -74,71 +75,72 @@ const TimesheetAdminDashboard: React.FC = () => {
          const dailyGoal = user.dailyAvailableHours || 8;
          const expectedHours = workDaysUntilYesterday.length * dailyGoal;
 
-         // Check absence today
-         const userAbsences = absences.filter(a =>
-            a.userId === user.id &&
-            (a.status === 'finalizada_dp' || a.status === 'aprovada_rh')
-         );
-         const now = new Date();
-         const absentToday = userAbsences.find(a => {
-            const start = new Date(a.startDate + 'T00:00:00');
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(a.endDate + 'T23:59:59');
-            end.setHours(23, 59, 59, 999);
-            return now >= start && now <= end;
-         });
+         // Status unificado via getUserStatus
+         const userStatus = getUserStatus(user, tasks, projects, clients, absences);
+         const statusLabel = userStatus.label;
+
+         // Mapear label amigável para o ID de status das colunas
+         let finalStatus: 'livre' | 'estudando' | 'ocupado' | 'atrasado' | 'ausente' = 'livre';
+
+         const absenceTypes = ['Férias', 'Atestado', 'Day Off', 'Feriado Local', 'Pipeline de Aprovação'];
+         if (absenceTypes.includes(statusLabel)) finalStatus = 'ausente';
+         else if (statusLabel === 'Atrasado') finalStatus = 'atrasado';
+         else if (statusLabel === 'Estudando') finalStatus = 'estudando';
+         else if (statusLabel === 'Ocupado') finalStatus = 'ocupado';
 
          return {
             user,
-            absenceData: absentToday,
+            statusLabel, // Label específico (Férias, etc.)
             totalDays: workDaysUntilYesterday.length,
             daysWithEntries: datesWithEntries.size,
             missingDays: missingDays.length,
             missingDates: missingDays,
             isUpToDate: missingDays.length === 0,
-            totalHours: userEntries.reduce((acc, curr) => acc + curr.totalHours, 0),
+            totalHours: userEntries.reduce((acc: number, curr: TimesheetEntry) => acc + curr.totalHours, 0),
             expectedHours,
-            dailyGoal
+            dailyGoal,
+            finalStatus,
+            activeTasksCount: tasks.filter((t: Task) => (t.developerId === user.id || t.collaboratorIds?.includes(user.id)) && t.status !== 'Done').length
          };
-      }).sort((a, b) => b.missingDays - a.missingDays);
-   }, [users, entries]);
+      }).sort((a: any, b: any) => b.missingDays - a.missingDays);
+   }, [users, entries, tasks, projects, clients, absences]);
 
    const getClientStats = (clientId: string) => {
-      const clientEntries = entries.filter(e => e.clientId === clientId);
-      const totalHours = clientEntries.reduce((acc, curr) => acc + curr.totalHours, 0);
-      const activeProjectIds = new Set(clientEntries.map(e => e.projectId));
+      const clientEntries = entries.filter((e: TimesheetEntry) => e.clientId === clientId);
+      const totalHours = clientEntries.reduce((acc: number, curr: TimesheetEntry) => acc + curr.totalHours, 0);
+      const activeProjectIds = new Set(clientEntries.map((e: TimesheetEntry) => e.projectId));
       return { totalHours, projectCount: activeProjectIds.size, entries: clientEntries };
    };
 
    // Dados do cliente selecionado
-   const selectedClient = selectedClientId ? clients.find(c => c.id === selectedClientId) : null;
+   const selectedClient = selectedClientId ? clients.find((c: Client) => c.id === selectedClientId) : null;
    const selectedClientData = selectedClientId ? getClientStats(selectedClientId) : null;
 
    // Projetos do cliente selecionado com horas
    const projectsWithHours = useMemo(() => {
       if (!selectedClientId) return [];
-      const clientProjects = projects.filter(p => p.clientId === selectedClientId);
-      return clientProjects.map(proj => {
-         const projEntries = selectedClientData?.entries.filter(e => e.projectId === proj.id) || [];
-         const hours = projEntries.reduce((acc, curr) => acc + curr.totalHours, 0);
+      const clientProjects = projects.filter((p: Project) => p.clientId === selectedClientId);
+      return clientProjects.map((proj: Project) => {
+         const projEntries = selectedClientData?.entries.filter((e: TimesheetEntry) => e.projectId === proj.id) || [];
+         const hours = projEntries.reduce((acc: number, curr: TimesheetEntry) => acc + (curr.totalHours || 0), 0);
          return { ...proj, totalHours: hours, entryCount: projEntries.length };
-      }).sort((a, b) => b.totalHours - a.totalHours);
+      }).sort((a: any, b: any) => b.totalHours - a.totalHours);
    }, [selectedClientId, projects, selectedClientData]);
 
    // Colaboradores do cliente selecionado com horas e tarefas
    const collaboratorsWithHours = useMemo(() => {
       if (!selectedClientId) return [];
 
-      const clientProjects = projects.filter(p => p.clientId === selectedClientId);
-      const clientProjectIds = new Set(clientProjects.map(p => p.id));
-      const clientTasks = tasks.filter(t => clientProjectIds.has(t.projectId));
+      const clientProjects = projects.filter((p: Project) => p.clientId === selectedClientId);
+      const clientProjectIds = new Set(clientProjects.map((p: Project) => p.id));
+      const clientTasks = tasks.filter((t: Task) => clientProjectIds.has(t.projectId));
 
       const collabMap = new Map<string, any>();
 
-      clientTasks.forEach(task => {
+      clientTasks.forEach((task: Task) => {
          if (task.developerId) {
             // Tenta pegar nome do usuário real
-            const realUser = users.find(u => u.id === task.developerId);
+            const realUser = users.find((u: User) => u.id === task.developerId);
             const userName = realUser ? realUser.name : (task.developer || `Dev ${task.developerId.substring(0, 4)}`);
 
             if (!collabMap.has(task.developerId)) {
@@ -339,7 +341,7 @@ const TimesheetAdminDashboard: React.FC = () => {
                      border-color: var(--primary);
                   }
                 `}</style>
-               <div className="flex flex-col md:flex-row gap-6 h-full min-h-[600px]">
+               <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6 h-full min-h-[600px]">
                   {/* COLUNA: LIVRES */}
                   <div className="status-column" style={{ backgroundColor: 'var(--success-bg)' }}>
                      <div className="flex items-center gap-3 mb-2">
@@ -348,18 +350,18 @@ const TimesheetAdminDashboard: React.FC = () => {
                         </div>
                         <div>
                            <h3 className="font-bold" style={{ color: 'var(--success-text)' }}>Livres</h3>
-                           <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: 'var(--success-text)', opacity: 0.8 }}>Disponíveis</p>
+                           <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: 'var(--success-text)', opacity: 0.8 }}>Sem tarefas</p>
                         </div>
                      </div>
 
                      {(() => {
-                        const freeCollabs = collaboratorsStatus.filter(s => s.isUpToDate && tasks.filter(t => t.developerId === s.user.id && t.status !== 'Done').length === 0);
+                        const freeCollabs = collaboratorsStatus.filter(s => s.finalStatus === 'livre');
                         return freeCollabs.length === 0 ? (
                            <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4" style={{ color: 'var(--success-text)', opacity: 0.5 }}>
                               Nenhum colaborador livre
                            </div>
                         ) : (
-                           <div className="flex flex-col gap-3 overflow-y-auto">
+                           <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
                               {freeCollabs.map(s => (
                                  <div key={s.user.id} className="status-card" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
                                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border shadow-inner"
@@ -368,17 +370,9 @@ const TimesheetAdminDashboard: React.FC = () => {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                        <p className="font-bold truncate" style={{ color: 'var(--text)' }}>{s.user.name}</p>
-                                       {s.absenceData ? (
-                                          <span className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 inline-block mt-0.5">
-                                             Ausente: {s.absenceData.type}
-                                          </span>
-                                       ) : (
-                                          <p className="text-[10px] truncate" style={{ color: 'var(--muted)' }}>{s.user.cargo || 'Desenvolvedor'}</p>
+                                       {!s.isUpToDate && (
+                                          <span className="text-[8px] font-black text-red-500 uppercase">Falta Apontamento</span>
                                        )}
-                                    </div>
-                                    <div className="text-right">
-                                       <p className="text-sm font-black" style={{ color: 'var(--success-text)' }}>{formatDecimalToTime(s.totalHours)}</p>
-                                       <p className="text-[8px] font-black uppercase" style={{ color: 'var(--muted)' }}>v. {formatDecimalToTime(s.expectedHours)}</p>
                                     </div>
                                  </div>
                               ))}
@@ -400,84 +394,140 @@ const TimesheetAdminDashboard: React.FC = () => {
                      </div>
 
                      {(() => {
-                        const busyCollabs = collaboratorsStatus.filter(s => s.isUpToDate && tasks.filter(t => t.developerId === s.user.id && t.status !== 'Done').length > 0);
+                        const busyCollabs = collaboratorsStatus.filter(s => s.finalStatus === 'ocupado');
                         return busyCollabs.length === 0 ? (
                            <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4" style={{ color: 'var(--warning-text)', opacity: 0.5 }}>
                               Nenhum colaborador ocupado
                            </div>
                         ) : (
-                           <div className="flex flex-col gap-3 overflow-y-auto">
-                              {busyCollabs.map(s => {
-                                 const activeTasks = tasks.filter(t => t.developerId === s.user.id && t.status !== 'Done');
-                                 return (
-                                    <div key={s.user.id} className="status-card" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
-                                       <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border shadow-inner"
-                                          style={{ backgroundColor: 'var(--surface)', color: 'var(--warning-text)', borderColor: 'var(--warning-bg)' }}>
-                                          {s.user.name.charAt(0)}
-                                       </div>
-                                       <div className="min-w-0 flex-1">
-                                          <p className="font-bold truncate" style={{ color: 'var(--text)' }}>{s.user.name}</p>
-                                          {s.absenceData ? (
-                                             <span className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md bg-orange-100 text-orange-700">
-                                                Ausente: {s.absenceData.type}
-                                             </span>
-                                          ) : (
-                                             <p className="text-[10px] truncate" style={{ color: 'var(--muted)' }}>{s.user.cargo || 'Desenvolvedor'}</p>
-                                          )}
-                                       </div>
-                                       <div className="text-right">
-                                          <div className="flex flex-col items-end">
-                                             <p className="text-sm font-black" style={{ color: 'var(--warning-text)' }}>{formatDecimalToTime(s.totalHours)}</p>
-                                             <p className="text-[8px] font-black uppercase" style={{ color: 'var(--muted)' }}>v. {formatDecimalToTime(s.expectedHours)}</p>
-                                          </div>
-                                       </div>
+                           <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                              {busyCollabs.map(s => (
+                                 <div key={s.user.id} className="status-card" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border shadow-inner"
+                                       style={{ backgroundColor: 'var(--surface)', color: 'var(--warning-text)', borderColor: 'var(--warning-bg)' }}>
+                                       {s.user.name.charAt(0)}
                                     </div>
-                                 );
-                              })}
+                                    <div className="min-w-0 flex-1">
+                                       <p className="font-bold truncate" style={{ color: 'var(--text)' }}>{s.user.name}</p>
+                                       <p className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>{s.activeTasksCount} tarefas ativas</p>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        );
+                     })()}
+                  </div>
+
+                  {/* COLUNA: ESTUDANDO */}
+                  <div className="status-column" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                     <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-blue-500">
+                           <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div>
+                           <h3 className="font-bold text-blue-700">Estudando</h3>
+                           <p className="text-[10px] uppercase font-black tracking-widest text-blue-600 opacity-0.8">Capacitação</p>
+                        </div>
+                     </div>
+
+                     {(() => {
+                        const studyCollabs = collaboratorsStatus.filter(s => s.finalStatus === 'estudando');
+                        return studyCollabs.length === 0 ? (
+                           <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4 text-blue-500 opacity-0.5">
+                              Ninguém em capacitação
+                           </div>
+                        ) : (
+                           <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                              {studyCollabs.map(s => (
+                                 <div key={s.user.id} className="status-card border-blue-200" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border border-blue-200 bg-blue-50 text-blue-600">
+                                       {s.user.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="font-bold truncate text-slate-800">{s.user.name}</p>
+                                       <p className="text-[9px] font-black uppercase text-blue-500">Em Estudo</p>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        );
+                     })()}
+                  </div>
+
+                  {/* COLUNA: ATRASADOS */}
+                  <div className="status-column" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+                     <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-red-600">
+                           <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <div>
+                           <h3 className="font-bold text-red-700">Atrasados</h3>
+                           <p className="text-[10px] uppercase font-black tracking-widest text-red-600 opacity-0.8">Pendências</p>
+                        </div>
+                     </div>
+
+                     {(() => {
+                        const lateCollabs = collaboratorsStatus.filter(s => s.finalStatus === 'atrasado');
+                        return lateCollabs.length === 0 ? (
+                           <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4 text-red-500 opacity-0.5">
+                              Ninguém em atraso!
+                           </div>
+                        ) : (
+                           <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                              {lateCollabs.map(s => (
+                                 <div key={s.user.id} className="status-card border-red-200" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border border-red-200 bg-red-50 text-red-600">
+                                       {s.user.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="font-bold truncate text-slate-800">{s.user.name}</p>
+                                       <p className="text-[9px] font-black uppercase text-red-500 flex items-center gap-1">
+                                          <AlertCircle className="w-3 h-3" /> Tarefas em Atraso
+                                       </p>
+                                    </div>
+                                 </div>
+                              ))}
                            </div>
                         );
                      })()}
                   </div>
 
                   {/* COLUNA: AUSENTES */}
-                  <div className="status-column" style={{ backgroundColor: 'var(--danger-bg)' }}>
+                  <div className="status-column" style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)' }}>
                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: 'var(--danger)' }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg bg-orange-500">
                            <AlertCircle className="w-6 h-6" />
                         </div>
                         <div>
-                           <h3 className="font-bold" style={{ color: 'var(--danger-text)' }}>Ausentes</h3>
-                           <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: 'var(--danger-text)', opacity: 0.8 }}>Sem apontamentos</p>
+                           <h3 className="font-bold text-orange-700">Ausentes</h3>
+                           <p className="text-[10px] uppercase font-black tracking-widest text-orange-600 opacity-0.8">Férias & Licenças</p>
                         </div>
                      </div>
 
                      {(() => {
-                        const absentCollabs = collaboratorsStatus.filter(s => !s.isUpToDate);
-                        return absentCollabs.length === 0 ? (
-                           <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4" style={{ color: 'var(--danger-text)', opacity: 0.5 }}>
-                              Todos estão em dia!
+                        const inactiveCollabs = collaboratorsStatus.filter((s: any) => s.finalStatus === 'ausente' || !s.isUpToDate);
+                        return inactiveCollabs.length === 0 ? (
+                           <div className="flex-1 flex items-center justify-center italic text-sm text-center px-4 text-orange-500 opacity-0.5">
+                              Todos disponíveis ou em dia!
                            </div>
                         ) : (
-                           <div className="flex flex-col gap-3 overflow-y-auto">
-                              {absentCollabs.map(s => (
-                                 <div key={s.user.id} className="status-card" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
-                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border shadow-inner"
-                                       style={{ backgroundColor: 'var(--surface)', color: 'var(--danger)', borderColor: 'var(--danger-bg)' }}>
+                           <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                              {inactiveCollabs.map((s: any) => (
+                                 <div key={s.user.id} className="status-card border-orange-200" onClick={() => navigate(`/admin/team/${s.user.id}`)}>
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold border border-orange-200 bg-orange-50 text-orange-600">
                                        {s.user.name.charAt(0)}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                       <p className="font-bold truncate" style={{ color: 'var(--text)' }}>{s.user.name}</p>
-                                       {s.absenceData ? (
-                                          <span className="text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 inline-block mt-0.5">
-                                             Ausente: {s.absenceData.type}
+                                       <p className="font-bold truncate text-slate-800">{s.user.name}</p>
+                                       {s.finalStatus === 'ausente' ? (
+                                          <span className="text-[9px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 inline-block mt-0.5">
+                                             {s.statusLabel}
                                           </span>
-                                       ) : (
-                                          <p className="text-[10px] truncate" style={{ color: 'var(--muted)' }}>{s.user.cargo || 'Desenvolvedor'}</p>
+                                       ) : !s.isUpToDate && (
+                                          <span className="text-[9px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md bg-red-100 text-red-700 inline-block mt-0.5">
+                                             Falta Apontamento
+                                          </span>
                                        )}
-                                    </div>
-                                    <div className="text-right">
-                                       <p className="text-sm font-black" style={{ color: 'var(--danger)' }}>{s.missingDays}</p>
-                                       <p className="text-[8px] font-black uppercase" style={{ color: 'var(--muted)' }}>dias faltando</p>
                                     </div>
                                  </div>
                               ))}

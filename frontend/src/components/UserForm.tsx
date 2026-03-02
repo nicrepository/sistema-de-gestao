@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import { User, Role } from '@/types';
-import { ArrowLeft, Save, User as UserIcon, Mail, Briefcase, Shield, Zap, Info, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Save, User as UserIcon, Mail, Briefcase, Shield, Zap, Info, LayoutGrid, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 import OrganizationalStructureSelector from './OrganizationalStructureSelector';
 import * as CapacityUtils from '@/utils/capacity';
@@ -29,7 +29,8 @@ const UserForm: React.FC = () => {
     torre: '',
     hourlyCost: 0,
     dailyAvailableHours: 8,
-    monthlyAvailableHours: 160
+    monthlyAvailableHours: 160,
+    atrasado: false
   });
 
   useEffect(() => {
@@ -45,7 +46,8 @@ const UserForm: React.FC = () => {
         torre: initialUser.torre || '',
         hourlyCost: initialUser.hourlyCost || 0,
         dailyAvailableHours: initialUser.dailyAvailableHours || 8,
-        monthlyAvailableHours: initialUser.monthlyAvailableHours || 160
+        monthlyAvailableHours: initialUser.monthlyAvailableHours || 160,
+        atrasado: !!initialUser.atrasado
       });
     }
   }, [initialUser]);
@@ -82,7 +84,8 @@ const UserForm: React.FC = () => {
         torre: formData.torre,
         custo_hora: formData.hourlyCost,
         horas_disponiveis_dia: formData.dailyAvailableHours,
-        horas_disponiveis_mes: formData.monthlyAvailableHours
+        horas_disponiveis_mes: formData.monthlyAvailableHours,
+        atrasado: formData.atrasado
       };
 
       if (isNew) {
@@ -243,6 +246,19 @@ const UserForm: React.FC = () => {
                       <span className="text-[10px] font-black uppercase tracking-widest">{formData.active ? 'Ativo' : 'Desligar'}</span>
                     </div>
                     <div className={`w-2 h-2 rounded-full ${formData.active ? 'bg-blue-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  </button>
+
+                  {/* TOGGLE: ATRASADO */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, atrasado: !formData.atrasado })}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${formData.atrasado ? 'bg-red-50 border-red-200 text-red-700 shadow-inner' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className={`w-4 h-4 ${formData.atrasado ? 'text-red-500' : 'text-slate-400'}`} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">{formData.atrasado ? 'Com Atraso' : 'Em Dia'}</span>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${formData.atrasado ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`}></div>
                   </button>
                 </div>
               </div>
