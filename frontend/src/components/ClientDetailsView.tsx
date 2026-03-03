@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowLeft, Plus, Briefcase, CheckSquare, Clock, Edit,
   LayoutGrid, ListTodo, Filter, Trash2, Save, Upload,
-  User as UserIcon, Building2, Globe, Phone, FileText, AlertTriangle
+  User as UserIcon, Building2, Globe, Phone, FileText, AlertTriangle, AlertCircle
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { motion } from 'framer-motion';
@@ -26,6 +26,7 @@ const ClientDetailsView: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'project' | 'task' | 'client' } | null>(null);
+  const [projectFilter, setProjectFilter] = useState<'active' | 'completed' | 'all'>('active');
 
   // Form State
   const client = clientId ? getClientById(clientId) : null;
@@ -62,6 +63,79 @@ const ClientDetailsView: React.FC = () => {
     tasks.filter(t => t.clientId === clientId),
     [tasks, clientId]
   );
+
+  const getComputedProjectStatus = (projectTasks: any[]) => {
+    if (projectTasks.length === 0) return 'S/ Tarefas';
+
+    const isDelayed = (t: any) => {
+      if (t.status === 'Done' || (t.progress || 0) >= 100) return false;
+      if (!t.estimatedDelivery) return false;
+      const parts = t.estimatedDelivery.split('-');
+      if (parts.length !== 3) return false;
+      const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today > due;
+    };
+
+    if (projectTasks.some(isDelayed)) return 'Atrasado';
+    if (projectTasks.some(t => t.status === 'In Progress')) return 'Em Andamento';
+    if (projectTasks.some(t => t.status === 'Testing')) return 'Teste';
+    if (projectTasks.some(t => t.status === 'Review')) return 'Análise';
+    if (projectTasks.some(t => t.status === 'Todo')) return 'Pré-Projeto';
+    if (projectTasks.every(t => t.status === 'Done')) return 'Concluído';
+
+    return 'Iniciado';
+  };
+
+  const projectStats = useMemo(() => {
+    const withComputed = clientProjects.map(p => {
+      const pTasks = tasks.filter(t => t.projectId === p.id);
+      const computedStatus = getComputedProjectStatus(pTasks);
+      return { ...p, computedStatus };
+    });
+
+    const active = withComputed.filter(p =>
+      p.computedStatus !== 'Concluído' &&
+      p.status !== 'Concluído' &&
+      p.status !== 'Finalizado' &&
+      p.status !== 'Entregue'
+    ).length;
+
+    const completed = withComputed.filter(p =>
+      p.computedStatus === 'Concluído' ||
+      p.status === 'Concluído' ||
+      p.status === 'Finalizado' ||
+      p.status === 'Entregue'
+    ).length;
+
+    return {
+      active,
+      completed,
+      all: withComputed.length,
+      withComputed
+    };
+  }, [clientProjects, tasks]);
+
+  const filteredProjects = useMemo(() => {
+    if (projectFilter === 'all') return projectStats.withComputed;
+
+    if (projectFilter === 'completed') {
+      return projectStats.withComputed.filter(p =>
+        p.computedStatus === 'Concluído' ||
+        p.status === 'Concluído' ||
+        p.status === 'Finalizado' ||
+        p.status === 'Entregue'
+      );
+    }
+
+    return projectStats.withComputed.filter(p =>
+      p.computedStatus !== 'Concluído' &&
+      p.status !== 'Concluído' &&
+      p.status !== 'Finalizado' &&
+      p.status !== 'Entregue'
+    );
+  }, [projectStats, projectFilter]);
 
   const isProjectIncomplete = (p: any) => {
     return (
@@ -434,18 +508,47 @@ const ClientDetailsView: React.FC = () => {
 
             {activeTab === 'projects' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-black tracking-tight" style={{ color: 'var(--text)' }}>Projetos em Andamento ({clientProjects.length})</h3>
-                  <button
-                    onClick={() => navigate(`/admin/clients/${clientId}/projects/new`)}
-                    className="px-5 py-2.5 bg-purple-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all flex items-center gap-2"
-                  >
-                    <Plus size={18} /> Novo Projeto
-                  </button>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                  <div className="flex flex-col">
+                    <h3 className="text-xl font-black tracking-tight" style={{ color: 'var(--text)' }}>
+                      {projectFilter === 'active' ? 'Projetos em Andamento' : projectFilter === 'completed' ? 'Projetos Concluídos' : 'Todos os Projetos'} ({filteredProjects.length})
+                    </h3>
+                    <p className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider mt-1">
+                      Visualizando {projectFilter === 'active' ? 'apenas ativos' : projectFilter === 'completed' ? 'apenas concluídos' : 'portfólio completo'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+                    <button
+                      onClick={() => setProjectFilter('active')}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${projectFilter === 'active' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                    >
+                      Ativos ({projectStats.active})
+                    </button>
+                    <button
+                      onClick={() => setProjectFilter('completed')}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${projectFilter === 'completed' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                    >
+                      Concluídos ({projectStats.completed})
+                    </button>
+                    <button
+                      onClick={() => setProjectFilter('all')}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${projectFilter === 'all' ? 'bg-[var(--text)] text-[var(--bg)]' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                    >
+                      Todos ({projectStats.all})
+                    </button>
+                    <div className="w-px h-4 bg-[var(--border)] mx-1" />
+                    <button
+                      onClick={() => navigate(`/admin/clients/${clientId}/projects/new`)}
+                      className="ml-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all flex items-center gap-2"
+                    >
+                      <Plus size={16} /> Novo
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {clientProjects.map(project => {
+                  {filteredProjects.map(project => {
                     const projectTasks = tasks.filter(t => t.projectId === project.id);
                     const doneTasks = projectTasks.filter(t => t.status === 'Done').length;
                     const progress = projectTasks.length > 0 ? Math.round((doneTasks / projectTasks.length) * 100) : 0;
@@ -485,9 +588,30 @@ const ClientDetailsView: React.FC = () => {
                               <CheckSquare size={14} style={{ color: 'var(--brand)' }} />
                               <span className="text-xs font-bold" style={{ color: 'var(--muted)' }}>{doneTasks} / {projectTasks.length}</span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border ${project.status === 'Concluído' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
-                              {project.status || 'Ativo'}
-                            </span>
+                            <div className="flex flex-col gap-2">
+                              {(() => {
+                                const status = project.computedStatus;
+                                let colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+
+                                if (status === 'Atrasado') colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
+                                else if (status === 'Concluído') colorClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                                else if (status === 'Teste') colorClass = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+                                else if (status === 'Análise') colorClass = 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+                                else if (status === 'Pré-Projeto') colorClass = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+
+                                return (
+                                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] border flex items-center justify-center ${colorClass}`}>
+                                    {status}
+                                  </span>
+                                );
+                              })()}
+                              {progress === 100 && project.computedStatus !== 'Concluído' && (project.status !== 'Concluído' && project.status !== 'Finalizado' && project.status !== 'Entregue') && (
+                                <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg animate-pulse">
+                                  <AlertCircle size={10} className="text-amber-500" />
+                                  <span className="text-[8px] font-black text-amber-600 uppercase">Sugestão: Concluir</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           <div className="flex -space-x-3 mt-4">

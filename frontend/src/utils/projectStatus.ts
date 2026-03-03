@@ -1,7 +1,14 @@
-import { Project } from "../types";
+import { Project, Task } from "../types";
 
-export const getProjectStatusByTimeline = (p: Project) => {
+export const getProjectStatusByTimeline = (p: Project, tasks?: Task[]) => {
+    if (p.status === 'Concluído' || p.status === 'CONCLUÍDO') return 'CONCLUÍDO';
     if (p.endDateReal && p.endDateReal.trim() !== "") return 'CONCLUÍDO';
+
+    // Se todas as tarefas estiverem concluídas, o projeto está concluído
+    if (tasks && tasks.length > 0 && tasks.every(t => t.status === 'Done' || (t.progress || 0) >= 100)) {
+        return 'CONCLUÍDO';
+    }
+
     if (p.startDateReal && p.startDateReal.trim() !== "") return 'EM ANDAMENTO';
 
     const now = new Date();

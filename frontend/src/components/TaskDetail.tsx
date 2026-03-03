@@ -22,7 +22,7 @@ const TaskDetail: React.FC = () => {
   const {
     tasks, clients, projects, users, projectMembers, timesheetEntries,
     createTask, updateTask, deleteTask, holidays,
-    taskMemberAllocations, setTaskMemberAllocations
+    taskMemberAllocations, setTaskMemberAllocations, absences
   } = useDataController();
 
   const isNew = !taskId || taskId === 'new';
@@ -230,30 +230,16 @@ const TaskDetail: React.FC = () => {
 
   const taskWeight = useMemo(() => {
     const project = projects.find(p => p.id === formData.projectId);
-    if (!project || !project.startDate || !project.estimatedDelivery) return { weight: 0, soldHours: 0 };
+    if (!project || !project.startDate || !project.estimatedDelivery) return { weight: 0 };
 
-    const ONE_DAY = 86400000;
-    const parseSafeDate = (d: string | null | undefined) => {
-      if (!d) return null;
-      const s = d.split('T')[0];
-      return new Date(s + 'T12:00:00').getTime();
-    };
+    const projectWorkingDays = CapacityUtils.getWorkingDaysInRange(project.startDate, project.estimatedDelivery, holidays);
+    const taskWorkingDays = (formData.scheduledStart || formData.actualStart) && formData.estimatedDelivery
+      ? CapacityUtils.getWorkingDaysInRange(formData.scheduledStart || formData.actualStart, formData.estimatedDelivery, holidays)
+      : 0;
 
-    const pStartTs = parseSafeDate(project.startDate)!;
-    const pEndTs = parseSafeDate(project.estimatedDelivery)!;
-
-    // Regra: peso baseado em forecast_horas (estimatedHours)
-    const otherTasks = tasks.filter(t => t.projectId === formData.projectId && t.id !== taskId);
-    const totalForecast = otherTasks.reduce((acc, t) => acc + (Number(t.estimatedHours) || 0), 0) + (Number(formData.estimatedHours) || 0);
-
-    // Se não houver forecast total, o peso é simplificado (1/N)
-    const weight = totalForecast > 0
-      ? ((Number(formData.estimatedHours) || 0) / totalForecast) * 100
-      : (otherTasks.length + 1 > 0 ? (100 / (otherTasks.length + 1)) : 0);
-
-    const soldHours = (project?.horas_vendidas || 0) > 0 ? (weight / 100) * project.horas_vendidas : 0;
-    return { weight, soldHours };
-  }, [formData.scheduledStart, formData.actualStart, formData.estimatedDelivery, formData.projectId, projects, tasks, timesheetEntries, taskId]);
+    const weight = projectWorkingDays > 0 ? (taskWorkingDays / projectWorkingDays) * 100 : 0;
+    return { weight };
+  }, [formData.scheduledStart, formData.actualStart, formData.estimatedDelivery, formData.projectId, projects, holidays]);
 
   const isOwner = task && task.developerId === currentUser?.id;
   const isCollaborator = !isNew && task && task.collaboratorIds?.includes(currentUser?.id || '');
@@ -422,6 +408,19 @@ const TaskDetail: React.FC = () => {
     } finally { setLoading(false); }
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      const targetId = task?.projectId || formData.projectId;
+      if (targetId) {
+        navigate(`/admin/projects/${targetId}?tab=tasks`);
+      } else {
+        navigate('/admin/clients');
+      }
+    }
+  };
+
   const responsibleUsers = useMemo(() => {
     if (!formData.projectId) return [];
     const membersIds = projectMembers.filter(pm => String(pm.id_projeto) === formData.projectId).map(pm => String(pm.id_colaborador));
@@ -440,7 +439,7 @@ const TaskDetail: React.FC = () => {
           {/* Botão Voltar com estilo explícito para garantir visibilidade */}
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/20 text-white flex items-center justify-center shrink-0"
             title="Voltar"
           >
@@ -830,7 +829,8 @@ const TaskDetail: React.FC = () => {
                       if (!hasAnyAllocation && limit > 0) {
                         totalAllocated = limit; // Auto-distribuído
                       } else {
-                        totalAllocated = Object.values(localTaskAllocations).reduce((sum, val) => sum + (val || 0), 0);
+                        const teamIds = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean);
+                        totalAllocated = teamIds.reduce((sum, id) => sum + (localTaskAllocations[id] || 0), 0);
                       }
 
                       let statusClasses = 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500/80';
@@ -910,8 +910,17 @@ const TaskDetail: React.FC = () => {
                         return sum + Math.max(0, allocation - reportedOnOther);
                       }, 0);
 
-                    const periodAvailability = Math.max(0, grossAvailability - otherTasksReserved);
+                    let periodAvailability = Math.max(0, grossAvailability - otherTasksReserved);
 
+                    // REGRA DE ATRASO: Se a tarefa já passou da data de entrega, está atrasada e não concluída,
+                    // mostramos o Saldo Disponível do Mês inteiro como salva-guarda, já que o período (dias úteis) zerou.
+                    if (tEnd && tEnd < todayStr && formData.status !== 'Done') {
+                      const currentMonthStr = todayStr.substring(0, 7);
+                      const monthlyData = CapacityUtils.getUserMonthlyAvailability(
+                        u, currentMonthStr, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences
+                      );
+                      periodAvailability = monthlyData.balance;
+                    }
 
                     const teamCount = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length;
 
@@ -954,9 +963,15 @@ const TaskDetail: React.FC = () => {
                           {/* Saldo Disponível no Período */}
                           <div className="flex flex-col">
                             <span className="text-[9px] font-black uppercase opacity-40">Saldo Disp.</span>
-                            <span className={`text-[10px] font-black tabular-nums ${periodAvailability < currentForecast ? 'text-red-500' : 'text-indigo-500'}`}>
-                              {formatDecimalToTime(periodAvailability)}
-                            </span>
+                            {formData.status === 'Done' ? (
+                              <span className="text-[10px] font-black text-[var(--muted)] opacity-50 tabular-nums">
+                                --
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-black tabular-nums ${periodAvailability < currentForecast ? 'text-red-500' : 'text-indigo-500'}`}>
+                                {formatDecimalToTime(periodAvailability)}
+                              </span>
+                            )}
                           </div>
 
                           {/* Distribuição de Carga */}

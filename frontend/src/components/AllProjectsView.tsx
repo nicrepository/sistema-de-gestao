@@ -13,13 +13,22 @@ const AllProjectsView: React.FC = () => {
     const saved = localStorage.getItem('project_view_mode_admin');
     return (saved as ViewMode) || 'list';
   });
+  const [showForaDoFluxo, setShowForaDoFluxo] = React.useState<boolean>(() => localStorage.getItem('admin_show_fora_do_fluxo') === 'true');
+
+  const filteredProjects = React.useMemo(() => {
+    let filtered = (projects || []).filter(p => p.active !== false);
+    if (!showForaDoFluxo) {
+      filtered = filtered.filter(p => !p.fora_do_fluxo);
+    }
+    return filtered;
+  }, [projects, showForaDoFluxo]);
 
   const handleToggleViewMode = (mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem('project_view_mode_admin', mode);
   };
 
-  const isProjectIncomplete = (p: any) => {
+  const isProjectIncomplete = (p: Project) => {
     return !p.name?.trim();
   };
 
@@ -33,7 +42,7 @@ const AllProjectsView: React.FC = () => {
             <Briefcase className="w-6 h-6" style={{ color: 'var(--brand)' }} />
             Todos os Projetos
           </h1>
-          <p className="mt-1" style={{ color: 'var(--textMuted)' }}>{projects.length} projetos cadastrados</p>
+          <p className="mt-1" style={{ color: 'var(--textMuted)' }}>{filteredProjects.length} projetos visíveis</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -58,6 +67,19 @@ const AllProjectsView: React.FC = () => {
           </div>
 
           <button
+            onClick={() => {
+              const newVal = !showForaDoFluxo;
+              setShowForaDoFluxo(newVal);
+              localStorage.setItem('admin_show_fora_do_fluxo', String(newVal));
+            }}
+            className={`px-3 py-2 rounded-lg transition-all flex items-center gap-2 border font-bold text-xs ${showForaDoFluxo ? 'bg-purple-600/10 border-purple-600/20 text-purple-600' : 'text-muted border-transparent hover:bg-white/5'}`}
+            title={showForaDoFluxo ? "Ocultar Fora do Fluxo" : "Ver Fora do Fluxo"}
+          >
+            <Briefcase className="w-4 h-4" />
+            <span className="hidden md:block">{showForaDoFluxo ? 'Ocultar Fora do Fluxo' : 'Ver Fora do Fluxo'}</span>
+          </button>
+
+          <button
             onClick={() => navigate('/admin/projects/new')}
             className="px-4 py-2 text-white rounded-lg flex items-center gap-2 transition-colors shadow"
             style={{ backgroundColor: 'var(--brand)' }}
@@ -79,7 +101,7 @@ const AllProjectsView: React.FC = () => {
               <p className="animate-pulse" style={{ color: 'var(--textMuted)' }}>Carregando projetos...</p>
             </div>
           </div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="flex items-center justify-center h-full" style={{ color: 'var(--textMuted)' }}>
             <div className="text-center">
               <Briefcase className="w-16 h-16 mx-auto mb-4 opacity-30" />
@@ -97,9 +119,9 @@ const AllProjectsView: React.FC = () => {
           /* MODO LISTA */
           <div className="space-y-8 pb-10">
             {clients
-              .filter(client => projects.some(p => p.clientId === client.id))
+              .filter(client => filteredProjects.some(p => p.clientId === client.id))
               .map(client => {
-                const clientProjects = projects.filter(p => p.clientId === client.id);
+                const clientProjects = filteredProjects.filter(p => p.clientId === client.id);
                 return (
                   <div key={client.id} className="space-y-4">
                     {/* Linha do Cliente */}

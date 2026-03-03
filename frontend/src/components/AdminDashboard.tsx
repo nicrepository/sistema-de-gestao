@@ -3,8 +3,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabaseRealtime } from '@/hooks/useSupabaseRealtime';
 import { useDataController } from '@/controllers/useDataController';
-import { Client, Project, Task } from "@/types";
-import { Plus, Building2, Search as SearchIcon, ArrowDownAZ, Briefcase, LayoutGrid, List, Edit2, CheckSquare, ChevronDown, Filter, Clock, AlertCircle, AlertTriangle, ArrowUp, Trash2, DollarSign, Target, TrendingUp, BarChart, Users, User, Calendar, PieChart, ArrowRight, Layers, FileSpreadsheet, X, HelpCircle, Info, Handshake, ArrowLeft, Mail, Phone, ExternalLink, Activity, Zap } from "lucide-react";
+import { Client, Project, Task, User, TimesheetEntry, ProjectMember } from "@/types";
+import { Plus, Building2, Search as SearchIcon, ArrowDownAZ, Briefcase, LayoutGrid, List, Edit2, CheckSquare, ChevronDown, Filter, Clock, AlertCircle, AlertTriangle, ArrowUp, Trash2, DollarSign, Target, TrendingUp, BarChart, Users, User as UserIcon, Calendar, PieChart, ArrowRight, Layers, FileSpreadsheet, X, HelpCircle, Info, Handshake, ArrowLeft, Mail, Phone, ExternalLink, Activity, Zap, FolderKanban } from "lucide-react";
 import ConfirmationModal from "./ConfirmationModal";
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,9 +34,12 @@ const ExecutiveRow = React.memo(({ p, idx, safeClients, users, groupedData, navi
   p: Project;
   idx: number;
   safeClients: Client[];
-  users: any[];
-  groupedData: any;
-  navigate: any;
+  users: User[];
+  groupedData: {
+    tasksByProj: Record<string, Task[]>;
+    timesByProj: Record<string, TimesheetEntry[]>;
+  };
+  navigate: (path: string) => void;
   isIncomplete?: boolean;
 }) => {
   const client = safeClients.find(c => c.id === p.clientId);
@@ -45,7 +48,7 @@ const ExecutiveRow = React.memo(({ p, idx, safeClients, users, groupedData, navi
   const pTimesheets = groupedData.timesByProj[p.id] || [];
   const isContinuous = p.project_type === 'continuous';
 
-  const costToday = pTimesheets.reduce((acc: number, e: any) => {
+  const costToday = pTimesheets.reduce((acc: number, e: TimesheetEntry) => {
     const u = users.find(user => user.id === e.userId);
     return acc + (e.totalHours * (u?.hourlyCost || 0));
   }, 0);
@@ -53,7 +56,7 @@ const ExecutiveRow = React.memo(({ p, idx, safeClients, users, groupedData, navi
   const progress = CapacityUtils.calculateProjectWeightedProgress(p.id, projectTasks);
 
   const hoursSold = p.horas_vendidas || 0;
-  const hoursReal = pTimesheets.reduce((acc: number, e: any) => acc + (Number(e.totalHours) || 0), 0);
+  const hoursReal = pTimesheets.reduce((acc: number, e: TimesheetEntry) => acc + (Number(e.totalHours) || 0), 0);
   const sold = p.valor_total_rs || 0;
   const result = sold - costToday;
   const margin = sold > 0 ? (result / sold * 100) : 0;
@@ -192,6 +195,7 @@ const AdminDashboard: React.FC = () => {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCapDoc, setShowCapDoc] = useState(false);
+  const [showForaDoFluxo, setShowForaDoFluxo] = useState<boolean>(() => localStorage.getItem('admin_show_fora_do_fluxo') === 'true');
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -259,7 +263,13 @@ const AdminDashboard: React.FC = () => {
 
   // Proteção contra undefined
   const safeClients = clients || [];
-  const safeProjects = useMemo(() => (projects || []).filter(p => p.active !== false), [projects]);
+  const safeProjects = useMemo(() => {
+    let filtered = (projects || []).filter(p => p.active !== false);
+    if (!showForaDoFluxo) {
+      filtered = filtered.filter(p => !p.fora_do_fluxo);
+    }
+    return filtered;
+  }, [projects, showForaDoFluxo]);
   const safeTasks = tasks || [];
 
   // Realtime handling should be done in useDataController or hooks/useAppData to maintain normalization.
@@ -612,7 +622,7 @@ const AdminDashboard: React.FC = () => {
       });
 
       const performedHours = Math.round(userMonthEntries.reduce((acc, entry) => {
-        const h = Number(entry.totalHours || (entry as any).hours || 0);
+        const h = Number(entry.totalHours || 0);
         return acc + (isNaN(h) ? 0 : h);
       }, 0) * 100) / 100;
 
@@ -641,7 +651,7 @@ const AdminDashboard: React.FC = () => {
     if (!resourceMetrics || resourceMetrics.length === 0) return null;
 
     const totalResources = resourceMetrics.length;
-    const saturatedResources = resourceMetrics.filter(r => (r.releaseDate as any)?.isSaturated).length;
+    const saturatedResources = resourceMetrics.filter(r => r.releaseDate?.isSaturated).length;
     const saturationRate = (saturatedResources / totalResources) * 100;
 
     const avgLoad = resourceMetrics.reduce((acc, r) => acc + r.load, 0) / totalResources;
@@ -656,7 +666,7 @@ const AdminDashboard: React.FC = () => {
       return members.every(pm => {
         const res = resourceMetrics.find(r => String(r.id) === String(pm.id_colaborador));
         if (!res) return false; // Se não encontrou o recurso (ex: fora do fluxo), não conta como saturado para bloqueio
-        return (res.releaseDate as any)?.isSaturated;
+        return res.releaseDate?.isSaturated;
       });
     });
 
@@ -1125,16 +1135,16 @@ const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="py-3 px-2 text-center border-b border-r border-[var(--border)]">
                               <div className="flex flex-col items-center">
-                                <span className={`text-[10px] font-black ${!res.releaseDate ? 'text-[var(--muted)] opacity-40' : (res.releaseDate as any).isSaturated ? 'text-red-500' : 'text-purple-500'}`}>
-                                  {formatDateBR((res.releaseDate as any)?.realistic)}
+                                <span className={`text-[10px] font-black ${!res.releaseDate ? 'text-[var(--muted)] opacity-40' : res.releaseDate.isSaturated ? 'text-red-500' : 'text-purple-500'}`}>
+                                  {formatDateBR(res.releaseDate?.realistic)}
                                 </span>
                                 {res.releaseDate && (
                                   <div className="flex flex-col gap-0 items-center">
-                                    <span className={`text-[7px] font-black uppercase tracking-tighter leading-none ${(res.releaseDate as any).isSaturated ? 'text-red-500' : 'text-amber-500'}`}>
-                                      {(res.releaseDate as any).isSaturated ? 'SATURADO' : 'Previsão Realista'}
+                                    <span className={`text-[7px] font-black uppercase tracking-tighter leading-none ${res.releaseDate.isSaturated ? 'text-red-500' : 'text-amber-500'}`}>
+                                      {res.releaseDate.isSaturated ? 'SATURADO' : 'Previsão Realista'}
                                     </span>
-                                    {(res.releaseDate as any).ideal !== (res.releaseDate as any).realistic && (
-                                      <span className="text-[6px] font-bold text-slate-400 uppercase tracking-tighter">Ideal: {formatDateBR((res.releaseDate as any).ideal)}</span>
+                                    {res.releaseDate.ideal !== res.releaseDate.realistic && (
+                                      <span className="text-[6px] font-bold text-slate-400 uppercase tracking-tighter">Ideal: {formatDateBR(res.releaseDate.ideal)}</span>
                                     )}
                                   </div>
                                 )}
@@ -1358,7 +1368,7 @@ const AdminDashboard: React.FC = () => {
                                       <div>
                                         <p className="text-[9px] font-black text-[var(--muted)] uppercase tracking-widest mb-3">Ponto Focal Parceiro</p>
                                         <div className="flex items-center gap-3 mb-3">
-                                          <div className="p-2 rounded-lg bg-slate-50 text-slate-400"><User size={16} /></div>
+                                          <div className="p-2 rounded-lg bg-slate-50 text-slate-400"><UserIcon size={16} /></div>
                                           <p className="text-[13px] font-black text-[var(--textTitle)]">{partner.responsavel_externo || 'Não informado'}</p>
                                         </div>
                                         <div className="flex flex-col gap-2 pl-11">
@@ -1623,6 +1633,20 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   ))}
                 </div>
+
+                {/* TOGGLE FORA DO FLUXO */}
+                <button
+                  onClick={() => {
+                    const newVal = !showForaDoFluxo;
+                    setShowForaDoFluxo(newVal);
+                    localStorage.setItem('admin_show_fora_do_fluxo', String(newVal));
+                  }}
+                  className={`p-1.5 px-2 rounded-md transition-all flex items-center gap-1.5 font-bold text-[10px] border ${showForaDoFluxo ? 'bg-purple-600/10 border-purple-600/20 text-purple-600' : 'text-[var(--muted)] border-transparent hover:bg-[var(--surface-hover)]'}`}
+                  title={showForaDoFluxo ? "Ocultar Fora do Fluxo" : "Ver Fora do Fluxo"}
+                >
+                  <FolderKanban size={13} />
+                  <span className="hidden lg:inline">{showForaDoFluxo ? 'Ocultar Fora do Fluxo' : 'Ver Fora do Fluxo'}</span>
+                </button>
 
                 {/* ACTION BUTTONS */}
                 <div className="flex items-center gap-1 shrink-0">
@@ -2227,7 +2251,7 @@ const AdminDashboard: React.FC = () => {
                             <p className="text-[9px] font-black text-[var(--muted)] uppercase mb-3">Ponto de Contato (Parceiro)</p>
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
-                                <User size={14} className="text-slate-400" />
+                                <UserIcon size={14} className="text-slate-400" />
                                 <p className="text-sm font-black text-[var(--text)]">{partner.responsavel_externo || 'Não informado'}</p>
                               </div>
                               <div className="flex flex-col gap-2 pl-6">
@@ -2391,13 +2415,13 @@ const AdminDashboard: React.FC = () => {
                       {(client.contato_principal || client.email_contato || client.telefone) && (
                         <div className="space-y-4">
                           <h3 className="text-[10px] font-black text-[var(--muted)] uppercase tracking-[0.2em] flex items-center gap-2 border-b border-[var(--border)] pb-2">
-                            <User size={12} className="text-blue-500" /> Contatos
+                            <UserIcon size={12} className="text-blue-500" /> Contatos
                           </h3>
                           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/20 border border-[var(--border)] shadow-sm">
                             <div className="space-y-3">
                               {client.contato_principal && (
                                 <div className="flex items-center gap-2">
-                                  <User size={14} className="text-slate-400" />
+                                  <UserIcon size={14} className="text-slate-400" />
                                   <p className="text-sm font-black text-[var(--text)]">{client.contato_principal}</p>
                                 </div>
                               )}

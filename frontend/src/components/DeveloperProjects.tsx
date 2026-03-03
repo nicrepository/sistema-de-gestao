@@ -61,11 +61,14 @@ const DeveloperProjects: React.FC = () => {
 
   const myProjects = React.useMemo(() => {
     if (!currentUser) return [];
-    if (isAdmin) return projects;
-
-    // Projetos onde tem tarefa OU é membro
-    return projects.filter(p => myProjectIdsFromTasks.has(p.id) || myMemberProjectIds.has(p.id));
-  }, [projects, myProjectIdsFromTasks, myMemberProjectIds, currentUser]);
+    let filtered = projects;
+    if (!isAdmin) {
+      // Projetos onde tem tarefa OU é membro
+      filtered = projects.filter(p => myProjectIdsFromTasks.has(p.id) || myMemberProjectIds.has(p.id));
+    }
+    // Ocultar projetos "fora do fluxo" por padrão
+    return filtered.filter(p => !p.fora_do_fluxo);
+  }, [projects, myProjectIdsFromTasks, myMemberProjectIds, currentUser, isAdmin]);
 
   const myClients = React.useMemo(() => {
     const clientIds = new Set(myProjects.map(p => p.clientId));

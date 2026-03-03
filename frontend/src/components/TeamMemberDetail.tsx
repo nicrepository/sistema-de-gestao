@@ -71,6 +71,8 @@ const TeamMemberDetail: React.FC = () => {
       monthlyAvailableHours: 160
    });
 
+   const scrollRef = React.useRef<HTMLDivElement>(null);
+
    useEffect(() => {
       if (user) {
          document.title = `${user.name} | Gestão de Equipe`;
@@ -88,10 +90,26 @@ const TeamMemberDetail: React.FC = () => {
             monthlyAvailableHours: user.monthlyAvailableHours || 160
          });
       }
+
+      // Restauração de Scroll
+      if (scrollRef.current) {
+         const savedScroll = sessionStorage.getItem(`teamMember_scroll_${userId}_${activeTab}`);
+         if (savedScroll) {
+            const timer = setTimeout(() => {
+               if (scrollRef.current) scrollRef.current.scrollTop = parseInt(savedScroll, 10);
+            }, 100);
+            return () => clearTimeout(timer);
+         }
+      }
+
       return () => {
          document.title = 'Sistema de Gestão';
       };
-   }, [user]);
+   }, [user, userId, activeTab]);
+
+   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      sessionStorage.setItem(`teamMember_scroll_${userId}_${activeTab}`, e.currentTarget.scrollTop.toString());
+   };
 
    const capData = useMemo(() => {
       if (!user) return null;
@@ -253,11 +271,26 @@ const TeamMemberDetail: React.FC = () => {
       });
 
    return (
-      <div className="h-full flex flex-col bg-[var(--bg)] overflow-hidden">
+      <div
+         ref={scrollRef}
+         onScroll={handleScroll}
+         className="h-full flex flex-col p-0 overflow-y-auto custom-scrollbar"
+         style={{ backgroundColor: 'var(--bg)' }}
+      >
          {/* CABEÇALHO SUPERIOR - COM PROFUNDIDADE */}
          <div className="px-8 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)] sticky top-0 z-20 shadow-sm">
             <div className="flex items-center gap-4">
-               <button type="button" onClick={() => navigate(-1)} className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--muted)]">
+               <button
+                  type="button"
+                  onClick={() => {
+                     if (window.history.length > 1) {
+                        navigate(-1);
+                     } else {
+                        navigate('/admin/team');
+                     }
+                  }}
+                  className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--muted)]"
+               >
                   <ArrowLeft className="w-5 h-5" />
                </button>
                <div className="w-10 h-10 rounded-xl bg-[var(--primary-soft)] border border-[var(--border)] shadow-sm overflow-hidden flex items-center justify-center text-sm font-black text-[var(--primary)]">
@@ -286,7 +319,11 @@ const TeamMemberDetail: React.FC = () => {
             </div>
          </div>
 
-         <div className="flex-1 overflow-y-auto custom-scrollbar">
+         <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto custom-scrollbar"
+         >
             {/* SUB-NAVEGAÇÃO - ESTILO TABS */}
             <div className="flex gap-2 border-b border-[var(--border)] sticky top-0 z-10 bg-[var(--bg)]/60 backdrop-blur-xl px-8 pt-2">
                {[
@@ -311,8 +348,8 @@ const TeamMemberDetail: React.FC = () => {
                            <span className={`px-1.5 py-0.5 rounded-lg text-[9px] font-black transition-all ${tab.id === 'completed' && tab.count > 0
                               ? 'bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]'
                               : tab.id === 'delayed' && tab.count > 0
-                                  ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]'
-                                  : activeTab === tab.id ? 'bg-[var(--primary-soft)] text-[var(--primary)]' : 'bg-[var(--surface-2)]'
+                                 ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]'
+                                 : activeTab === tab.id ? 'bg-[var(--primary-soft)] text-[var(--primary)]' : 'bg-[var(--surface-2)]'
                               }`}>
                               {tab.count}
                            </span>
@@ -415,10 +452,10 @@ const TeamMemberDetail: React.FC = () => {
                                     className="p-5 rounded-3xl bg-white border border-[var(--border)] shadow-sm cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group/card"
                                  >
                                     <div className="flex items-center justify-between mb-1.5">
-                                       <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Contínuo (Reserva)</p>
+                                       <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Reserva Técnica</p>
                                        <div className="flex items-center gap-2">
                                           <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity">Ver Detalhes</span>
-                                          <InfoTooltip title="Prioridade 2" content="Horas alocadas para projetos Contínuos ou Reserva Estratégica (50% da capacidade se não houver planejado)." />
+                                          <InfoTooltip title="Prioridade 2" content="Horas alocadas para Projetos de Sustentação ou Reserva Estratégica (50% da capacidade se não houver planejado)." />
                                        </div>
                                     </div>
                                     <p className="text-2xl font-black text-amber-500 font-mono">
@@ -497,7 +534,7 @@ const TeamMemberDetail: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                        <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-                                       <span className="text-[8px] font-black uppercase text-[var(--muted)]">Contínuo</span>
+                                       <span className="text-[8px] font-black uppercase text-[var(--muted)]">Reserva</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                        <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
@@ -558,7 +595,7 @@ const TeamMemberDetail: React.FC = () => {
                                                       <span>{day.plannedHours}h</span>
                                                    </div>
                                                    <div className="flex justify-between items-center text-[8px] font-bold">
-                                                      <span className="text-amber-400">CONTÍNUO:</span>
+                                                      <span className="text-amber-400">RESERVA:</span>
                                                       <span>{day.continuousHours}h</span>
                                                    </div>
                                                    <div className="flex justify-between items-center text-[8px] font-bold border-t border-white/5 pt-1.5 mt-1.5">
@@ -1055,126 +1092,126 @@ const TeamMemberDetail: React.FC = () => {
                   </div>
                )}
 
-                               {activeTab === 'delayed' && (
-                   <div className="space-y-4 max-w-4xl mx-auto">
-                      <motion.div
-                         initial="hidden"
-                         animate="visible"
-                         variants={{
-                            visible: { transition: { staggerChildren: 0.05 } }
-                         }}
-                         className="space-y-3"
-                      >
-                         {delayedTasks.map((t) => {
-                            const client = clients.find(c => String(c.id) === String(t.clientId));
-                            const teamIds = Array.from(new Set([t.developerId, ...(t.collaboratorIds || [])])).filter(Boolean);
-                            const responsible = users.find(u => String(u.id) === String(t.developerId));
-                            const teamNames = teamIds
-                               .map(id => users.find(u => String(u.id) === String(id))?.name?.toUpperCase())
-                               .filter(Boolean)
-                               .join(', ');
+               {activeTab === 'delayed' && (
+                  <div className="space-y-4 max-w-4xl mx-auto">
+                     <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                           visible: { transition: { staggerChildren: 0.05 } }
+                        }}
+                        className="space-y-3"
+                     >
+                        {delayedTasks.map((t) => {
+                           const client = clients.find(c => String(c.id) === String(t.clientId));
+                           const teamIds = Array.from(new Set([t.developerId, ...(t.collaboratorIds || [])])).filter(Boolean);
+                           const responsible = users.find(u => String(u.id) === String(t.developerId));
+                           const teamNames = teamIds
+                              .map(id => users.find(u => String(u.id) === String(id))?.name?.toUpperCase())
+                              .filter(Boolean)
+                              .join(', ');
 
-                            const reportedHours = timesheetEntries.reduce((sum, entry) => {
-                               if (String(entry.taskId) === String(t.id) && String(entry.userId) === String(user.id)) {
-                                  return sum + (Number(entry.totalHours) || 0);
-                               }
-                               return sum;
-                            }, 0);
+                           const reportedHours = timesheetEntries.reduce((sum, entry) => {
+                              if (String(entry.taskId) === String(t.id) && String(entry.userId) === String(user.id)) {
+                                 return sum + (Number(entry.totalHours) || 0);
+                              }
+                              return sum;
+                           }, 0);
 
-                            return (
-                               <motion.div
-                                  variants={{
-                                     hidden: { opacity: 0, y: 10 },
-                                     visible: { opacity: 1, y: 0 }
-                                  }}
-                                  whileHover={{ scale: 1.005 }}
-                                  onClick={() => navigate(`/tasks/${t.id}`)}
-                                  key={t.id}
-                                  className="relative cursor-pointer bg-red-500/[0.02] border border-red-500/10 p-4 rounded-[16px] mb-3 flex gap-5 items-center group transition-all"
-                               >
-                                  <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center p-2.5 shrink-0 shadow-lg">
-                                     {client?.logoUrl ? (
-                                        <img src={client.logoUrl} alt={client.name} className="w-full h-full object-contain" />
-                                     ) : (
-                                        <LayoutGrid className="w-8 h-8 text-slate-200" />
-                                     )}
-                                  </div>
+                           return (
+                              <motion.div
+                                 variants={{
+                                    hidden: { opacity: 0, y: 10 },
+                                    visible: { opacity: 1, y: 0 }
+                                 }}
+                                 whileHover={{ scale: 1.005 }}
+                                 onClick={() => navigate(`/tasks/${t.id}`)}
+                                 key={t.id}
+                                 className="relative cursor-pointer bg-red-500/[0.02] border border-red-500/10 p-4 rounded-[16px] mb-3 flex gap-5 items-center group transition-all"
+                              >
+                                 <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center p-2.5 shrink-0 shadow-lg">
+                                    {client?.logoUrl ? (
+                                       <img src={client.logoUrl} alt={client.name} className="w-full h-full object-contain" />
+                                    ) : (
+                                       <LayoutGrid className="w-8 h-8 text-slate-200" />
+                                    )}
+                                 </div>
 
-                                  <div className="flex-1 min-w-0">
-                                     <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-3">
-                                           <h4 className="text-white font-black text-[15px] tracking-tight truncate max-w-lg">
-                                              {t.title}
-                                           </h4>
-                                           <div className="bg-red-500/10 px-3 py-1 rounded-full flex gap-1.5 items-center border border-red-500/20">
-                                              <span className="text-[10px] font-bold text-red-500 font-mono">Total {formatDecimalToTime(reportedHours)}h / {formatDecimalToTime(t.estimatedHours || 0)}h</span>
-                                           </div>
-                                        </div>
-                                        <span className="text-red-500 font-black text-[13px] font-mono">{t.progress}%</span>
-                                     </div>
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                       <div className="flex items-center gap-3">
+                                          <h4 className="text-white font-black text-[15px] tracking-tight truncate max-w-lg">
+                                             {t.title}
+                                          </h4>
+                                          <div className="bg-red-500/10 px-3 py-1 rounded-full flex gap-1.5 items-center border border-red-500/20">
+                                             <span className="text-[10px] font-bold text-red-500 font-mono">Total {formatDecimalToTime(reportedHours)}h / {formatDecimalToTime(t.estimatedHours || 0)}h</span>
+                                          </div>
+                                       </div>
+                                       <span className="text-red-500 font-black text-[13px] font-mono">{t.progress}%</span>
+                                    </div>
 
-                                     <div className="mb-4 flex items-center gap-2">
-                                        <span className="bg-red-600 text-[10px] font-black text-white px-3 py-1 rounded-md uppercase tracking-widest">
-                                           {getStatusDisplayName(t.status)}
-                                        </span>
-                                        <span className="text-[10px] font-black text-red-500 px-2 py-1 rounded-md bg-red-500/10 uppercase tracking-widest">
-                                           {t.daysOverdue} dias de atraso
-                                        </span>
-                                     </div>
+                                    <div className="mb-4 flex items-center gap-2">
+                                       <span className="bg-red-600 text-[10px] font-black text-white px-3 py-1 rounded-md uppercase tracking-widest">
+                                          {getStatusDisplayName(t.status)}
+                                       </span>
+                                       <span className="text-[10px] font-black text-red-500 px-2 py-1 rounded-md bg-red-500/10 uppercase tracking-widest">
+                                          {t.daysOverdue} dias de atraso
+                                       </span>
+                                    </div>
 
-                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-4">
-                                        <div className="flex items-center gap-2">
-                                           <Calendar className="w-3.5 h-3.5 opacity-30" />
-                                           <span>PRAZO VENCIDO: <span className="text-red-400">{formatDateBR(t.estimatedDelivery)}</span></span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                           <UserIcon className="w-3.5 h-3.5 opacity-30" />
-                                           <span>RESPONSÁVEL: <span className="text-slate-300">{responsible?.name?.toUpperCase()}</span></span>
-                                        </div>
-                                     </div>
+                                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter mb-4">
+                                       <div className="flex items-center gap-2">
+                                          <Calendar className="w-3.5 h-3.5 opacity-30" />
+                                          <span>PRAZO VENCIDO: <span className="text-red-400">{formatDateBR(t.estimatedDelivery)}</span></span>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                          <UserIcon className="w-3.5 h-3.5 opacity-30" />
+                                          <span>RESPONSÁVEL: <span className="text-slate-300">{responsible?.name?.toUpperCase()}</span></span>
+                                       </div>
+                                    </div>
 
-                                     <div className="flex items-center justify-between">
-                                        <div className="flex -space-x-2.5">
-                                           {teamIds.slice(0, 8).map(id => {
-                                              const collabo = users.find(u => String(u.id) === String(id));
-                                              return (
-                                                 <div key={id} className="w-7 h-7 rounded-full border-2 border-[#0c0c14] overflow-hidden bg-slate-800 shadow-xl">
-                                                    {collabo?.avatarUrl ? <img src={collabo.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[7px] font-black text-white/30 uppercase">{collabo?.name?.substring(0, 1)}</div>}
-                                                 </div>
-                                              );
-                                           })}
-                                        </div>
+                                    <div className="flex items-center justify-between">
+                                       <div className="flex -space-x-2.5">
+                                          {teamIds.slice(0, 8).map(id => {
+                                             const collabo = users.find(u => String(u.id) === String(id));
+                                             return (
+                                                <div key={id} className="w-7 h-7 rounded-full border-2 border-[#0c0c14] overflow-hidden bg-slate-800 shadow-xl">
+                                                   {collabo?.avatarUrl ? <img src={collabo.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[7px] font-black text-white/30 uppercase">{collabo?.name?.substring(0, 1)}</div>}
+                                                </div>
+                                             );
+                                          })}
+                                       </div>
 
-                                        <div className="w-64 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                           <div className="h-full bg-red-600/10" style={{ width: '100%' }}>
-                                              <motion.div
-                                                 initial={{ width: 0 }}
-                                                 animate={{ width: `${t.progress}%` }}
-                                                 transition={{ duration: 1.5 }}
-                                                 className="h-full bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.35)]"
-                                              />
-                                           </div>
-                                        </div>
-                                     </div>
-                                  </div>
-                               </motion.div>
-                            );
-                         })}
-                      </motion.div>
-                      {delayedTasks.length === 0 && (
-                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="py-16 text-center border-2 border-dashed border-[var(--border-muted)] rounded-[32px] bg-[var(--surface-2)]/30 backdrop-blur-sm"
-                         >
-                            <AlertCircle className="w-8 h-8 mx-auto text-emerald-500 opacity-20 mb-3" />
-                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] opacity-40">Nenhuma tarefa em atraso</p>
-                         </motion.div>
-                      )}
-                   </div>
-                )}
+                                       <div className="w-64 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                          <div className="h-full bg-red-600/10" style={{ width: '100%' }}>
+                                             <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${t.progress}%` }}
+                                                transition={{ duration: 1.5 }}
+                                                className="h-full bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.35)]"
+                                             />
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </motion.div>
+                           );
+                        })}
+                     </motion.div>
+                     {delayedTasks.length === 0 && (
+                        <motion.div
+                           initial={{ opacity: 0 }}
+                           animate={{ opacity: 1 }}
+                           className="py-16 text-center border-2 border-dashed border-[var(--border-muted)] rounded-[32px] bg-[var(--surface-2)]/30 backdrop-blur-sm"
+                        >
+                           <AlertCircle className="w-8 h-8 mx-auto text-emerald-500 opacity-20 mb-3" />
+                           <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] opacity-40">Nenhuma tarefa em atraso</p>
+                        </motion.div>
+                     )}
+                  </div>
+               )}
 
-{activeTab === 'completed' && (
+               {activeTab === 'completed' && (
                   <motion.div
                      initial="hidden"
                      animate="visible"
@@ -1285,7 +1322,7 @@ const TeamMemberDetail: React.FC = () => {
                      <div className="flex items-center justify-between">
                         <div>
                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Distribuição de Carga</p>
-                           <h3 className="text-2xl font-black">{showBreakdown === 'planned' ? 'Projetos Planejados' : 'Projetos Contínuos'}</h3>
+                           <h3 className="text-2xl font-black">{showBreakdown === 'planned' ? 'Projetos Planejados' : 'Atividades de Reserva'}</h3>
                         </div>
                         <button onClick={() => setShowBreakdown(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                            <LayoutGrid className="w-5 h-5 rotate-45" />

@@ -37,8 +37,8 @@ const Badge = ({ children, status, className = "" }: { children: React.ReactNode
         'analise': 'bg-purple-50 text-purple-600 border-purple-100',
         'nao-iniciado': 'bg-slate-100 text-slate-700 border-slate-200',
         'concluido': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'atrasado': 'bg-red-100 text-red-700 border-red-200',
-        'entrega-hoje': 'bg-sky-100 text-sky-700 border-sky-200',
+        'atrasada': 'bg-red-500 text-white border-red-600',
+        'entrega-hoje': 'bg-blue-600 text-white border-blue-700 shadow-lg shadow-blue-500/20',
         'pre-projeto': 'bg-slate-100 text-slate-700 border-slate-200',
         'saudavel': 'bg-emerald-100 text-emerald-700 border-emerald-200',
         'critico': 'bg-red-100 text-red-700 border-red-200',
@@ -410,7 +410,14 @@ const AdminMonitoringView: React.FC = () => {
         setCurrentNotification({ message: next.message, id: next.id });
     }, [notifications, currentNotification]);
 
-    const [taskPage, setTaskPage] = useState(0);
+    const [taskPage, setTaskPage] = useState(() => {
+        const saved = sessionStorage.getItem('adminMonitoring_taskPage');
+        return saved ? parseInt(saved, 10) : 0;
+    });
+
+    useEffect(() => {
+        sessionStorage.setItem('adminMonitoring_taskPage', String(taskPage));
+    }, [taskPage]);
     const [windowSize, setWindowSize] = useState({
         width: typeof window !== 'undefined' ? window.innerWidth : 1920,
         height: typeof window !== 'undefined' ? window.innerHeight : 1080
@@ -429,10 +436,10 @@ const AdminMonitoringView: React.FC = () => {
 
     const itemsPerPage = useMemo(() => {
         const { width, height } = windowSize;
-        if (width >= 2500 && height >= 1300) return 12; // 4x3 ou 6x2
-        if (width >= 1800 && height >= 900) return 8;  // 4x2
+        if (width >= 2500 && height >= 1300) return 9; // 3x3
+        if (width >= 1800 && height >= 900) return 9;  // 3x3
         if (width >= 1200 && height >= 800) return 6;  // 3x2
-        return 4; // Mobile/Compact
+        return 3; // 3x1
     }, [windowSize]);
 
 
@@ -464,9 +471,8 @@ const AdminMonitoringView: React.FC = () => {
     }, [tasksInProgress.length, taskPage, itemsPerPage]);
 
     const filteredUsers = useMemo(() => {
-        const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead', 'developer'];
         return allUsers.filter(u =>
-            u.active !== false && (u.torre !== 'N/A' || activeRoles.includes(u.role?.toLowerCase() || ''))
+            u.active !== false && u.torre !== 'N/A'
         );
     }, [allUsers]);
 
@@ -518,7 +524,7 @@ const AdminMonitoringView: React.FC = () => {
                 entry.date === todayStr
             );
 
-            let status: 'LIVRE' | 'ESTUDANDO' | 'INICIADO' | 'APONTADO' | 'ATRASADO' | 'AUSENTE' = 'LIVRE';
+            let status: 'LIVRE' | 'ESTUDANDO' | 'OCUPADO' | 'APONTADO' | 'ATRASADO' | 'AUSENTE' = 'LIVRE';
             let absenceData = undefined;
 
             // Check if absent today
@@ -543,7 +549,7 @@ const AdminMonitoringView: React.FC = () => {
             } else if (isAfter16h && hasTimesheetToday) {
                 status = 'APONTADO';
             } else if (activeTasks.length > 0) {
-                status = 'INICIADO';
+                status = 'OCUPADO';
             } else if (isStudyCargo || hasStudy) {
                 status = 'ESTUDANDO';
             }
@@ -588,7 +594,7 @@ const AdminMonitoringView: React.FC = () => {
             tasksByStatus,
             team: {
                 livre: teamStatus.filter(m => m.boardStatus === 'LIVRE').length,
-                iniciado: teamStatus.filter(m => m.boardStatus === 'INICIADO').length,
+                ocupado: teamStatus.filter(m => m.boardStatus === 'OCUPADO').length,
                 atrasado: teamStatus.filter(m => m.boardStatus === 'ATRASADO').length,
                 estudando: teamStatus.filter(m => m.boardStatus === 'ESTUDANDO').length,
                 apontado: teamStatus.filter(m => m.boardStatus === 'APONTADO').length,
@@ -612,7 +618,7 @@ const AdminMonitoringView: React.FC = () => {
         <div className="h-screen w-full bg-gradient-to-br from-slate-100 via-white to-slate-100 flex flex-col overflow-hidden font-sans text-slate-900 selection:bg-purple-100">
 
             {/* --- BARRA INFORMATIVA --- */}
-            <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-white/10 px-4 sm:px-6 h-[56px] 2xl:h-[80px] flex items-center justify-between shrink-0 shadow-xl overflow-hidden z-50">
+            <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-white/10 px-4 sm:px-6 h-[72px] 2xl:h-[100px] flex items-center justify-between shrink-0 shadow-xl overflow-hidden z-50">
                 {/* Clima - Esquerda */}
                 <div className="flex items-center h-full min-w-fit">
                     {weather ? (
@@ -715,10 +721,7 @@ const AdminMonitoringView: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 1.02 }}
                                 transition={{ duration: 0.5 }}
-                                className={`grid gap-2 sm:gap-3 lg:gap-4 h-full ${itemsPerPage >= 12 ? 'grid-cols-4 lg:grid-cols-6' :
-                                    itemsPerPage >= 8 ? 'grid-cols-2 lg:grid-cols-4' :
-                                        itemsPerPage >= 6 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'
-                                    }`}
+                                className={`grid gap-2 sm:gap-3 lg:gap-4 h-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3`}
                             >
                                 {(() => {
                                     const startIdx = taskPage * itemsPerPage;
@@ -734,13 +737,15 @@ const AdminMonitoringView: React.FC = () => {
                                         const isReview = task.status === 'Review';
 
                                         let finalStatusLabel = task.status === 'In Progress' ? 'ANDAMENTO' :
-                                            task.status === 'Review' ? 'IMPEDIDO' :
-                                                task.status === 'Todo' ? 'ANÁLISE' : 'CONCLUÍDO';
+                                            task.status === 'Review' ? 'ANÁLISE' :
+                                                task.status === 'Todo' ? 'PRÉ-PROJETO' :
+                                                    task.status === 'Testing' ? 'TESTE' :
+                                                        task.status === 'Done' ? 'CONCLUÍDO' : task.status;
 
-                                        if (delayed) finalStatusLabel = 'ATRASADO';
-                                        else if (isDueToday) finalStatusLabel = 'ENTREGA HOJE';
+                                        if (delayed) finalStatusLabel = 'ATRASADA';
+                                        else if (isDueToday && task.status !== 'Done') finalStatusLabel = 'ENTREGA HOJE';
 
-                                        const statusLabelKey = finalStatusLabel.toLowerCase().replace(' ', '-');
+                                        const statusLabelKey = finalStatusLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
                                         const formattedDate = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'S/D';
 
                                         let countdownText = '';
@@ -890,7 +895,7 @@ const AdminMonitoringView: React.FC = () => {
                     {/* ECOSSISTEMA DE PROJETOS ATIVOS */}
                     {activeProjects.length > 0 && (
                         <section className="flex flex-col min-h-0 overflow-hidden">
-                            <SectionHeader label="Ecossistema de Projetos Ativos" icon={Timer} colorClass="bg-blue-600">
+                            <SectionHeader label={`Ecossistema de Projetos Ativos (${activeProjects.length})`} icon={Timer} colorClass="bg-blue-600">
                                 <CompactStat label="Pré-Projeto" count={stats.preProjeto} icon={Layout} colorClass="text-slate-600" />
                                 <CompactStat label="Análise" count={stats.analise} icon={Cpu} colorClass="text-yellow-600" />
                                 <CompactStat label="Andamento" count={stats.andamento} icon={Activity} colorClass="text-blue-600" />
@@ -906,7 +911,7 @@ const AdminMonitoringView: React.FC = () => {
                                         const hasReview = projTasks.some(t => t.status === 'Review');
                                         const hasInProgress = projTasks.some(t => t.status === 'In Progress');
 
-                                        const projStatus = getProjectStatusByTimeline(proj);
+                                        const projStatus = getProjectStatusByTimeline(proj, projTasks);
                                         const colors = getProjectStatusColor(projStatus);
                                         const statusLabel = projStatus;
                                         const statusColor = colors.text;
@@ -970,7 +975,7 @@ const AdminMonitoringView: React.FC = () => {
                     <section className="flex flex-col min-h-0 overflow-hidden">
                         <SectionHeader label="Time & Disponibilidade" icon={Users} colorClass="bg-emerald-600">
                             <CompactStat label="Livre" count={stats.team.livre} icon={CheckCircle2} colorClass="text-emerald-600" />
-                            <CompactStat label="Em Atividade" count={stats.team.iniciado + stats.team.apontado} icon={PlayCircle} colorClass="text-purple-600" />
+                            <CompactStat label="Ocupados" count={stats.team.ocupado + stats.team.apontado} icon={PlayCircle} colorClass="text-purple-600" />
                             <CompactStat label="Estudando" count={stats.team.estudando} icon={Box} colorClass="text-blue-500" />
                             <CompactStat label="Atrasados" count={stats.team.atrasado} icon={AlertTriangle} colorClass="text-red-600" />
                             {stats.team.ausente > 0 && <CompactStat label="Ausentes" count={stats.team.ausente} icon={AlertCircle} colorClass="text-orange-600" />}
@@ -980,7 +985,7 @@ const AdminMonitoringView: React.FC = () => {
                                 {[...teamStatus, ...teamStatus, ...teamStatus].map((member, idx) => { // Triplicated for infinite loop
                                     const colors: any = {
                                         'LIVRE': 'text-emerald-600 border-emerald-500 bg-emerald-50',
-                                        'INICIADO': 'text-purple-600 border-purple-500 bg-purple-50',
+                                        'OCUPADO': 'text-purple-600 border-purple-500 bg-purple-50',
                                         'ESTUDANDO': 'text-blue-600 border-blue-500 bg-blue-50',
                                         'ATRASADO': 'text-red-600 border-red-500 bg-red-50',
                                         'APONTADO': 'text-indigo-700 border-indigo-500 bg-indigo-50',
@@ -988,7 +993,7 @@ const AdminMonitoringView: React.FC = () => {
                                     };
                                     const dotColors: any = {
                                         'LIVRE': 'bg-emerald-500',
-                                        'INICIADO': 'bg-purple-500',
+                                        'OCUPADO': 'bg-purple-500',
                                         'ESTUDANDO': 'bg-blue-500',
                                         'ATRASADO': 'bg-red-500',
                                         'APONTADO': 'bg-indigo-600',
@@ -1015,11 +1020,19 @@ const AdminMonitoringView: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="border-t border-slate-50 pt-1 2xl:pt-3 flex items-center justify-between">
-                                                <span className={`text-[7px] 2xl:text-[10px] font-black px-2 py-0.5 rounded-lg border ${colors[member.boardStatus]} whitespace-nowrap`}>
-                                                    {member.boardStatus === 'AUSENTE' && (member as any).absenceData ? `AUSENTE: ${((member as any).absenceData).type}` : member.boardStatus}
+                                            <div className="border-t border-slate-50 pt-1 2xl:pt-3 flex items-center justify-between gap-2">
+                                                <span className={`text-[7px] 2xl:text-[10px] font-black px-2 py-0.5 rounded-lg border ${colors[member.boardStatus]} whitespace-nowrap ${member.boardStatus === 'AUSENTE' ? 'flex-1 text-center truncate shadow-sm bg-opacity-30' : ''}`}>
+                                                    {member.boardStatus === 'AUSENTE' && (member as any).absenceData ? (
+                                                        (() => {
+                                                            const abs = (member as any).absenceData;
+                                                            const end = new Date(abs.endDate + 'T12:00:00');
+                                                            end.setDate(end.getDate() + 1);
+                                                            const returnDate = end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                                                            return `${abs.type.toUpperCase()} • VOLTA ${returnDate}`;
+                                                        })()
+                                                    ) : member.boardStatus}
                                                 </span>
-                                                <div className={`w-1.5 h-1.5 2xl:w-2.5 2xl:h-2.5 rounded-full ${dotColors[member.boardStatus]} shadow-md`} />
+                                                <div className={`w-1.5 h-1.5 2xl:w-2.5 2xl:h-2.5 rounded-full ${dotColors[member.boardStatus]} shadow-md shrink-0`} />
                                             </div>
                                         </div>
                                     );

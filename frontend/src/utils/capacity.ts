@@ -355,7 +355,18 @@ export const getUserMonthlyAvailability = (
             totalEffort = 0;
         }
 
-        if (totalEffort <= 0) return;
+        // REGRA DE SALDO: Se a tarefa foi concluída, a alocação real é o que foi apontado (se for menor que o alocado)
+        // Isso libera as horas excedentes de volta para o saldo do usuário.
+        if (t.status === 'Done') {
+            const reportedOnTask = timesheetEntries
+                .filter(e => String(e.taskId) === String(t.id) && String(e.userId) === String(user.id))
+                .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
+
+            // A alocação passa a ser o menor entre o planejado original e o executado real
+            totalEffort = Math.min(totalEffort, reportedOnTask);
+        }
+
+        if (totalEffort <= 0 && t.status !== 'Done') return;
 
         const tStart = t.scheduledStart || t.actualStart || p.startDate || startDate;
         // Se a tarefa já foi entregue, o esforço real de alocação terminou na data de entrega efetiva
@@ -647,4 +658,51 @@ export const simulateNewProjectImpact = (
         // Ordena por maior impacto (maior deslocamento de data)
         return new Date(b.releaseDateAfter).getTime() - new Date(a.releaseDateAfter).getTime();
     });
+};
+/**
+ * CÁLCULO DE CAPACIDADE E SALDO DO USUÁRIO NO MÊS
+ */
+export const calculateUserCapacity = (
+    userId: string,
+    referenceDate: Date,
+    allTasks: Task[],
+    holidays: Holiday[] = [],
+    absences: Absence[] = [],
+    dailyCap: number = 8
+) => {
+    const year = referenceDate.getFullYear();
+    const month = referenceDate.getMonth() + 1;
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const startDate = `${monthStr}-01`;
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+    const userAbsences = absences.filter(a => String(a.userId) === String(userId) && a.status === 'aprovada_gestao');
+    const workingDays = getWorkingDaysInRange(startDate, endDate, holidays, userAbsences);
+    const monthlyCapacity = dailyCap * workingDays;
+
+    let allocatedHours = 0;
+    allTasks.forEach(t => {
+        const isOwner = String(t.developerId) === String(userId) || t.collaboratorIds?.some(id => String(id) === String(userId));
+        if (!isOwner || t.status === 'Done' || t.deleted_at) return;
+
+        const tStart = t.scheduledStart || t.actualStart || startDate;
+        const tEnd = t.estimatedDelivery || endDate;
+
+        const totalTaskDays = getWorkingDaysInRange(tStart, tEnd, holidays, userAbsences) || 1;
+        const hoursPerDay = (Number(t.estimatedHours) || 0) / totalTaskDays;
+
+        const intStart = tStart > startDate ? tStart : startDate;
+        const intEnd = tEnd < endDate ? tEnd : endDate;
+
+        if (intStart <= intEnd) {
+            const bizDaysInMonth = getWorkingDaysInRange(intStart, intEnd, holidays, userAbsences);
+            allocatedHours += bizDaysInMonth * hoursPerDay;
+        }
+    });
+
+    return {
+        monthlyCapacity,
+        allocatedHours,
+        availableBalance: monthlyCapacity - allocatedHours
+    };
 };

@@ -281,10 +281,11 @@ const ProjectForm: React.FC = () => {
                   <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Nome do Projeto *</label>
                   <input
                     type="text"
+                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm font-bold border rounded-xl outline-none transition-all ${!name.trim() ? 'bg-orange-500/5 border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                    style={{ color: 'var(--text)' }}
+                    className={`w-full px-3 py-2 text-sm font-bold border rounded-xl outline-none transition-all ${!name.trim() ? 'bg-amber-200 border-amber-400 text-amber-900 placeholder:text-amber-700/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                    style={{ color: !name.trim() ? undefined : 'var(--text)' }}
                     placeholder="Nome do Projeto"
                   />
                 </div>
@@ -326,8 +327,8 @@ const ProjectForm: React.FC = () => {
                   <select
                     value={responsibleNicLabsId}
                     onChange={(e) => setResponsibleNicLabsId(e.target.value)}
-                    className={`w-full px-3 py-2 text-xs font-bold border rounded-xl outline-none transition-all ${!responsibleNicLabsId ? 'bg-orange-500/5 border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                    style={{ color: 'var(--text)' }}
+                    className={`w-full px-3 py-2 text-xs font-bold border rounded-xl outline-none transition-all ${!responsibleNicLabsId ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                    style={{ color: !responsibleNicLabsId ? undefined : 'var(--text)' }}
                   >
                     <option value="">Selecione...</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -339,8 +340,8 @@ const ProjectForm: React.FC = () => {
                     type="text"
                     value={managerClient}
                     onChange={(e) => setManagerClient(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm font-bold border rounded-xl outline-none transition-all ${!managerClient.trim() ? 'bg-orange-500/5 border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                    style={{ color: 'var(--text)' }}
+                    className={`w-full px-3 py-2 text-sm font-bold border rounded-xl outline-none transition-all ${!managerClient.trim() ? 'bg-amber-200 border-amber-400 text-amber-900 placeholder:text-amber-700/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                    style={{ color: !managerClient.trim() ? undefined : 'var(--text)' }}
                     placeholder="Nome na Empresa"
                   />
                 </div>
@@ -373,10 +374,11 @@ const ProjectForm: React.FC = () => {
                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
                     <input
                       type="number"
+                      required
                       value={horasVendidas || ''}
                       onChange={(e) => setHorasVendidas(Number(e.target.value))}
-                      className={`w-full pl-9 pr-3 py-4 text-xl font-black border rounded-2xl outline-none transition-all tabular-nums ${!horasVendidas ? 'bg-orange-500/5 border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                      style={{ color: 'var(--text)' }}
+                      className={`w-full pl-9 pr-3 py-4 text-xl font-black border rounded-2xl outline-none transition-all tabular-nums ${!horasVendidas ? 'bg-amber-200 border-amber-400 text-amber-900 placeholder:text-amber-700/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                      style={{ color: !horasVendidas ? undefined : 'var(--text)' }}
                     />
                   </div>
                 </div>
@@ -395,17 +397,19 @@ const ProjectForm: React.FC = () => {
                   <div className="space-y-3">
                     <input
                       type="date"
+                      required
                       value={startDate}
                       onChange={e => setStartDate(e.target.value)}
-                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none bg-transparent ${!startDate ? 'bg-orange-500/5 border-orange-500/30' : 'border-[var(--border)]'}`}
-                      style={{ color: 'var(--text)' }}
+                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none transition-all ${!startDate ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-transparent border-[var(--border)]'}`}
+                      style={{ color: !startDate ? undefined : 'var(--text)' }}
                     />
                     <input
                       type="date"
+                      required
                       value={estimatedDelivery}
                       onChange={e => setEstimatedDelivery(e.target.value)}
-                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none bg-transparent ${!estimatedDelivery ? 'bg-orange-500/5 border-orange-500/30' : 'border-[var(--border)]'}`}
-                      style={{ color: !estimatedDelivery ? 'var(--text)' : undefined }}
+                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none transition-all ${!estimatedDelivery ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-transparent border-[var(--border)]'}`}
+                      style={{ color: !estimatedDelivery ? undefined : 'var(--text)' }}
                     />
                   </div>
                 </div>
@@ -435,8 +439,8 @@ const ProjectForm: React.FC = () => {
                   <select
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-xl font-bold bg-[var(--bg)] outline-none border-[var(--border)] ${!clientId ? 'bg-orange-500/5 border-orange-500/30' : ''}`}
-                    style={{ color: 'var(--text)' }}
+                    className={`w-full px-4 py-3 border rounded-xl font-bold outline-none transition-all ${!clientId ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                    style={{ color: !clientId ? undefined : 'var(--text)' }}
                     disabled={isEdit}
                   >
                     <option value="">Selecione...</option>

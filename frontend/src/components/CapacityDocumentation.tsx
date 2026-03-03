@@ -119,10 +119,10 @@ const CapacityDocumentation: React.FC<CapacityDocumentationProps> = ({ isOpen, o
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
                                         {[
                                             { n: '1', t: 'Capacidade Base', c: 'Cálculo derivado de Cap. Diária × Dias Úteis do período. Limite máximo imutável.' },
-                                            { n: '2', t: 'Tipos de Projeto', c: 'Planejados consomem apenas a margem livre. Contínuos são prioridade estrutural.' },
-                                            { n: '3', t: 'Alocação Proporcional', c: 'Compromisso Contínuo = Capacidade ÷ Membros. Valor dinâmico e auditável.' },
-                                            { n: '4', t: 'Previsão Realista', c: 'Logic: Esforço Restante ÷ (Capacidade - Compromisso Contínuo).' },
-                                            { n: '5', t: 'Saturação Estrutural', c: 'Ocorre quando Projetos Contínuos ocupam 100% da carga diária.' },
+                                            { n: '2', t: 'Tipos de Projeto', c: 'Planejados consomem apenas a margem livre. Projetos de Sustentação são prioridade estrutural.' },
+                                            { n: '3', t: 'Alocação Proporcional', c: 'Compromisso de Reserva = Capacidade ÷ Membros. Valor dinâmico e auditável.' },
+                                            { n: '4', t: 'Previsão Realista', c: 'Logic: Esforço Restante ÷ (Capacidade - Compromisso de Reserva).' },
+                                            { n: '5', t: 'Saturação Estrutural', c: 'Ocorre quando as Atividades de Reserva ocupam 100% da carga diária.' },
                                             { n: '6', t: 'Bloqueio de Projeto', c: 'Ativado automaticamente quando 100% do time alocado está saturado.' },
                                             { n: '7', t: 'Elasticidade', c: 'Buffer real de absorção. Risco crítico quando abaixo de 15%.' },
                                             { n: '8', t: 'Trend Forecast', c: 'Projeção futura de 90 dias baseada no encerramento gradual de backlogs.' },

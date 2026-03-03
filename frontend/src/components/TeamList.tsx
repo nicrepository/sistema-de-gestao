@@ -1,5 +1,5 @@
 // components/TeamList.tsx - Adaptado para Router
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { User, Task, TimesheetEntry } from '@/types';
@@ -16,7 +16,7 @@ const TeamList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCargo, setSelectedCargo] = useState<'Todos' | string>('Todos');
   const [showInactive, setShowInactive] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Livre' | 'Ocupado' | 'Estudando' | 'Atrasado' | 'Ausente'>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todos' | 'Livre' | 'Ocupado' | 'Estudando' | 'Atrasado' | 'Ausente' | 'Fora do Fluxo'>('Todos');
 
   // Deletion state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -27,7 +27,9 @@ const TeamList: React.FC = () => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    setShowBackToTop(e.currentTarget.scrollTop > 300);
+    const scrollTop = e.currentTarget.scrollTop;
+    setShowBackToTop(scrollTop > 300);
+    sessionStorage.setItem('teamList_scrollPosition', String(scrollTop));
   };
 
   const scrollToTop = () => {
@@ -36,6 +38,41 @@ const TeamList: React.FC = () => {
       behavior: 'smooth'
     });
   };
+
+  // State Persistence - Initial Load
+  useEffect(() => {
+    const savedSearch = sessionStorage.getItem('teamList_searchTerm');
+    const savedCargo = sessionStorage.getItem('teamList_selectedCargo');
+    const savedInactive = sessionStorage.getItem('teamList_showInactive');
+    const savedStatus = sessionStorage.getItem('teamList_statusFilter');
+
+    if (savedSearch) setSearchTerm(savedSearch);
+    if (savedCargo) setSelectedCargo(savedCargo);
+    if (savedInactive) setShowInactive(savedInactive === 'true');
+    if (savedStatus) setStatusFilter(savedStatus as any);
+  }, []);
+
+  // Scroll Restoration - Separate effect to wait for loading
+  useEffect(() => {
+    if (!loading && scrollRef.current) {
+      const savedScroll = sessionStorage.getItem('teamList_scrollPosition');
+      if (savedScroll) {
+        const timer = setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = parseInt(savedScroll, 10);
+          }
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    sessionStorage.setItem('teamList_searchTerm', searchTerm);
+    sessionStorage.setItem('teamList_selectedCargo', selectedCargo);
+    sessionStorage.setItem('teamList_showInactive', String(showInactive));
+    sessionStorage.setItem('teamList_statusFilter', statusFilter);
+  }, [searchTerm, selectedCargo, showInactive, statusFilter]);
 
   // Helpers
   const isTaskDelayed = (task: Task): boolean => {
@@ -80,8 +117,8 @@ const TeamList: React.FC = () => {
       const status = getUserStatus(user, tasks, projects, clients, absences);
       const statusLabel = status.label;
 
-      // "Fora do Fluxo" deve estar somente no filtro "Todos"
-      if (statusLabel === 'Fora do Fluxo' && statusFilter !== 'Todos') {
+      // "Fora do Fluxo" só deve ser mostrado se o filtro for especificamente ele
+      if (statusLabel === 'Fora do Fluxo' && statusFilter !== 'Fora do Fluxo') {
         return false;
       }
 
@@ -175,7 +212,8 @@ const TeamList: React.FC = () => {
                   { id: 'Estudando', label: 'Estudando', color: '#3b82f6' },
                   { id: 'Ocupado', label: 'Ocupados', color: '#f59e0b' },
                   { id: 'Atrasado', label: 'Atrasados', color: '#ef4444' },
-                  { id: 'Ausente', label: 'Ausentes', color: 'var(--muted)' }
+                  { id: 'Ausente', label: 'Ausentes', color: '#f97316' },
+                  { id: 'Fora do Fluxo', label: 'Fora do Fluxo', color: '#64748b' }
                 ].map((f) => {
                   const isActive = statusFilter === f.id;
                   return (

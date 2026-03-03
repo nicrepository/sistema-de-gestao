@@ -70,6 +70,7 @@ export interface Project {
   torre?: string;
   project_type?: 'planned' | 'continuous';
   valor_diario?: number;
+  fora_do_fluxo?: boolean;
 }
 
 export interface Task {
@@ -104,6 +105,7 @@ export interface Task {
   is_impediment?: boolean; // Flag de impedimento
   task_weight?: number; // Peso percentual da tarefa no projeto
   deleted_at?: string;
+  fora_do_fluxo?: boolean;
 }
 
 export interface TaskMemberAllocation {

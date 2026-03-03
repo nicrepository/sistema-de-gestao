@@ -34,9 +34,19 @@ self.addEventListener('activate', (event) => {
 
 // Fetch - Network First Strategy
 self.addEventListener('fetch', (event) => {
+    // Only intercept/cache GET requests
+    if (event.request.method !== 'GET') {
+        return; // Let the request go directly to the network
+    }
+
     event.respondWith(
         fetch(event.request)
             .then((response) => {
+                // If the response is not valid, just return it
+                if (!response || response.status !== 200 || response.type !== 'basic') {
+                    return response;
+                }
+
                 // Clone the response
                 const responseToCache = response.clone();
 

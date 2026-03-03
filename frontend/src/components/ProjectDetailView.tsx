@@ -1,5 +1,5 @@
 // ProjectDetailView.tsx - Dashboard Unificado do Projeto
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import {
@@ -48,6 +48,24 @@ const ProjectDetailView: React.FC = () => {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showArchivedOverview, setShowArchivedOverview] = useState(false);
+
+  // --- SCROLL MANAGEMENT ---
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!loading && scrollRef.current && projectId) {
+      const saved = localStorage.getItem(`scroll_project_${projectId}`);
+      if (saved) {
+        scrollRef.current.scrollTop = parseInt(saved, 10);
+      }
+    }
+  }, [loading, projectId]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (projectId) {
+      localStorage.setItem(`scroll_project_${projectId}`, e.currentTarget.scrollTop.toString());
+    }
+  };
 
   // Redirecionar colaboradores para aba de tarefas
   useEffect(() => {
@@ -82,7 +100,8 @@ const ProjectDetailView: React.FC = () => {
     complexidade: 'Média' as 'Alta' | 'Média' | 'Baixa',
     torre: '',
     project_type: 'continuous' as 'planned' | 'continuous',
-    valor_diario: 0
+    valor_diario: 0,
+    fora_do_fluxo: false
   });
 
   useEffect(() => {
@@ -119,7 +138,8 @@ const ProjectDetailView: React.FC = () => {
         complexidade: project.complexidade || 'Média',
         torre: project.torre || '',
         project_type: project.project_type || 'continuous',
-        valor_diario: (project as any).valor_diario || 0
+        valor_diario: (project as any).valor_diario || 0,
+        fora_do_fluxo: (project as any).fora_do_fluxo || false
       });
       const membersResult = projectMembers.filter(pm => String(pm.id_projeto) === projectId);
       const selectedIds = membersResult.map(m => String(m.id_colaborador));
@@ -166,7 +186,8 @@ const ProjectDetailView: React.FC = () => {
         complexidade: 'Média',
         torre: '',
         project_type: 'continuous',
-        valor_diario: 0
+        valor_diario: 0,
+        fora_do_fluxo: false
       });
       setSelectedUsers([]);
       setMemberAllocations({});
@@ -525,12 +546,26 @@ const ProjectDetailView: React.FC = () => {
 
   const filteredTasks = useMemo(() => {
     let t = projectTasks;
-    // Archive logic: Hide Done tasks by default unless explicitly filtered for 'Done' or showArchived is true
-    if (!showArchived && selectedStatus !== 'Done') {
-      t = t.filter(task => task.status !== 'Done');
+
+    // Filtro principal: Ocultar o que é arquivado ou fora do fluxo por padrão
+    if (!showArchived) {
+      t = t.filter(task => !task.fora_do_fluxo);
+
+      // Se não houver filtro de status específico para 'Done', oculta os concluídos
+      if (selectedStatus !== 'Done') {
+        t = t.filter(task => task.status !== 'Done');
+      }
     }
-    if (selectedStatus !== 'Todos') t = t.filter(task => task.status === selectedStatus);
-    return t.sort((a, b) => (new Date(a.estimatedDelivery || '2099-12-31').getTime() - new Date(b.estimatedDelivery || '2099-12-31').getTime()));
+
+    if (selectedStatus !== 'Todos') {
+      t = t.filter(task => task.status === selectedStatus);
+    }
+
+    return t.sort((a, b) => {
+      const dateA = a.estimatedDelivery ? new Date(a.estimatedDelivery).getTime() : 2147483647000;
+      const dateB = b.estimatedDelivery ? new Date(b.estimatedDelivery).getTime() : 2147483647000;
+      return dateA - dateB;
+    });
   }, [projectTasks, selectedStatus, showArchived]);
 
   const canCreateTask = !isProjectIncomplete;
@@ -661,7 +696,11 @@ const ProjectDetailView: React.FC = () => {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-5 custom-scrollbar"
+      >
         <div className="max-w-7xl mx-auto space-y-5">
 
           {/* CRITICAL STATUS BANNER */}
@@ -1251,9 +1290,23 @@ const ProjectDetailView: React.FC = () => {
                         </div>
                       )}
                       {isEditing && (
-                        <div className="mt-8 pt-8 border-t flex justify-end gap-3" style={{ borderColor: 'var(--bg)' }}>
-                          <button onClick={() => setIsEditing(false)} className="px-6 py-2 rounded-xl font-bold text-sm" style={{ color: 'var(--muted)' }}>Cancelar</button>
-                          <button onClick={handleSaveProject} disabled={loading} className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-purple-500/20">{loading ? 'Salvando...' : <><Save size={16} /> Salvar Alterações</>}</button>
+                        <div className="mt-8 pt-8 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--bg)' }}>
+                          <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl hover:bg-black/5 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={formData.fora_do_fluxo}
+                              onChange={e => setFormData({ ...formData, fora_do_fluxo: e.target.checked })}
+                              className="w-4 h-4 rounded border-[var(--border)] text-purple-600 focus:ring-purple-500"
+                            />
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text)' }}>Fora do Fluxo</p>
+                              <p className="text-[8px] font-bold opacity-40 uppercase tracking-tighter" style={{ color: 'var(--muted)' }}>Ignorar este projeto em métricas globais e ocultar da visão padrão</p>
+                            </div>
+                          </label>
+                          <div className="flex gap-3">
+                            <button onClick={() => setIsEditing(false)} className="px-6 py-2 rounded-xl font-bold text-sm" style={{ color: 'var(--muted)' }}>Cancelar</button>
+                            <button onClick={handleSaveProject} disabled={loading} className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-purple-500/20">{loading ? 'Salvando...' : <><Save size={16} /> Salvar Alterações</>}</button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1520,12 +1573,12 @@ const ProjectDetailView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowArchived(!showArchived)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black transition-all border uppercase tracking-wider ${showArchived ? 'bg-amber-500/10 border-amber-500/50 text-amber-600' : 'bg-[var(--bg)] border-[var(--border)] text-[var(--muted)] opacity-60 hover:opacity-100'}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black transition-all border uppercase tracking-wider ${showArchived ? 'bg-amber-500/20 border-amber-500/50 text-amber-600 shadow-lg shadow-amber-500/10' : 'bg-[var(--bg)] border-[var(--border)] text-[var(--muted)] opacity-60 hover:opacity-100'}`}
                     >
-                      <Archive size={12} className={showArchived ? "fill-amber-500/20" : ""} />
+                      <Archive size={14} className={showArchived ? "fill-amber-500/30" : ""} />
                       {(() => {
-                        const doneCount = projectTasks.filter(t => t.status === 'Done').length;
-                        return showArchived ? `Ocultar ${doneCount} Concluídas` : `Ver ${doneCount} Concluídas`;
+                        const archivedCount = projectTasks.filter(t => t.status === 'Done' || t.fora_do_fluxo).length;
+                        return showArchived ? `Ocultar ${archivedCount} Arquivadas` : `Ver ${archivedCount} Arquivadas`;
                       })()}
                     </button>
                   </div>
@@ -1563,6 +1616,9 @@ const ProjectDetailView: React.FC = () => {
                         task={task}
                         users={users}
                         timesheetEntries={timesheetEntries}
+                        tasks={tasks}
+                        holidays={holidays}
+                        absences={absences}
                         isAdmin={isAdmin}
                         currentUserId={currentUser?.id}
                         onClick={() => navigate(`/tasks/${task.id}`)}
@@ -1589,10 +1645,9 @@ const ProjectDetailView: React.FC = () => {
                 </div>
               </motion.div>
             )}
-          </AnimatePresence >
-
-        </div >
-      </div >
+          </AnimatePresence>
+        </div>
+      </div>
 
       <ConfirmationModal
         isOpen={!!itemToDelete}
@@ -1661,7 +1716,7 @@ const ProjectDetailView: React.FC = () => {
         onCancel={() => { setItemToDelete(null); setDeleteConfirmText(''); }}
         disabled={!!(itemToDelete?.force && (currentUser?.role !== 'system_admin' || deleteConfirmText !== project?.name))}
       />
-    </div >
+    </div>
   );
 };
 
@@ -1671,10 +1726,13 @@ const ProjectTaskCard: React.FC<{
   task: any,
   users: any[],
   timesheetEntries: any[],
+  tasks: any[],
+  holidays: any[],
+  absences: any[],
   isAdmin: boolean,
   currentUserId?: string,
   onClick: () => void
-}> = ({ project, task, users, timesheetEntries, isAdmin, currentUserId, onClick }) => {
+}> = ({ project, task, users, timesheetEntries, tasks, holidays, absences, isAdmin, currentUserId, onClick }) => {
   const navigate = useNavigate();
   const dev = users.find(u => u.id === task.developerId);
   const actualHours = timesheetEntries.filter(e => e.taskId === task.id).reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
@@ -1704,7 +1762,26 @@ const ProjectTaskCard: React.FC<{
   };
 
   const statusInfo = statusMap[task.status] || { label: task.status, color: 'text-slate-400', bg: 'bg-slate-400/10' };
-  const isLate = task.status !== 'Done' && task.estimatedDelivery && new Date(task.estimatedDelivery) < new Date();
+  const deadlineTime = task.estimatedDelivery ? parseSafeDate(task.estimatedDelivery) : null;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const todayTime = today.getTime();
+  const isLate = task.status !== 'Done' && deadlineTime && deadlineTime < todayTime;
+
+  // Cálculo do Saldo Disponível
+  const userMetrics = CapacityUtils.calculateUserCapacity(
+    dev?.id || '',
+    new Date(),
+    tasks,
+    holidays,
+    absences
+  );
+
+  // Se a tarefa estiver em atraso, mostramos o saldo cheio do mês (ignorando alocações)
+  const displayBalance = isLate ? userMetrics.monthlyCapacity : userMetrics.availableBalance;
+
+  const startDate = task.scheduledStart ? new Date(task.scheduledStart + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '--/--';
+  const deliveryDate = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '--/--';
 
   return (
     <motion.div
@@ -1726,10 +1803,17 @@ const ProjectTaskCard: React.FC<{
             </span>
           )}
         </div>
-        {task.priority === 'Critical' && (
-          <div className="flex items-center gap-1.5 text-[9px] font-black text-red-500 uppercase tracking-tighter animate-pulse">
-            <AlertCircle size={14} /> CRÍTICO
-          </div>
+        <div className="flex flex-col items-end">
+          <p className="text-[8px] font-black uppercase opacity-40 tracking-widest" style={{ color: 'var(--muted)' }}>Capacidade Disp.</p>
+          <p className={`text-xs font-black ${displayBalance < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+            {formatDecimalToTime(displayBalance)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-2">
+        {task.fora_do_fluxo && (
+          <span className="text-[8px] font-black bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-tighter">Fora do Fluxo</span>
         )}
       </div>
 
@@ -1738,6 +1822,25 @@ const ProjectTaskCard: React.FC<{
       </h3>
 
       <div className="space-y-6">
+        <div className="flex items-center justify-between p-4 rounded-2xl border bg-[var(--bg)]" style={{ borderColor: 'var(--border)' }}>
+          <div className="flex flex-col">
+            <p className="text-[8px] font-black uppercase opacity-60 tracking-widest mb-1.5 flex items-center gap-1" style={{ color: 'var(--muted)' }}>
+              <Calendar size={10} /> Prazo de Entrega
+            </p>
+            <p className={`text-xs font-black flex items-center gap-2 ${isLate ? 'text-red-500' : 'text-[var(--text)]'}`}>
+              <span className="opacity-40">{startDate}</span>
+              <span className="opacity-20">→</span>
+              <span>{deliveryDate}</span>
+            </p>
+          </div>
+          <div className="flex flex-col items-end">
+            <p className="text-[8px] font-black uppercase opacity-60 tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>Peso Estimado</p>
+            <p className="text-xs font-black" style={{ color: 'var(--text)' }}>
+              {distributedHours.toFixed(1)}h
+            </p>
+          </div>
+        </div>
+
         <div>
           <div className="flex justify-between text-[10px] font-black uppercase mb-2" style={{ color: 'var(--muted)' }}>
             <span className="tracking-widest">Evolução</span>
@@ -1753,7 +1856,6 @@ const ProjectTaskCard: React.FC<{
         </div>
 
         {task.status !== 'Done' && !isAdmin && (
-          // Mostrar botão de apontar APENAS para colaboradores (dev ou co-dev), impedindo para admins
           task.developerId === currentUserId ||
           (task.collaboratorIds || []).includes(currentUserId || '')
         ) && (
@@ -1804,6 +1906,7 @@ const ProjectTaskCard: React.FC<{
                 </div>
               )}
             </div>
+            <p className="text-[7px] font-black uppercase opacity-40" style={{ color: 'var(--muted)' }}>Horas Reportadas</p>
           </div>
         </div>
       </div>
