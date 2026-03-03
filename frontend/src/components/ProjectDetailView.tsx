@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
 import { formatDecimalToTime } from '@/utils/normalizers';
+import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Absence } from '@/types';
 import { getProjectStatusByTimeline } from '@/utils/projectStatus';
 
 // --- UTILS ---
@@ -49,6 +50,11 @@ const ProjectDetailView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showArchivedOverview, setShowArchivedOverview] = useState(false);
+  const [hideDoneInOverview, setHideDoneInOverview] = useState(() => localStorage.getItem('hideDoneInOverview') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('hideDoneInOverview', hideDoneInOverview.toString());
+  }, [hideDoneInOverview]);
 
   // --- SCROLL MANAGEMENT ---
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -74,8 +80,8 @@ const ProjectDetailView: React.FC = () => {
     }
   }, [isAdmin]);
 
-  const project = projects.find(p => p.id === projectId);
-  const client = project ? clients.find(c => c.id === project.clientId) : (paramClientId ? clients.find(c => c.id === paramClientId) : null);
+  const project = projects.find((p: Project) => p.id === projectId);
+  const client = project ? clients.find((c: Client) => c.id === project.clientId) : (paramClientId ? clients.find((c: Client) => c.id === paramClientId) : null);
 
   // --- FORM STATE ---
   const [formData, setFormData] = useState({
@@ -115,6 +121,18 @@ const ProjectDetailView: React.FC = () => {
   // balanceAllocations removido (cálculos nas tarefas)
 
   useEffect(() => {
+    const fetchMembers = async () => {
+      if (!projectId || isNew) return;
+      try {
+        const m = await getProjectMembers(projectId);
+        const ids = m.map((p: ProjectMember) => String(p.id_colaborador));
+        setSelectedUsers(ids);
+      } catch (err: any) {
+        console.error('Erro ao buscar membros:', err);
+      }
+    };
+    fetchMembers();
+
     if (project) {
       setFormData({
         name: project.name || '',
@@ -141,13 +159,13 @@ const ProjectDetailView: React.FC = () => {
         valor_diario: (project as any).valor_diario || 0,
         fora_do_fluxo: (project as any).fora_do_fluxo || false
       });
-      const membersResult = projectMembers.filter(pm => String(pm.id_projeto) === projectId);
-      const selectedIds = membersResult.map(m => String(m.id_colaborador));
+      const membersResult = projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === projectId);
+      const selectedIds = membersResult.map((m: ProjectMember) => String(m.id_colaborador));
       setSelectedUsers(selectedIds);
 
       const initialAllocations: Record<string, number> = {};
       let totalSum = 0;
-      membersResult.forEach(m => {
+      membersResult.forEach((m: ProjectMember) => {
         const perc = Number(m.allocation_percentage) || 0;
         initialAllocations[String(m.id_colaborador)] = perc;
         totalSum += perc;
@@ -157,7 +175,7 @@ const ProjectDetailView: React.FC = () => {
       if (totalSum !== 100 && selectedIds.length > 0) {
         // Se houver membros, inicializa com 100% (flag de presença)
         const all100: Record<string, number> = {};
-        selectedIds.forEach(id => all100[id] = 100);
+        selectedIds.forEach((id: string) => all100[id] = 100);
         setMemberAllocations(all100);
       } else {
         setMemberAllocations(initialAllocations);
@@ -195,27 +213,27 @@ const ProjectDetailView: React.FC = () => {
   }, [project, projectId, projectMembers, isNew, paramClientId]);
 
   const projectTasks = useMemo(() => {
-    const pTasks = tasks.filter(t => t.projectId === projectId);
+    const pTasks = tasks.filter((t: Task) => t.projectId === projectId);
     if (currentUser && !isAdmin) {
-      return pTasks.filter(t => t.developerId === currentUser.id || (t.collaboratorIds && t.collaboratorIds.includes(currentUser.id)));
+      return pTasks.filter((t: Task) => t.developerId === currentUser.id || (t.collaboratorIds && t.collaboratorIds.includes(currentUser.id)));
     }
     return pTasks;
   }, [tasks, projectId, currentUser, isAdmin]);
 
-  const isContinuousMode = true; // Forçar modo contínuo permanentemente conforme solicitado
+  const isContinuousMode = false; // Desabilitado conforme solicitado
 
   const performance = useMemo(() => {
     if (!project) return null;
-    const pTimesheets = timesheetEntries.filter(e => e.projectId === projectId);
-    const consumedHours = pTimesheets.reduce((acc, entry) => acc + (Number(entry.totalHours) || 0), 0);
-    const committedCost = pTimesheets.reduce((acc, entry) => {
-      const u = users.find(u => u.id === entry.userId);
+    const pTimesheets = timesheetEntries.filter((e: TimesheetEntry) => e.projectId === projectId);
+    const consumedHours = pTimesheets.reduce((acc: number, entry: TimesheetEntry) => acc + (Number(entry.totalHours) || 0), 0);
+    const committedCost = pTimesheets.reduce((acc: number, entry: TimesheetEntry) => {
+      const u = users.find((u: User) => u.id === entry.userId);
       return acc + (entry.totalHours * (u?.hourlyCost || 0));
     }, 0);
-    const totalEstimated = projectTasks.reduce((acc, t) => {
+    const totalEstimated = projectTasks.reduce((acc: number, t: Task) => {
       const reported = timesheetEntries
-        .filter(e => e.taskId === t.id)
-        .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
+        .filter((e: TimesheetEntry) => e.taskId === t.id)
+        .reduce((sum: number, e: TimesheetEntry) => sum + (Number(e.totalHours) || 0), 0);
       return acc + Math.max(t.estimatedHours || 0, reported);
     }, 0);
 
@@ -224,14 +242,37 @@ const ProjectDetailView: React.FC = () => {
     const projectDurationTs = Math.max(0, pEndTs - pStartTs) + ONE_DAY;
 
     const memberIds = new Set(
-      projectMembers.filter(pm => String(pm.id_projeto) === projectId).map(pm => String(pm.id_colaborador))
+      projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === projectId).map((pm: ProjectMember) => String(pm.id_colaborador))
     );
 
-    const projectFactors = projectTasks.map(t => {
-      const factor = Number(t.estimatedHours) || 0;
+    const getBusinessDays = (dStart: string, dEnd: string) => {
+      let count = 0;
+      let curr = new Date(dStart + 'T12:00:00');
+      const stop = new Date(dEnd + 'T12:00:00');
+      while (curr <= stop) {
+        const day = curr.getDay();
+        if (day !== 0 && day !== 6) {
+          const ds = curr.toISOString().split('T')[0];
+          const isH = holidays.some((h: Holiday) => ds >= h.date && ds <= (h.endDate || h.date));
+          if (!isH) count++;
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+      return Math.max(1, count);
+    };
+
+    const projectDays = (project.startDate && project.estimatedDelivery)
+      ? getBusinessDays(project.startDate.split('T')[0], project.estimatedDelivery.split('T')[0])
+      : 1;
+
+    const projectFactors = projectTasks.map((t: Task) => {
+      const taskDays = (t.startDate && t.endDate)
+        ? getBusinessDays(t.startDate.split('T')[0], t.endDate.split('T')[0])
+        : 1;
+      const factor = taskDays / projectDays;
       return { id: t.id, factor, progress: t.progress || 0 };
     });
-    const totalFactor = projectFactors.reduce((acc, f) => acc + f.factor, 0);
+    const totalFactor = projectFactors.reduce((acc: number, f: any) => acc + f.factor, 0);
 
     const weightedProgress = CapacityUtils.calculateProjectWeightedProgress(projectId!, projectTasks);
 
@@ -259,13 +300,33 @@ const ProjectDetailView: React.FC = () => {
     const memberTimesheets = pTimesheets.filter(e => memberIds.has(String(e.userId)));
 
     const realStartDate = memberTimesheets.length > 0
-      ? new Date(Math.min(...memberTimesheets.map(e => new Date(e.date + 'T12:00:00').getTime())))
+      ? new Date(Math.min(...memberTimesheets.map((e: TimesheetEntry) => new Date(e.date + 'T12:00:00').getTime())))
       : null;
 
     const allTasksDone = projectTasks.length > 0 && projectTasks.every(t => t.status === 'Done');
     const realEndDate = allTasksDone && memberTimesheets.length > 0
-      ? new Date(Math.max(...memberTimesheets.map(e => new Date(e.date + 'T12:00:00').getTime())))
+      ? new Date(Math.max(...memberTimesheets.map((e: TimesheetEntry) => new Date(e.date + 'T12:00:00').getTime())))
       : null;
+
+    const taskEntries = timesheetEntries.filter((e: TimesheetEntry) => e.projectId === projectId);
+    const months = Array.from(new Set(
+      taskEntries.map((e: TimesheetEntry) => e.date.substring(0, 7))
+    )).sort();
+
+    const burnedByMonth = months.map((month: string) => {
+      const hours = taskEntries
+        .filter((e: TimesheetEntry) => e.date.startsWith(month))
+        .reduce((sum: number, e: TimesheetEntry) => sum + (Number(e.totalHours) || 0), 0);
+      return { month, hours };
+    });
+
+    const totalDays = projectDurationTs / ONE_DAY;
+    const holidaysInRange = holidays.filter((h: Holiday) => {
+      const hStart = h.date;
+      const hEnd = h.endDate || h.date;
+      return (hStart >= project.startDate! && hStart <= project.estimatedDelivery!) ||
+        (hEnd >= project.startDate! && hEnd <= project.estimatedDelivery!);
+    });
 
     // --- CÁLCULOS ESPECÍFICOS PARA PROJETOS CONTÍNUOS ---
     let continuousPlannedValue = 0;
@@ -275,19 +336,19 @@ const ProjectDetailView: React.FC = () => {
       today.setHours(12, 0, 0, 0);
 
       let businessDays = 0;
-      let curr = new Date(start);
-      while (curr <= today) {
-        const day = curr.getDay();
+      let currPlan = new Date(start);
+      while (currPlan <= today) {
+        const day = currPlan.getDay();
         if (day !== 0 && day !== 6) {
-          const dateStr = curr.toISOString().split('T')[0];
-          const isHoliday = holidays.some(h => {
+          const dateStr = currPlan.toISOString().split('T')[0];
+          const isHoliday = holidays.some((h: Holiday) => {
             const hStart = h.date;
             const hEnd = h.endDate || h.date;
             return dateStr >= hStart && dateStr <= hEnd;
           });
           if (!isHoliday) businessDays++;
         }
-        curr.setDate(curr.getDate() + 1);
+        currPlan.setDate(currPlan.getDate() + 1);
       }
       continuousPlannedValue = businessDays * ((project as any).valor_diario || 0);
     }
@@ -296,123 +357,61 @@ const ProjectDetailView: React.FC = () => {
   }, [project, projectTasks, timesheetEntries, users, projectId, projectMembers, holidays]);
 
   const teamOperationalBalance = useMemo(() => {
-    if (!isContinuousMode || !project || !project.startDate) return null;
+    if (!project || !projectId) return null;
 
-    const startDate = new Date(project.startDate + 'T12:00:00');
-    const endDate = project.estimatedDelivery ? new Date(project.estimatedDelivery + 'T12:00:00') : new Date(startDate);
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
+    const activeProjectMembers = projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === projectId);
 
-    // 1. Dicionário de dias -> contagem de ativos
-    const activeProjectMembers = projectMembers.filter(pm => String(pm.id_projeto) === projectId);
-
-    // Contabiliza total de dias úteis reais do projeto (descontando fins de semana e feriados)
-    let totalBusinessDays = 0;
-    let curr = new Date(startDate);
-    while (curr <= endDate) {
-      const day = curr.getDay();
-      if (day !== 0 && day !== 6) {
-        const dateStr = curr.toISOString().split('T')[0];
-        const isHoliday = holidays.some(h => {
-          const hStart = h.date;
-          const hEnd = h.endDate || h.date;
-          return dateStr >= hStart && dateStr <= hEnd;
-        });
-        if (!isHoliday) totalBusinessDays++;
-      }
-      curr.setDate(curr.getDate() + 1);
-    }
-
-    const totalProjectHours = totalBusinessDays * 8;
-    const dividedIdealAccumulated = activeProjectMembers.length > 0 ? (totalProjectHours / activeProjectMembers.length) : 0;
-    const currentBaseDaily = activeProjectMembers.length > 0 ? (8 / activeProjectMembers.length) : 8;
-
-    // 2. Calcular métricas por integrante
     const memberMetrics: Record<string, {
-      baseDaily: number;
-      idealAccumulated: number;
+      allocatedHours: number;
       actualHours: number;
-      deviation: number;
-      deviationPercent: number;
       status: 'green' | 'yellow' | 'red';
     }> = {};
 
-    activeProjectMembers.forEach(pm => {
+    activeProjectMembers.forEach((pm: ProjectMember) => {
       const userId = String(pm.id_colaborador);
-      const idealAccumulated = dividedIdealAccumulated;
+
+      // Soma das horas de alocação (reserva) para este usuário
+      const allocatedHours = projectTasks
+        .filter((t: Task) => String(t.developerId) === userId || (t.collaboratorIds && t.collaboratorIds.map(String).includes(userId)))
+        .reduce((sum: number, t: Task) => {
+          const estimated = (Number(t.estimatedHours) || 0);
+
+          if (t.status === 'Done') {
+            // Se a tarefa acabou, ela não "reserva" mais horas futuras.
+            // A alocação real consumida é o que foi apontado (no máximo o estimado)
+            const actualOnTask = timesheetEntries
+              .filter((e: TimesheetEntry) => String(e.taskId) === String(t.id) && String(e.userId) === userId)
+              .reduce((s, e) => s + (Number(e.totalHours) || 0), 0);
+            return sum + Math.min(estimated, actualOnTask);
+          }
+
+          return sum + estimated;
+        }, 0);
 
       const actualHours = timesheetEntries
-        .filter(e => e.projectId === projectId && e.userId === userId)
-        .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
-
-      const deviation = actualHours - idealAccumulated;
-      const deviationPercent = idealAccumulated > 0 ? (deviation / idealAccumulated) : 0;
+        .filter((e: TimesheetEntry) => String(e.projectId) === projectId && String(e.userId) === userId)
+        .reduce((sum: number, e: TimesheetEntry) => sum + (Number(e.totalHours) || 0), 0);
 
       let status: 'green' | 'yellow' | 'red' = 'green';
-      const absPercent = Math.abs(deviationPercent);
-      if (absPercent > 0.15) status = 'red';
-      else if (absPercent > 0.10) status = 'yellow';
-      else if (absPercent <= 0.05) status = 'green';
-      else status = 'yellow';
+      if (actualHours > allocatedHours * 1.1) status = 'red';
+      else if (actualHours > allocatedHours) status = 'yellow';
 
       memberMetrics[userId] = {
-        baseDaily: currentBaseDaily,
-        idealAccumulated,
+        allocatedHours,
         actualHours,
-        deviation,
-        deviationPercent: deviationPercent * 100,
         status
       };
     });
 
-    // 3. Lógica de Sugestão
-    const suggestions: Record<string, number> = {};
-    const absoluteDeviationsSum = Object.values(memberMetrics).reduce((sum, m) => sum + Math.abs(m.deviation), 0);
-    const hasSignificantDeviation = Object.values(memberMetrics).some(m => Math.abs(m.deviationPercent) > 10);
-
-    if (hasSignificantDeviation && absoluteDeviationsSum > 0) {
-      let rawWeights: Record<string, number> = {};
-      let totalWeight = 0;
-
-      activeProjectMembers.forEach(pm => {
-        const userId = String(pm.id_colaborador);
-        const weight = Math.max(0.1, 1 - (memberMetrics[userId].deviation / absoluteDeviationsSum));
-        rawWeights[userId] = weight;
-        totalWeight += weight;
-      });
-
-      let totalSuggested = 0;
-      activeProjectMembers.forEach(pm => {
-        const userId = String(pm.id_colaborador);
-        let suggested = 8 * (rawWeights[userId] / totalWeight);
-        suggested = Math.max(1, Math.min(8, suggested));
-        suggestions[userId] = suggested;
-        totalSuggested += suggested;
-      });
-
-      // Arredondamento
-      let roundedTotal = 0;
-      const userIds = Object.keys(suggestions);
-      userIds.forEach(uid => {
-        suggestions[uid] = Math.round(suggestions[uid] * 10) / 10;
-        roundedTotal += suggestions[uid];
-      });
-
-      const diff = 8 - roundedTotal;
-      if (diff !== 0 && userIds.length > 0) {
-        suggestions[userIds[userIds.length - 1]] = Math.round((suggestions[userIds[userIds.length - 1]] + diff) * 10) / 10;
-      }
-    }
-
-    return { memberMetrics, suggestions, hasSignificantDeviation, todayActiveCount: activeProjectMembers.length };
-  }, [isContinuousMode, project, projectMembers, timesheetEntries, holidays, projectId]);
+    return { memberMetrics, todayActiveCount: activeProjectMembers.length };
+  }, [project, projectMembers, projectTasks, timesheetEntries, projectId]);
 
 
   const projectHolidays = useMemo(() => {
     if (!project || !project.startDate || !project.estimatedDelivery) return [];
     const start = new Date(project.startDate);
     const end = new Date(project.estimatedDelivery);
-    return holidays.filter(h => {
+    return holidays.filter((h: Holiday) => {
       const hStart = new Date(h.date);
       const hEnd = h.endDate ? new Date(h.endDate) : hStart;
       return (hStart <= end && hEnd >= start);
@@ -423,11 +422,16 @@ const ProjectDetailView: React.FC = () => {
     if (!project || !project.startDate || !project.estimatedDelivery) return [];
     const start = new Date(project.startDate);
     const end = new Date(project.estimatedDelivery);
-    const memberIds = projectMembers.filter(pm => String(pm.id_projeto) === projectId).map(pm => String(pm.id_colaborador));
-    return absences.filter(a => {
+    const memberIdSet = new Set(
+      projectMembers
+        .filter((pm: ProjectMember) => String(pm.id_projeto) === projectId)
+        .map((pm: ProjectMember) => String(pm.id_colaborador))
+    );
+
+    return absences.filter((a: Absence) => {
       const aStart = new Date(a.startDate);
       const aEnd = a.endDate ? new Date(a.endDate) : aStart;
-      return memberIds.includes(String(a.userId)) &&
+      return memberIdSet.has(String(a.userId)) &&
         (aStart <= end && aEnd >= start);
     });
   }, [absences, project, projectMembers, projectId]);
@@ -750,24 +754,36 @@ const ProjectDetailView: React.FC = () => {
                   {/* Resumo do Planejamento - Cronograma & Peso */}
                   <div className="p-4 rounded-[32px] border shadow-sm relative overflow-hidden transition-all hover:shadow-md flex flex-col" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', height: '350px' }}>
                     <div className="flex items-center justify-between mb-2 shrink-0">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Cronograma & Peso</h4>
-                      <div className="p-1 rounded-lg bg-purple-500/10 text-purple-600">
-                        <Calendar size={10} />
+                      <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>TAREFAS</h4>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setHideDoneInOverview(!hideDoneInOverview)}
+                          className={`p-1.5 rounded-lg transition-all border ${hideDoneInOverview ? 'bg-purple-500 text-white border-purple-400 shadow-sm' : 'bg-purple-500/10 text-purple-600 border-purple-500/10'}`}
+                          title={hideDoneInOverview ? "Mostrar Concluídas" : "Ocultar Concluídas"}
+                        >
+                          <CheckSquare size={10} />
+                        </motion.button>
+                        <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 border border-blue-500/10">
+                          <Calendar size={10} />
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
                       {projectTasks
                         .slice()
-                        .sort((a, b) => {
+                        .filter((t: Task) => !hideDoneInOverview || t.status !== 'Done')
+                        .sort((a: Task, b: Task) => {
                           const dateA = a.estimatedDelivery ? new Date(a.estimatedDelivery + 'T12:00:00').getTime() : Number.MAX_SAFE_INTEGER;
                           const dateB = b.estimatedDelivery ? new Date(b.estimatedDelivery + 'T12:00:00').getTime() : Number.MAX_SAFE_INTEGER;
                           return dateA - dateB;
                         })
-                        .map(task => {
+                        .map((task: Task) => {
                           const taskReported = timesheetEntries
-                            .filter(e => e.taskId === task.id)
-                            .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
+                            .filter((e: TimesheetEntry) => e.taskId === task.id)
+                            .reduce((sum: number, e: TimesheetEntry) => sum + (Number(e.totalHours) || 0), 0);
 
                           const pStartTs = parseSafeDate(project?.startDate) || Date.now();
                           const pEndTs = parseSafeDate(project?.estimatedDelivery) || pStartTs;
@@ -866,8 +882,8 @@ const ProjectDetailView: React.FC = () => {
                     <div className="mb-6 pb-6 border-b border-dashed shrink-0" style={{ borderColor: 'var(--border)' }}>
                       <h4 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>Status de Entrega</h4>
                       {(() => {
-                        // Check if continuous mode has no planned value configured
-                        if (isContinuousMode && (!performance?.continuousPlannedValue || performance.continuousPlannedValue < 0.01)) {
+                        // Mostra placeholder quando valor_diario não está configurado
+                        if (!project?.valor_diario || project.valor_diario < 0.01) {
                           return (
                             <div className="flex flex-col items-center justify-center py-4 opacity-30">
                               <DollarSign size={20} className="mb-2" />
@@ -879,34 +895,13 @@ const ProjectDetailView: React.FC = () => {
                           );
                         }
 
-                        const delta = isContinuousMode
-                          ? ((performance?.committedCost || 0) / (performance?.continuousPlannedValue || 1) - 1) * 100
-                          : (performance?.weightedProgress || 0) - (performance?.plannedProgress || 0);
+                        const delta = ((performance?.committedCost || 0) / (performance?.continuousPlannedValue || 1) - 1) * 100;
 
-                        const hourOverrun = !isContinuousMode && hasHours && (performance?.consumedHours || 0) > (project?.horas_vendidas || 0);
-
-                        if (!hasTimeline && !isContinuousMode) {
-                          return (
-                            <div className="flex flex-col items-center justify-center py-4 opacity-30">
-                              <Calendar size={20} className="mb-2" />
-                              <span className="text-[10px] font-black uppercase tracking-widest">Aguardando Timeline</span>
-                            </div>
-                          );
-                        }
-
-                        // Tolerance logic for status
-                        let health;
-                        if (isContinuousMode) {
-                          // For continuous: Committed Cost vs Planned Value
-                          health = delta <= 5 ? { label: 'No Prazo', color: 'text-emerald-500', bg: 'bg-emerald-500' } :
-                            delta <= 15 ? { label: 'Alerta', color: 'text-amber-500', bg: 'bg-amber-500' } :
-                              { label: 'Crítico', color: 'text-red-500', bg: 'bg-red-500' };
-                        } else {
-                          health = hourOverrun ? { label: 'Custo Excedido', color: 'text-red-500', bg: 'bg-red-500' } :
-                            delta >= -1 ? { label: 'No Prazo', color: 'text-emerald-500', bg: 'bg-emerald-500' } :
-                              delta >= -10 ? { label: 'Atraso Leve', color: 'text-amber-500', bg: 'bg-amber-500' } :
-                                { label: 'Em Atraso', color: 'text-red-500', bg: 'bg-red-500' };
-                        }
+                        const health = delta <= 5
+                          ? { label: 'No Prazo', color: 'text-emerald-500', bg: 'bg-emerald-500' }
+                          : delta <= 15
+                            ? { label: 'Alerta', color: 'text-amber-500', bg: 'bg-amber-500' }
+                            : { label: 'Crítico', color: 'text-red-500', bg: 'bg-red-500' };
 
                         return (
                           <div className="flex flex-col items-center justify-center py-1">
@@ -916,31 +911,26 @@ const ProjectDetailView: React.FC = () => {
                               <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
                                 Desvio: {delta > 0 ? '+' : ''}{Math.round(delta)}%
                               </span>
-                              {hourOverrun && <span className="text-[7px] font-black text-red-500 uppercase">Eficiência Negativa</span>}
                             </div>
                           </div>
-                        )
+                        );
                       })()}
                     </div>
 
-                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>{isContinuousMode ? 'Rendimento Contínuo' : 'Progresso vs Plano'}</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>Rendimento</h4>
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between text-[10px] font-black uppercase mb-1">
                           <span style={{ color: 'var(--text)' }}>PLANO — VALOR RENDIDO ESTIMADO</span>
-                          <span style={{ color: isContinuousMode ? 'var(--warning)' : 'var(--info)' }}>
-                            {isContinuousMode
-                              ? (performance?.continuousPlannedValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                              : `${hasTimeline ? Math.round(performance?.plannedProgress || 0) : '--'}%`}
+                          <span style={{ color: 'var(--warning)' }}>
+                            {(performance?.continuousPlannedValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
                         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
                           <div
-                            className={`h-full transition-all duration-1000 ${isContinuousMode ? 'bg-amber-500' : 'bg-blue-500'}`}
+                            className="h-full bg-amber-500 transition-all duration-1000"
                             style={{
-                              width: isContinuousMode
-                                ? `${Math.min(100, ((performance?.continuousPlannedValue || 0) / (Math.max(performance?.continuousPlannedValue || 0, performance?.committedCost || 0) || 1)) * 100)}%`
-                                : `${hasTimeline ? (performance?.plannedProgress || 0) : 0}%`
+                              width: `${Math.min(100, ((performance?.continuousPlannedValue || 0) / (Math.max(performance?.continuousPlannedValue || 0, performance?.committedCost || 0) || 1)) * 100)}%`
                             }}
                           />
                         </div>
@@ -949,29 +939,24 @@ const ProjectDetailView: React.FC = () => {
                         <div className="flex justify-between text-[10px] font-black uppercase mb-1">
                           <span style={{ color: 'var(--text)' }}>CUSTO REAL APURADO</span>
                           <span style={{ color: 'var(--success)' }}>
-                            {isContinuousMode
-                              ? (performance?.committedCost || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                              : `${hasTimeline ? Math.round(performance?.weightedProgress || 0) : '--'}%`}
+                            {(performance?.committedCost || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
                         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
                           <div
                             className="h-full bg-emerald-500 transition-all duration-1000"
                             style={{
-                              width: isContinuousMode
-                                ? `${Math.min(100, ((performance?.committedCost || 0) / (Math.max(performance?.continuousPlannedValue || 0, performance?.committedCost || 0) || 1)) * 100)}%`
-                                : `${Math.min(100, (hasTimeline ? performance?.weightedProgress : 0) || 0)}%`
+                              width: `${Math.min(100, ((performance?.committedCost || 0) / (Math.max(performance?.continuousPlannedValue || 0, performance?.committedCost || 0) || 1)) * 100)}%`
                             }}
                           />
                         </div>
                       </div>
-                      {isContinuousMode && (
-                        <p className="text-[7px] font-bold opacity-30 uppercase mt-2">
-                          * Barras de progresso proporcionais entre Plano e Real.
-                        </p>
-                      )}
+                      <p className="text-[7px] font-bold opacity-30 uppercase mt-2">
+                        * Barras de progresso proporcionais entre Plano e Real.
+                      </p>
                     </div>
                   </div>
+
 
                   {/* Finanças (Visible only to Admin) */}
                   {isAdmin && (
@@ -981,84 +966,74 @@ const ProjectDetailView: React.FC = () => {
                         <h4 className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>Finanças</h4>
                       </div>
 
-                      {isContinuousMode && (
-                        <div className="space-y-4">
-                          <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 mb-4">
-                            <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-2">
-                              <Info size={12} /> Projeto Contínuo
-                            </p>
-                            <p className="text-[9px] font-bold opacity-60 mt-1 uppercase leading-tight">
-                              Escopo mensal baseado em valor diário. A alocação do time é calculada automaticamente (8h/N).
-                            </p>
-                          </div>
-
-                          {isEditing ? (
-                            <div className="space-y-4">
+                      <div className="space-y-4">
+                        {isEditing ? (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Valor Diário (8h) (R$)</label>
+                              <input
+                                type="number"
+                                value={formData.valor_diario || ''}
+                                onChange={e => setFormData({ ...formData, valor_diario: e.target.value === '' ? 0 : Number(e.target.value) })}
+                                onKeyDown={handleKeyDown}
+                                className="text-xs p-2 rounded w-full border outline-none font-bold transition-colors bg-[var(--bg)] border-[var(--border)]"
+                                style={{ color: 'var(--text)' }}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Valor Diário (8h) (R$)</label>
+                                <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Valor Total (R$)</label>
                                 <input
                                   type="number"
-                                  value={formData.valor_diario || ''}
-                                  onChange={e => setFormData({ ...formData, valor_diario: e.target.value === '' ? 0 : Number(e.target.value) })}
+                                  value={formData.valor_total_rs || ''}
+                                  onChange={e => setFormData({ ...formData, valor_total_rs: e.target.value === '' ? 0 : Number(e.target.value) })}
                                   onKeyDown={handleKeyDown}
                                   className="text-xs p-2 rounded w-full border outline-none font-bold transition-colors bg-[var(--bg)] border-[var(--border)]"
                                   style={{ color: 'var(--text)' }}
                                 />
                               </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Valor Total (R$)</label>
-                                  <input
-                                    type="number"
-                                    value={formData.valor_total_rs || ''}
-                                    onChange={e => setFormData({ ...formData, valor_total_rs: e.target.value === '' ? 0 : Number(e.target.value) })}
-                                    onKeyDown={handleKeyDown}
-                                    className="text-xs p-2 rounded w-full border outline-none font-bold transition-colors bg-[var(--bg)] border-[var(--border)]"
-                                    style={{ color: 'var(--text)' }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Horas Vendidas</label>
-                                  <input
-                                    type="number"
-                                    value={formData.horas_vendidas || ''}
-                                    onChange={e => setFormData({ ...formData, horas_vendidas: e.target.value === '' ? 0 : Number(e.target.value) })}
-                                    onKeyDown={handleKeyDown}
-                                    className="text-xs p-2 rounded w-full border outline-none font-bold transition-colors bg-[var(--bg)] border-[var(--border)]"
-                                    style={{ color: 'var(--text)' }}
-                                  />
-                                </div>
+                              <div>
+                                <label className="text-[9px] font-bold uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Horas Vendidas</label>
+                                <input
+                                  type="number"
+                                  value={formData.horas_vendidas || ''}
+                                  onChange={e => setFormData({ ...formData, horas_vendidas: e.target.value === '' ? 0 : Number(e.target.value) })}
+                                  onKeyDown={handleKeyDown}
+                                  className="text-xs p-2 rounded w-full border outline-none font-bold transition-colors bg-[var(--bg)] border-[var(--border)]"
+                                  style={{ color: 'var(--text)' }}
+                                />
                               </div>
                             </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <div className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)] overflow-hidden">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Valor Diário Acordado</p>
-                                <p className="text-xl font-black text-amber-500 truncate">
-                                  {(project?.valor_diario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)] overflow-hidden">
+                              <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Valor Diário Acordado</p>
+                              <p className="text-xl font-black text-amber-500 truncate">
+                                {(project?.valor_diario || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </p>
+                              <p className="text-[8px] font-bold opacity-40 mt-1 uppercase leading-none">Equivalente a 8h de operação.</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
+                              <div>
+                                <p className="text-[8px] font-black uppercase tracking-wider opacity-40 mb-1">Valor Total</p>
+                                <p className="text-[11px] font-black truncate" style={{ color: 'var(--text)' }}>
+                                  {(project?.valor_total_rs || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </p>
-                                <p className="text-[8px] font-bold opacity-40 mt-1 uppercase leading-none">Equivalente a 8h de operação.</p>
                               </div>
-                              <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
-                                <div>
-                                  <p className="text-[8px] font-black uppercase tracking-wider opacity-40 mb-1">Valor Total</p>
-                                  <p className="text-[11px] font-black truncate" style={{ color: 'var(--text)' }}>
-                                    {(project?.valor_total_rs || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                  </p>
-                                </div>
-                                <div className="border-l border-[var(--border)] pl-3">
-                                  <p className="text-[8px] font-black uppercase tracking-wider opacity-40 mb-1">Horas Vendidas</p>
-                                  <p className="text-[11px] font-black" style={{ color: 'var(--text)' }}>
-                                    {project?.horas_vendidas || 0}h
-                                  </p>
-                                </div>
+                              <div className="border-l border-[var(--border)] pl-3">
+                                <p className="text-[8px] font-black uppercase tracking-wider opacity-40 mb-1">Horas Vendidas</p>
+                                <p className="text-[11px] font-black" style={{ color: 'var(--text)' }}>
+                                  {project?.horas_vendidas || 0}h
+                                </p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
+
                   {/* Timeline do Projeto */}
                   <div className="p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md h-[350px] flex flex-col" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                     <h4 className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>Timeline do Projeto</h4>
@@ -1109,7 +1084,7 @@ const ProjectDetailView: React.FC = () => {
 
                           {project?.startDate && project?.estimatedDelivery && (
                             <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-center">
-                              <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Resumo do Período</p>
+                              <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest">DATA FIM</p>
                               <p className="text-sm font-black mt-1" style={{ color: 'var(--text)' }}>
                                 {project.estimatedDelivery.split('T')[0].split('-').reverse().join('/')}
                               </p>
@@ -1342,27 +1317,9 @@ const ProjectDetailView: React.FC = () => {
                       <div className="flex flex-col gap-1 mb-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2" style={{ color: 'var(--text)' }}>
-                            <Users size={16} className="text-purple-500" /> Equipe Alocada {isContinuousMode ? '(Alocação Diária Automática)' : ''}
+                            <Users size={16} className="text-purple-500" /> Equipe Alocada
                           </h3>
                         </div>
-                        {isContinuousMode && (
-                          <div className="space-y-1.5 mt-2">
-                            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                              <div className="flex items-center gap-1.5">
-                                <Zap size={12} className="text-purple-500" />
-                                <span className="text-[8px] font-black uppercase tracking-wider text-purple-500">Modo: Equalização Assistida</span>
-                              </div>
-                              <span className="text-[8px] font-bold opacity-50 uppercase">Base: 8h / {teamOperationalBalance?.todayActiveCount || 0} colab. = {(8 / (teamOperationalBalance?.todayActiveCount || 1)).toFixed(1)}h/dia</span>
-                            </div>
-
-                            {teamOperationalBalance?.hasSignificantDeviation && (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                                <AlertTriangle size={12} className="text-amber-500" />
-                                <span className="text-[8px] font-black uppercase tracking-wider text-amber-500">Desequilíbrio Detectado — Redistribuição Sugerida</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                       <div className="space-y-2">
                         {isEditing ? (
@@ -1412,60 +1369,47 @@ const ProjectDetailView: React.FC = () => {
                             {projectMembers.filter(pm => String(pm.id_projeto) === projectId).map(pm => {
                               const u = users.find(user => user.id === String(pm.id_colaborador));
                               return u ? (
-                                <div key={u.id} className="p-3 rounded-xl border transition-all" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
+                                <div key={u.id} className="px-3 py-2.5 rounded-xl border transition-all" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
                                   {/* Header with User Info */}
-                                  <div className="flex items-center gap-2.5 mb-2">
-                                    <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-[var(--border)] shadow-sm" style={{ backgroundColor: 'var(--surface)' }}>
-                                      {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[9px] font-black uppercase" style={{ color: 'var(--primary)' }}>{u.name.substring(0, 2).toUpperCase()}</div>}
+                                  <div className="flex items-center gap-2.5 mb-2.5">
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-[var(--border)]" style={{ backgroundColor: 'var(--surface)' }}>
+                                      {u.avatarUrl
+                                        ? <img src={u.avatarUrl} className="w-full h-full object-cover" />
+                                        : <div className="w-full h-full flex items-center justify-center text-[9px] font-black uppercase" style={{ color: 'var(--primary)' }}>{u.name.substring(0, 2).toUpperCase()}</div>
+                                      }
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-black tracking-tight truncate mb-0.5" style={{ color: 'var(--text)' }}>{u.name}</p>
-                                      <p className="text-[7px] font-black uppercase opacity-40 tracking-wider truncate" style={{ color: 'var(--text)' }}>{u.cargo || 'Consultor'}</p>
+                                      <p className="text-[11px] font-bold tracking-tight truncate" style={{ color: 'var(--text)' }}>{u.name}</p>
+                                      <p className="text-[7px] font-black uppercase opacity-35 tracking-widest truncate mt-0.5" style={{ color: 'var(--text)' }}>{u.cargo || 'Consultor'}</p>
                                     </div>
                                   </div>
 
-                                  {/* Metrics Section */}
+                                  {/* Metrics: ALOCADO (TAREFAS) + APONTADO */}
                                   {(() => {
                                     const metrics = teamOperationalBalance?.memberMetrics[u.id];
-                                    if (isContinuousMode && metrics) {
-                                      const statusColor = metrics.status === 'green' ? 'text-emerald-500' : metrics.status === 'yellow' ? 'text-amber-500' : 'text-red-500';
-                                      const statusBg = metrics.status === 'green' ? 'bg-emerald-500/5' : metrics.status === 'yellow' ? 'bg-amber-500/5' : 'bg-red-500/5';
-                                      const statusBorder = metrics.status === 'green' ? 'border-emerald-500/20' : metrics.status === 'yellow' ? 'border-amber-500/20' : 'border-red-500/20';
+                                    const allocatedHours = metrics?.allocatedHours ?? 0;
+                                    const reported = timesheetEntries
+                                      .filter(e => e.projectId === projectId && e.userId === u.id)
+                                      .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
+                                    const actualHours = metrics?.actualHours ?? reported;
 
-                                      return (
-                                        <div className="space-y-1.5">
-                                          {/* Metrics Grid */}
-                                          <div className="grid grid-cols-2 gap-1.5">
-                                            {/* Expected */}
-                                            <div className="flex flex-col items-center px-2 py-1.5 rounded-lg border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                                              <p className="text-[6px] font-black uppercase opacity-40 tracking-wider mb-0.5">Esperado</p>
-                                              <p className="text-[10px] font-black tabular-nums" style={{ color: 'var(--text)' }}>{formatDecimalToTime(metrics.idealAccumulated)}</p>
-                                            </div>
-
-                                            {/* Actual */}
-                                            <div className="flex flex-col items-center px-2 py-1.5 rounded-lg border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                                              <p className="text-[6px] font-black uppercase opacity-40 tracking-wider mb-0.5">Apontado</p>
-                                              <p className="text-[10px] font-black tabular-nums" style={{ color: 'var(--text)' }}>{formatDecimalToTime(metrics.actualHours)}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-
-                                    // Non-continuous mode - simple display
-                                    const reported = timesheetEntries.filter(e => e.projectId === projectId && e.userId === u.id).reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
                                     return (
-                                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                                        <p className="text-[7px] font-black uppercase opacity-40 tracking-wider">Total Apontado</p>
-                                        <p className="text-[11px] font-black" style={{ color: 'var(--text)' }}>{formatDecimalToTime(reported)}</p>
+                                      <div className="grid grid-cols-2 gap-1.5">
+                                        <div className="flex flex-col items-center px-2 py-2 rounded-lg border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                                          <p className="text-[6px] font-black uppercase opacity-40 tracking-wider mb-0.5">Alocado (Tarefas)</p>
+                                          <p className="text-[12px] font-black tabular-nums" style={{ color: 'var(--text)' }}>{formatDecimalToTime(allocatedHours)}</p>
+                                        </div>
+                                        <div className="flex flex-col items-center px-2 py-2 rounded-lg border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                                          <p className="text-[6px] font-black uppercase opacity-40 tracking-wider mb-0.5">Apontado</p>
+                                          <p className="text-[12px] font-black tabular-nums" style={{ color: 'var(--text)' }}>{formatDecimalToTime(actualHours)}</p>
+                                        </div>
                                       </div>
                                     );
                                   })()}
-
-
                                 </div>
                               ) : null;
                             })}
+
 
                             {/* EX-COLABORADORES (Com horas mas sem vínculo atual) */}
                             {(() => {
