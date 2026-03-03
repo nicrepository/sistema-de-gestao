@@ -61,15 +61,15 @@ const TimesheetAdminDashboard: React.FC = () => {
       );
 
       return monitoredCollaborators.map((user: User) => {
-         const userEntries = entries.filter((e: TimesheetEntry) =>
-            e.userId === user.id &&
-            new Date(e.date).getMonth() === currentMonth &&
-            new Date(e.date).getFullYear() === currentYear
-         );
+         const userEntries = entries.filter((e: TimesheetEntry) => {
+            if (!e.date) return false;
+            const [y, m, d] = e.date.split('-').map(Number);
+            return e.userId === user.id && (m - 1) === currentMonth && y === currentYear;
+         });
 
          const datesWithEntries = new Set(userEntries.map((e: TimesheetEntry) => e.date));
 
-         const isExempt = ['ceo', 'diretoria', 'executive'].includes(user.role?.toLowerCase() || '') || user.torre?.toLowerCase() === 'pmo';
+         const isExempt = ['ceo', 'diretoria', 'executive'].includes(user.role?.toLowerCase() || '') || user.torre?.toLowerCase() === 'pmo' || user.torre === 'N/A';
          const missingDays = isExempt ? [] : workDaysUntilYesterday.filter(day => !datesWithEntries.has(day));
 
          const dailyGoal = user.dailyAvailableHours || 8;

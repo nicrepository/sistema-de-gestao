@@ -162,8 +162,8 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
 
     const usr = safeUsers.find((u: User) => u.id === uid);
 
-    if (usr && (['ceo', 'diretoria', 'executive'].includes(usr.role?.toLowerCase() || '') || usr.torre?.toLowerCase() === 'pmo')) {
-      return 0; // Diretoria/Executivos não possuem pendência de timesheet
+    if (usr && (['ceo', 'diretoria', 'executive'].includes(usr.role?.toLowerCase() || '') || usr.torre?.toLowerCase() === 'pmo' || usr.torre === 'N/A')) {
+      return 0; // Diretoria/Executivos/Fora do fluxo não possuem pendência de timesheet
     }
 
     const userEntries = allEntries.filter((e: TimesheetEntry) => {
@@ -211,10 +211,10 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
 
     const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead'];
     return safeUsers
-      .filter((u: User) => u.active !== false && (u.torre !== 'N/A' || activeRoles.includes(u.role?.toLowerCase() || '')))
+      .filter((u: User) => u.active !== false && u.torre !== 'N/A')
       .map((u: User) => {
         const missing = calculateDaysMissing(u.id);
-        const status = missing > 2 ? 'late' : 'ontime';
+        const status = missing > 0 ? 'late' : 'ontime';
         return { ...u, missing, status };
       })
       .sort((a: any, b: any) => b.missing - a.missing);
@@ -460,12 +460,12 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
                                     style={{ backgroundColor: 'var(--surface-hover)', borderColor: 'var(--border)', color: 'var(--text)' }}>
                                     {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full rounded-full object-cover" /> : user.name.charAt(0)}
                                   </div>
-                                  {user.missing > 2 && <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface)]" />}
+                                  {user.missing > 0 && <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[var(--surface)]" />}
                                 </div>
                                 <div className="text-left flex-1 min-w-0">
                                   <p className="text-xs font-bold truncate transition-colors group-hover:text-[var(--primary)]" style={{ color: user.id === selectedUserId ? 'var(--primary)' : 'var(--text)' }}>{user.name}</p>
-                                  <p className={`text-[9px] font-black uppercase ${user.missing > 2 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                    {user.missing > 2 ? `${user.missing} pendências` : 'OK'}
+                                  <p className={`text-[9px] font-black uppercase ${user.missing > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                    {user.missing > 0 ? `${user.missing} pendências` : 'OK'}
                                   </p>
                                 </div>
                                 {user.id === selectedUserId && <Check className="w-3 h-3" style={{ color: 'var(--primary)' }} />}
