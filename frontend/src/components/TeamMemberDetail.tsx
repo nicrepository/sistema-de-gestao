@@ -401,14 +401,14 @@ const TeamMemberDetail: React.FC = () => {
                               </div>
                            </div>
 
-                           {capData && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                                 {/* Status Card */}
-                                 <div className="p-5 rounded-3xl bg-white border border-[var(--border)] shadow-sm">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                       <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Status de Carga</p>
-                                       <InfoTooltip title="Ocupação Total" content="Soma das horas de projetos Planejados + Contínuos em relação à sua meta mensal." />
-                                    </div>
+                            {capData && (
+                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                                  {/* Status Card */}
+                                  <div className="p-5 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
+                                     <div className="flex items-center justify-between mb-1.5">
+                                        <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Status de Carga</p>
+                                        <InfoTooltip title="Ocupação Total" content="Soma das horas de projetos Planejados + Contínuos em relação à sua meta mensal." />
+                                     </div>
                                     <div className="flex items-end gap-2">
                                        <span className={`text-2xl font-black tabular-nums transition-colors ${capData.status === 'Sobrecarregado' ? 'text-red-500' : capData.status === 'Alto' ? 'text-amber-500' : 'text-emerald-500'}`}>
                                           {Math.round(capData.occupancyRate)}%
@@ -417,19 +417,19 @@ const TeamMemberDetail: React.FC = () => {
                                           {capData.status}
                                        </div>
                                     </div>
-                                    <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                                       <div
-                                          className={`h-full transition-all duration-1000 ${capData.status === 'Sobrecarregado' ? 'bg-red-500' : capData.status === 'Alto' ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                                          style={{ width: `${Math.min(100, capData.occupancyRate)}%` }}
-                                       />
-                                    </div>
+                                     <div className="w-full h-1.5 bg-[var(--surface-3)] rounded-full mt-3 overflow-hidden">
+                                        <div
+                                           className={`h-full transition-all duration-1000 ${capData.status === 'Sobrecarregado' ? 'bg-red-500' : capData.status === 'Alto' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                           style={{ width: `${Math.min(100, capData.occupancyRate)}%` }}
+                                        />
+                                     </div>
                                  </div>
 
-                                 {/* Planejado Card */}
-                                 <div
-                                    onClick={() => setShowBreakdown('planned')}
-                                    className="p-5 rounded-3xl bg-white border border-[var(--border)] shadow-sm cursor-pointer hover:border-[var(--primary)] hover:scale-[1.02] transition-all group/card"
-                                 >
+                                  {/* Planejado Card */}
+                                  <div
+                                     onClick={() => setShowBreakdown('planned')}
+                                     className="p-5 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-sm cursor-pointer hover:border-[var(--primary)] hover:scale-[1.02] transition-all group/card"
+                                  >
                                     <div className="flex items-center justify-between mb-1.5">
                                        <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Planejado (Prioritário)</p>
                                        <div className="flex items-center gap-2">
@@ -445,11 +445,11 @@ const TeamMemberDetail: React.FC = () => {
                                     </p>
                                  </div>
 
-                                 {/* Continuo Card */}
-                                 <div
-                                    onClick={() => setShowBreakdown('continuous')}
-                                    className="p-5 rounded-3xl bg-white border border-[var(--border)] shadow-sm cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group/card"
-                                 >
+                                  {/* Continuo Card */}
+                                  <div
+                                     onClick={() => setShowBreakdown('continuous')}
+                                     className="p-5 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-sm cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group/card"
+                                  >
                                     <div className="flex items-center justify-between mb-1.5">
                                        <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Reserva Técnica</p>
                                        <div className="flex items-center gap-2">
@@ -465,8 +465,8 @@ const TeamMemberDetail: React.FC = () => {
                                     </p>
                                  </div>
 
-                                 {/* Saldo/Buffer Card */}
-                                 <div className="p-5 rounded-3xl bg-white border border-[var(--border)] shadow-sm">
+                                  {/* Saldo/Buffer Card */}
+                                  <div className="p-5 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
                                     <div className="flex items-center justify-between mb-1.5">
                                        <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Disponível p/ Planejado</p>
                                        <InfoTooltip title="Buffer" content="Capacidade livre que pode ser utilizada para novas tarefas planejadas sem comprometer a reserva contínua." />
@@ -479,11 +479,11 @@ const TeamMemberDetail: React.FC = () => {
                                     </p>
                                  </div>
 
-                                 {/* Release Date Card */}
-                                 <div
-                                    onClick={() => setActiveTab('tasks')}
-                                    className="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl cursor-pointer hover:scale-[1.02] transition-all group relative overflow-hidden"
-                                 >
+                                  {/* Release Date Card */}
+                                  <div
+                                     onClick={() => setActiveTab('tasks')}
+                                     className="p-5 rounded-3xl bg-[var(--surface-elevated)] border border-[var(--border)] shadow-xl cursor-pointer hover:scale-[1.02] transition-all group relative overflow-hidden"
+                                  >
                                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all">
                                        <Zap className="w-12 h-12 text-purple-500" />
                                     </div>
@@ -495,22 +495,22 @@ const TeamMemberDetail: React.FC = () => {
                                        />
                                     </div>
 
-                                    <div className="relative z-10">
-                                       <div className="flex items-center gap-2">
-                                          <p className={`text-xl font-black font-mono transition-all ${releaseDate?.isSaturated ? 'text-red-500' : releaseDate?.realistic ? 'text-purple-400' : 'text-slate-600'}`}>
-                                             {releaseDate?.realistic || 'N/A'}
-                                          </p>
+                                     <div className="relative z-10">
+                                        <div className="flex items-center gap-2">
+                                           <p className={`text-xl font-black font-mono transition-all ${releaseDate?.isSaturated ? 'text-red-500' : releaseDate?.realistic ? 'text-purple-400' : 'text-[var(--text-3)]'}`}>
+                                              {releaseDate?.realistic || 'N/A'}
+                                           </p>
                                           {releaseDate?.isSaturated && (
                                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-red-500 text-white animate-pulse">SOBRECARGA</span>
                                           )}
                                        </div>
-                                       <div className="flex items-center gap-2 mt-1">
-                                          <span className={`text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-tighter ${releaseDate?.isSaturated ? 'bg-red-500/20 text-red-400' : 'bg-purple-500/20 text-purple-400'}`}>Realista</span>
-                                          {releaseDate && releaseDate.ideal !== releaseDate.realistic && (
-                                             <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">
-                                                Ideal: <span className="text-slate-400">{releaseDate.ideal}</span>
-                                             </span>
-                                          )}
+                                        <div className="flex items-center gap-2 mt-1">
+                                           <span className={`text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-tighter ${releaseDate?.isSaturated ? 'bg-red-500/20 text-red-400' : 'bg-purple-500/20 text-purple-400'}`}>Realista</span>
+                                           {releaseDate && releaseDate.ideal !== releaseDate.realistic && (
+                                              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
+                                                 Ideal: <span className="text-[var(--text-3)]">{releaseDate.ideal}</span>
+                                              </span>
+                                           )}
                                        </div>
                                     </div>
 
@@ -603,15 +603,15 @@ const TeamMemberDetail: React.FC = () => {
                                                    ) : (
                                                       <>
                                                          <div className="flex justify-between items-center text-[8px] font-bold">
-                                                            <span className="text-blue-400">PROJETOS:</span>
+                                                            <span className="text-blue-400">OCUPADO:</span>
                                                             <span>{day.plannedHours}h</span>
                                                          </div>
                                                          <div className="flex justify-between items-center text-[8px] font-bold">
-                                                            <span className="text-amber-400">CONTÍNUO:</span>
+                                                            <span className="text-amber-400">RESERVA:</span>
                                                             <span>{day.continuousHours}h</span>
                                                          </div>
                                                          <div className="flex justify-between items-center text-[8px] font-bold border-t border-white/5 pt-1.5 mt-1.5">
-                                                            <span className="text-emerald-400">DISPONÍVEL:</span>
+                                                            <span className="text-emerald-400">LIVRE:</span>
                                                             <span>{day.bufferHours}h</span>
                                                          </div>
                                                          <div className={`flex justify-between items-center text-[9px] font-black pt-1 ${isOverloaded ? 'text-red-500' : 'text-white'}`}>
@@ -1419,13 +1419,14 @@ const TeamMemberDetail: React.FC = () => {
             onConfirm={handleDeleteUser}
             onCancel={() => setDeleteModalOpen(false)}
          />
-         {showBreakdown && capData && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-               <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20"
-               >
+          {showBreakdown && capData && (
+             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" style={{ backgroundColor: 'var(--overlay)' }}>
+                <motion.div
+                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                   className="rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden border"
+                   style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border)' }}
+                >
                   <div className={`p-8 ${showBreakdown === 'planned' ? 'bg-blue-600' : 'bg-amber-500'} text-white`}>
                      <div className="flex items-center justify-between">
                         <div>
@@ -1445,8 +1446,8 @@ const TeamMemberDetail: React.FC = () => {
                      </div>
                   </div>
 
-                  <div className="p-8 max-h-[60vh] overflow-y-auto">
-                     <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-6 opacity-40">Origem das Horas</p>
+                   <div className="p-8 max-h-[60vh] overflow-y-auto" style={{ backgroundColor: 'var(--surface)' }}>
+                      <p className="text-[10px] font-black text-[var(--muted)] uppercase tracking-widest mb-6 opacity-40">Origem das Horas</p>
 
                      <div className="space-y-4">
                         {(showBreakdown === 'planned' ? capData.breakdown.planned : capData.breakdown.continuous).map((item, idx) => (
@@ -1476,11 +1477,20 @@ const TeamMemberDetail: React.FC = () => {
                      </div>
                   </div>
 
-                  <div className="p-8 bg-slate-50 border-t border-[var(--border)] flex justify-end">
-                     <button
-                        onClick={() => setShowBreakdown(null)}
-                        className="px-8 py-3 bg-white border border-[var(--border)] text-[var(--text)] rounded-2xl font-black text-xs uppercase hover:bg-white hover:border-[var(--primary)] transition-all active:scale-95 shadow-sm"
-                     >
+                   <div className="p-8 border-t border-[var(--border)] flex justify-end" style={{ backgroundColor: 'var(--surface-2)' }}>
+                      <button
+                         onClick={() => setShowBreakdown(null)}
+                         className="px-8 py-3 border border-[var(--border)] text-[var(--text)] rounded-2xl font-black text-xs uppercase transition-all active:scale-95 shadow-sm"
+                         style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                         onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                            e.currentTarget.style.borderColor = 'var(--primary)';
+                         }}
+                         onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface)';
+                            e.currentTarget.style.borderColor = 'var(--border)';
+                         }}
+                      >
                         Fechar
                      </button>
                   </div>
