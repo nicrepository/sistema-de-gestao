@@ -31,40 +31,41 @@ import ThemeToggle from './ThemeToggle';
 // --- Sub-componentes Estilizados ---
 
 const Badge = ({ children, status, className = "" }: { children: React.ReactNode, status: string, className?: string }) => {
-    const colors: any = {
-        'andamento': 'bg-blue-50 text-blue-600 border-blue-100',
-        'impedido': 'bg-amber-50 text-amber-600 border-amber-100',
-        'analise': 'bg-purple-50 text-purple-600 border-purple-100',
-        'nao-iniciado': 'bg-slate-100 text-slate-700 border-slate-200',
-        'concluido': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'atrasada': 'bg-red-500 text-white border-red-600',
-        'entrega-hoje': 'bg-blue-600 text-white border-blue-700 shadow-lg shadow-blue-500/20',
-        'pre-projeto': 'bg-slate-100 text-slate-700 border-slate-200',
-        'saudavel': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'critico': 'bg-red-100 text-red-700 border-red-200',
-    };
-    const key = status.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
-    const colorClass = colors[key] || 'bg-slate-100 text-slate-600 border-slate-200';
+     const colors: any = {
+         'andamento': 'bg-blue-50 text-blue-600 border-blue-100',
+         'impedido': 'bg-amber-50 text-amber-600 border-amber-100',
+         'analise': 'bg-purple-50 text-purple-600 border-purple-100',
+         'nao-iniciado': 'text-slate-700 border-slate-200',
+                         'concluido': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                         'atrasada': 'bg-red-500 text-white border-red-600',
+                         'entrega-hoje': 'bg-blue-600 text-white border-blue-700 shadow-lg shadow-blue-500/20',
+                         'pre-projeto': 'text-slate-700 border-slate-200',
+         'saudavel': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+         'critico': 'bg-red-100 text-red-700 border-red-200',
+     };
+     const key = status.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
+     const colorClass = colors[key] || 'text-slate-600 border-slate-200';
+     const shouldUseThemeBackground = key === 'nao-iniciado' || key === 'pre-projeto';
 
-    return (
-        <span className={`px-2 py-0.5 2xl:px-4 2xl:py-1.5 rounded-lg text-[9px] sm:text-[10px] 2xl:text-xs 3xl:text-sm font-black uppercase tracking-wide border-2 ${colorClass} ${className} whitespace-nowrap`}>
-            {children}
-        </span>
-    );
+     return (
+         <span className={`px-2 py-0.5 2xl:px-4 2xl:py-1.5 rounded-lg text-[9px] sm:text-[10px] 2xl:text-xs 3xl:text-sm font-black uppercase tracking-wide border-2 ${colorClass} ${className} whitespace-nowrap`} style={shouldUseThemeBackground ? { backgroundColor: 'var(--surface-3)', borderColor: 'var(--border)' } : {}}>
+             {children}
+         </span>
+     );
 };
 
 const SectionHeader = ({ label, icon: Icon, colorClass, children }: { label: string, icon: any, colorClass: string, children?: React.ReactNode }) => (
-    <div className="flex items-center gap-2 sm:gap-3 2xl:gap-6 mb-1.5 sm:mb-2 lg:mb-3 2xl:mb-4">
-        <div className={`w-1.5 h-3 sm:h-4 lg:h-5 2xl:h-7 rounded-full ${colorClass}`} />
-        <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 2xl:w-5 2xl:h-5 text-slate-400 shrink-0" />
-        <h2 className="text-[5px] sm:text-[6px] lg:text-[7px] 2xl:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] 2xl:tracking-[0.2em] text-slate-500 whitespace-nowrap">{label}</h2>
-        <div className="h-[1px] flex-1 bg-slate-200 ml-2 opacity-50" />
-        {children && <div className="flex items-center gap-1 sm:gap-1.5 2xl:gap-3 ml-2">{children}</div>}
-    </div>
+     <div className="flex items-center gap-2 sm:gap-3 2xl:gap-6 mb-1.5 sm:mb-2 lg:mb-3 2xl:mb-4">
+         <div className={`w-1.5 h-3 sm:h-4 lg:h-5 2xl:h-7 rounded-full ${colorClass}`} />
+         <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 2xl:w-5 2xl:h-5 shrink-0" style={{ color: 'var(--text-muted)' }} />
+         <h2 className="text-[5px] sm:text-[6px] lg:text-[7px] 2xl:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] 2xl:tracking-[0.2em] whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{label}</h2>
+         <div className="h-[1px] flex-1 ml-2 opacity-50" style={{ backgroundColor: 'var(--border)' }} />
+         {children && <div className="flex items-center gap-1 sm:gap-1.5 2xl:gap-3 ml-2">{children}</div>}
+     </div>
 );
 
 const CompactStat = ({ label, count, icon: Icon, colorClass }: { label: string, count: number, icon: any, colorClass: string }) => (
-    <div className="bg-white/60 backdrop-blur-sm px-1.5 py-0.5 2xl:px-2.5 2xl:py-1 rounded-md border border-slate-100 shadow-sm flex items-center gap-1.5 transition-all hover:bg-white/90">
+     <div className="backdrop-blur-sm px-1.5 py-0.5 2xl:px-2.5 2xl:py-1 rounded-md border shadow-sm flex items-center gap-1.5 transition-all" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
         <Icon className={`${colorClass} w-2 h-2 2xl:w-3.5 2xl:h-3.5 opacity-80`} />
         <span className={`text-[5px] sm:text-[5.5px] 2xl:text-[9.5px] font-black uppercase tracking-tighter ${colorClass}`}>
             {label} <span className="opacity-60 ml-0.5">({count})</span>
@@ -313,7 +314,7 @@ const AdminMonitoringView: React.FC = () => {
                         {members.length > 0 && (
                             <div className="flex -space-x-3">
                                 {members.slice(0, 4).map(m => (
-                                    <div key={m.id} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 overflow-hidden shadow-lg">
+                                    <div key={m.id} className="w-10 h-10 rounded-full border-2 overflow-hidden shadow-lg" style={{ borderColor: 'var(--surface)', backgroundColor: 'var(--surface-2)' }}>
                                         <img
                                             src={m.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}`}
                                             className="w-full h-full object-cover"
@@ -326,7 +327,7 @@ const AdminMonitoringView: React.FC = () => {
                                     </div>
                                 ))}
                                 {members.length > 4 && (
-                                    <div className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+                                    <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-lg" style={{ borderColor: 'var(--surface)', backgroundColor: 'var(--surface-2)' }}>
                                         +{members.length - 4}
                                     </div>
                                 )}
@@ -773,10 +774,10 @@ const AdminMonitoringView: React.FC = () => {
                                             .filter(Boolean) as User[];
 
                                         return (
-                                            <div key={`${task.id}-${idx}`} className={`bg-white border rounded-xl p-2.5 sm:p-3 2xl:p-5 relative flex flex-col group hover:border-purple-400 transition-all ${shadowClass} overflow-hidden h-full min-h-[140px]`}>
+                                            <div key={`${task.id}-${idx}`} className={`border rounded-xl p-2.5 sm:p-3 2xl:p-5 relative flex flex-col group hover:border-purple-400 transition-all ${shadowClass} overflow-hidden h-full min-h-[140px]`} style={{ backgroundColor: 'var(--surface)' }}>
                                                 <div className="flex justify-between items-start mb-1.5 sm:mb-2 2xl:mb-4 gap-2">
                                                     <Badge className="2xl:text-xs 2xl:px-3 2xl:py-1" status={statusLabelKey}>{finalStatusLabel}</Badge>
-                                                    <div className="w-8 h-8 2xl:w-12 2xl:h-12 rounded-lg bg-slate-50 border border-slate-200 p-1 flex items-center justify-center overflow-hidden shadow-sm group-hover:bg-white transition-all shrink-0">
+                                                    <div className="w-8 h-8 2xl:w-12 2xl:h-12 rounded-lg border p-1 flex items-center justify-center overflow-hidden shadow-sm transition-all shrink-0" style={{ backgroundColor: 'var(--surface-3)', borderColor: 'var(--border)' }}>
                                                         <img
                                                             src={client?.logoUrl || 'https://placehold.co/100x100?text=Logo'}
                                                             className="w-full h-full object-contain"
@@ -791,7 +792,7 @@ const AdminMonitoringView: React.FC = () => {
 
                                                 <div className="flex-1 flex flex-col justify-start gap-1 2xl:gap-2 min-w-0">
                                                     <div className="flex items-center gap-1.5">
-                                                        <h3 className="text-xs sm:text-sm 2xl:text-xl font-black text-slate-800 uppercase leading-tight line-clamp-2 flex-1 tracking-tight">{task.title}</h3>
+                                                        <h3 className="text-xs sm:text-sm 2xl:text-xl font-black uppercase leading-tight line-clamp-2 flex-1 tracking-tight" style={{ color: 'var(--text)' }}>{task.title}</h3>
                                                         {isDueToday && (
                                                             <div className="flex items-center gap-0.5 bg-sky-500 text-white text-[7px] 2xl:text-[10px] font-black px-1.5 py-0.5 rounded-full animate-bounce shrink-0 shadow-lg shadow-sky-200">
                                                                 <Zap size={10} className="shrink-0" /> HOJE
@@ -799,7 +800,7 @@ const AdminMonitoringView: React.FC = () => {
                                                         )}
                                                     </div>
                                                     <div className="flex flex-col gap-0.5 2xl:gap-1">
-                                                        <span className="text-[8px] sm:text-[10px] 2xl:text-xs font-black text-slate-400 uppercase truncate">CLIENTE: {client?.name || 'Interno'}</span>
+                                                        <span className="text-[8px] sm:text-[10px] 2xl:text-xs font-black uppercase truncate" style={{ color: 'var(--text-muted)' }}>CLIENTE: {client?.name || 'Interno'}</span>
                                                         <span className="text-[8px] sm:text-[10px] 2xl:text-xs font-black text-purple-600 uppercase truncate leading-none">
                                                             PROJ: {project?.name || 'N/A'}
                                                         </span>
@@ -811,7 +812,7 @@ const AdminMonitoringView: React.FC = () => {
                                                             )
                                                         ) : (
                                                             task.estimatedDelivery && (
-                                                                <span className={`text-[8px] sm:text-[10px] 2xl:text-xs font-black uppercase flex items-center gap-1 mt-0.5 ${isDueToday ? 'text-sky-600' : 'text-slate-500'}`}>
+                                                        <span className={`text-[8px] sm:text-[10px] 2xl:text-xs font-black uppercase flex items-center gap-1 mt-0.5 ${isDueToday ? 'text-sky-600' : ''}`} style={!isDueToday ? { color: 'var(--text-muted)' } : {}}>
                                                                     📅 {formattedDate}{countdownText ? ` • ${countdownText}` : ''}
                                                                 </span>
                                                             )
@@ -820,7 +821,7 @@ const AdminMonitoringView: React.FC = () => {
                                                 </div>
 
                                                 <div className="mt-2 2xl:mt-6 mb-1">
-                                                    <div className="w-full h-1.5 2xl:h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="w-full h-1.5 2xl:h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-2)' }}>
                                                         <div
                                                             className={`h-full transition-all duration-500 ${delayed ? 'bg-red-500' : isDueToday ? 'bg-sky-500' : isReview ? 'bg-yellow-500' : 'bg-purple-600'}`}
                                                             style={{ width: `${task.progress}%` }}
@@ -828,10 +829,10 @@ const AdminMonitoringView: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between mt-auto pt-2 2xl:pt-4 border-t border-slate-50">
+                                                <div className="flex items-center justify-between mt-auto pt-2 2xl:pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                                                     <div className="flex items-center gap-1.5 sm:gap-2 2xl:gap-4 min-w-0">
                                                         <div className="flex -space-x-1.5 2xl:-space-x-3">
-                                                            <div className="w-6 h-6 2xl:w-10 2xl:h-10 rounded-full overflow-hidden border-2 border-white shadow-sm shrink-0 z-10 bg-slate-50">
+                                                            <div className="w-6 h-6 2xl:w-10 2xl:h-10 rounded-full overflow-hidden border-2 shadow-sm shrink-0 z-10" style={{ borderColor: 'var(--surface)', backgroundColor: 'var(--surface-3)' }}>
                                                                 <img
                                                                     src={dev?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(task.developer)}&background=f8fafc&color=475569`}
                                                                     className="w-full h-full object-cover"
@@ -883,7 +884,8 @@ const AdminMonitoringView: React.FC = () => {
                                 <button
                                     key={idx}
                                     onClick={() => setTaskPage(idx)}
-                                    className={`h-1 rounded-full transition-all duration-300 ${taskPage === idx ? 'w-6 sm:w-8 bg-purple-600' : 'w-1.5 bg-slate-200 hover:bg-purple-400'}`}
+                                    className={`h-1 rounded-full transition-all duration-300 ${taskPage === idx ? 'w-6 sm:w-8 bg-purple-600' : 'w-1.5 hover:bg-purple-400'}`}
+                                    style={taskPage !== idx ? { backgroundColor: 'var(--border)' } : {}}
                                 />
                             ))}
                         </div>

@@ -114,7 +114,7 @@ export const addBusinessDays = (startDate: string, daysToAdd: number, holidays: 
 export interface DayAllocation {
     date: string;
     plannedHours: number;
-    continuousHours: number;
+    
     bufferHours: number;
     totalOccupancy: number;
     isWorkingDay: boolean;
@@ -178,13 +178,12 @@ export const simulateUserDailyAllocation = (
         const isAbsent = !!activeAbsence;
         const isWorkingDay = !isWeekend && !isHoliday && !isAbsent;
 
-        let plannedHours = 0;
-        let continuousHours = 0;
+                let plannedHours = 0;
         let bufferHours = 0;
         let currentCapacity = isAbsent ? 0 : capacityDia;
 
         if (isWorkingDay) {
-            // 1. Verificar tarefas planejadas ativas no dia
+            // BUSCA DE TAREFAS ATIVAS NO DIA
             const userTasks = allTasks.filter(t =>
                 (String(t.developerId) === String(userId) || t.collaboratorIds?.some(id => String(id) === String(userId))) &&
                 t.status !== 'Done' &&
@@ -193,36 +192,36 @@ export const simulateUserDailyAllocation = (
                 !t.deleted_at
             );
 
-            const activePlannedTasks = userTasks.filter(t => {
+            // Filtra tarefas que o dia atual (dateStr) está dentro do período (Início até Fim Estimado)
+            const activeTasks = userTasks.filter(t => {
                 const project = allProjects.find(p => String(p.id) === String(t.projectId));
-                if (!project || project.project_type !== 'planned') return false;
+                if (!project) return false;
 
+                // Se não tem data de início na tarefa, usa a do projeto. Se não tem fim, assume infinito (ocupado).
                 const tStart = t.scheduledStart || t.actualStart || project.startDate || '';
                 const tEnd = t.estimatedDelivery || '';
+
+                // Se o dia está depois do início E (não tem fim OU está antes do fim)
                 return dateStr >= tStart && (tEnd === '' || dateStr <= tEnd);
             });
 
-            // 2. Verificar o compromisso contínuo dinâmico no dia (Passando a data para filtrar vigência)
-            const continuousCommitment = getUserContinuousCommitment(String(userId), allProjects, projectMembers, capacityDia, dateStr);
-            const availableForPlanned = Math.max(0, capacityDia - continuousCommitment);
-
-            if (activePlannedTasks.length > 0) {
-                // Tem tarefa planejada: Consome o que sobra do compromisso contínuo (Prioriza o planejado no que sobrar)
-                plannedHours = availableForPlanned;
-                continuousHours = continuousCommitment;
+            if (activeTasks.length > 0) {
+                // Se houver qualquer tarefa ativa, o dia é considerado 100% OCUPADO
+                plannedHours = currentCapacity;
+                bufferHours = 0;
             } else {
-                // Sem tarefas planejadas: Aloca apenas o compromisso contínuo real e libera o resto como disponível (Buffer)
-                continuousHours = continuousCommitment;
-                bufferHours = Math.max(0, currentCapacity - continuousHours);
+                // Sem tarefas: 100% LIVRE
+                plannedHours = 0;
+                bufferHours = currentCapacity;
             }
         }
 
-        allocations.push({
+allocations.push({
             date: dateStr,
             plannedHours: Number(plannedHours.toFixed(2)),
-            continuousHours: Number(continuousHours.toFixed(2)),
+            
             bufferHours: Number(bufferHours.toFixed(2)),
-            totalOccupancy: Number((plannedHours + continuousHours).toFixed(2)),
+            totalOccupancy: Number(plannedHours.toFixed(2)),
             isWorkingDay,
             isAbsent,
             absenceType: activeAbsence?.type,
@@ -323,7 +322,7 @@ export const getUserAvailabilityInRange = (
 ): {
     capacity: number;
     plannedHours: number;
-    continuousHours: number;
+    
     totalOccupancy: number;
     occupancyRate: number;
     balance: number;

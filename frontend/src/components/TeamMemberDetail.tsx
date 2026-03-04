@@ -557,7 +557,7 @@ const TeamMemberDetail: React.FC = () => {
                                     );
 
                                     return daily.map(day => {
-                                       const total = day.plannedHours + day.continuousHours;
+                                       const total = day.plannedHours;
                                        const isOverloaded = total > day.capacity;
 
                                        return (
@@ -573,7 +573,7 @@ const TeamMemberDetail: React.FC = () => {
                                                 {!day.isAbsent && (
                                                    <div className="w-full h-full flex flex-col">
                                                       <div className="flex-1 bg-blue-500/80" style={{ height: `${(day.plannedHours / Math.max(1, day.capacity)) * 100}%`, flex: 'none' }} />
-                                                      <div className="flex-1 bg-amber-400/80" style={{ height: `${(day.continuousHours / Math.max(1, day.capacity)) * 100}%`, flex: 'none' }} />
+                                                      
                                                       <div className="flex-1 bg-emerald-400/20" style={{ height: `${(day.bufferHours / Math.max(1, day.capacity)) * 100}%`, flex: 'none' }} />
                                                    </div>
                                                 )}
@@ -610,10 +610,7 @@ const TeamMemberDetail: React.FC = () => {
                                                             <span className="text-blue-400">OCUPADO:</span>
                                                             <span>{day.plannedHours}h</span>
                                                          </div>
-                                                         <div className="flex justify-between items-center text-[8px] font-bold">
-                                                            <span className="text-amber-400">RESERVA:</span>
-                                                            <span>{day.continuousHours}h</span>
-                                                         </div>
+                                                         
                                                          <div className="flex justify-between items-center text-[8px] font-bold border-t border-white/5 pt-1.5 mt-1.5">
                                                             <span className="text-emerald-400">LIVRE:</span>
                                                             <span>{day.bufferHours}h</span>
