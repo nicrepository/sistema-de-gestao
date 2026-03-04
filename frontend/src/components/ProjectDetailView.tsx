@@ -952,9 +952,9 @@ const ProjectDetailView: React.FC = () => {
                           const startDate = task.scheduledStart ? new Date(task.scheduledStart + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '--/--';
                           const deliveryDate = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : null;
 
-                          // Peso = duração da tarefa / soma de todas as durações (= mesma fórmula do TaskDetail)
+                          // Peso = duração da tarefa / duração total do projeto (= mesma fórmula do TaskDetail)
                           const taskFactor = performance?.projectFactors?.find((f: { id: string; factor: number }) => f.id === task.id)?.factor || 0;
-                          const weight = (performance?.totalFactor || 0) > 0 ? (taskFactor / performance!.totalFactor) * 100 : 0;
+                          const weight = taskFactor * 100;
 
                           const taskSoldHours = (project?.horas_vendidas || 0) > 0 ? (weight / 100) * project!.horas_vendidas : (Number(task.estimatedHours) || 0);
                           const collaboratorCount = (task.collaboratorIds?.length || 0);
@@ -1042,7 +1042,7 @@ const ProjectDetailView: React.FC = () => {
                               // Soma de pesos de TODAS as tarefas do projeto para garantir consistência
                               const rawSum = projectTasks.reduce((acc: number, t: Task) => {
                                 const f = performance?.projectFactors?.find((pf: any) => pf.id === t.id)?.factor || 0;
-                                return acc + ((performance?.totalFactor || 0) > 0 ? (f / performance!.totalFactor) * 100 : 0);
+                                return acc + (f * 100);
                               }, 0);
                               const sum = Math.min(100, rawSum);
                               return Math.round(sum) + '%';
@@ -1284,7 +1284,7 @@ const ProjectDetailView: React.FC = () => {
                               <Clock size={80} />
                             </div>
                             <p className="text-[9px] font-black uppercase text-amber-600/60 tracking-[0.3em] mb-1 text-center">Entrega Estimada</p>
-                            <p className="text-3xl font-black tracking-tighter text-white text-center mb-3">
+                            <p className="text-3xl font-black tracking-tighter text-center mb-3" style={{ color: 'var(--text)' }}>
                               {project.estimatedDelivery.split('T')[0].split('-').reverse().join('/')}
                             </p>
                             {project.startDate && (() => {
@@ -1312,7 +1312,7 @@ const ProjectDetailView: React.FC = () => {
                                     <Clock size={11} />
                                     {remaining} dias úteis disponíveis
                                   </p>
-                                  <p className="text-[9px] font-bold text-white/40 text-center uppercase tracking-widest">
+                                  <p className="text-[9px] font-bold text-center uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                                     Capacidade Período: {(performance?.projectDays || 0) * 8}h ({(performance?.projectDays || 0)} dias úteis)
                                   </p>
                                 </div>

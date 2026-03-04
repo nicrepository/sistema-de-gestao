@@ -952,14 +952,12 @@ const TaskDetail: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-2 border-t border-[var(--border)] pt-2 border-dashed">
-                          {/* Saldo no Período */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 border-t border-[var(--border)] pt-2 border-dashed">
+                          {/* SALDO DISP. */}
                           <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase opacity-40">Saldo Período</span>
+                            <span className="text-[9px] font-black uppercase opacity-40">Saldo Disp.</span>
                             {formData.status === 'Done' ? (
-                              <span className="text-[10px] font-black text-[var(--muted)] opacity-50 tabular-nums">
-                                --
-                              </span>
+                              <span className="text-[10px] font-black text-[var(--muted)] opacity-50 tabular-nums">--</span>
                             ) : (
                               <span className={`text-[10px] font-black tabular-nums ${periodAvailability < 0 ? 'text-red-500' : 'text-indigo-500'}`}>
                                 {formatDecimalToTime(periodAvailability)}
@@ -967,28 +965,18 @@ const TaskDetail: React.FC = () => {
                             )}
                           </div>
 
-                          {/* Saldo Mensal (Fixo do Quadro) */}
+                          {/* DISTRIBUIÇÃO */}
                           <div className="flex flex-col border-l border-[var(--border)] pl-3">
-                            <span className="text-[9px] font-black uppercase opacity-40 flex items-center gap-1">
-                              <Lock size={8} className="opacity-40" /> Saldo Mensal
-                            </span>
-                            <span className={`text-[10px] font-black tabular-nums ${(monthlyBalance ?? 0) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                              {monthlyBalance !== null ? formatDecimalToTime(monthlyBalance) : '--'}
-                            </span>
-                          </div>
-
-                          {/* Alocação na Tarefa */}
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase opacity-40">Alocação Tarefa</span>
+                            <span className="text-[9px] font-black uppercase opacity-40">Distribuição</span>
                             <span className="text-[10px] font-black text-amber-500 tabular-nums">
                               {distributionPercent.toFixed(1)}%
                             </span>
                           </div>
 
-                          {/* Allocation Input */}
-                          <div className="flex flex-col border-l border-[var(--border)] pl-3 group/alloc">
+                          {/* ALOCADO input */}
+                          <div className="flex flex-col group/alloc">
                             <span className="text-[9px] font-black uppercase group-focus-within/alloc:text-blue-500 transition-colors">
-                              <span className="opacity-40">Horas Tarefa</span>
+                              <span className="opacity-40">Alocado</span>
                               <span className="opacity-20 ml-1">/ {formatDecimalToTime(totalTaskHours)}</span>
                             </span>
                             <div className="flex items-center">
@@ -1020,16 +1008,14 @@ const TaskDetail: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Real Execution */}
-                          <div className="flex flex-col col-span-2 border-t border-[var(--border)] pt-2 border-dotted mt-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[9px] font-black uppercase opacity-40">Execução Real</span>
-                              <span className={`text-[10px] font-black tabular-nums ${memberRealHours > currentForecast && currentForecast > 0 ? 'text-red-500' : memberRealHours > 0 ? 'text-emerald-500' : 'opacity-30'}`}>
-                                {formatDecimalToTime(memberRealHours)}
-                              </span>
-                            </div>
+                          {/* APONTADO */}
+                          <div className="flex flex-col border-l border-[var(--border)] pl-3">
+                            <span className="text-[9px] font-black uppercase opacity-40">Apontado</span>
+                            <span className={`text-[10px] font-black tabular-nums ${memberRealHours > currentForecast && currentForecast > 0 ? 'text-red-500' : memberRealHours > 0 ? 'text-emerald-500' : 'opacity-30'}`}>
+                              {formatDecimalToTime(memberRealHours)}
+                            </span>
                             {memberRealHours > currentForecast && currentForecast > 0 && (
-                              <p className="text-[7px] font-black text-red-500 uppercase mt-0.5 animate-pulse">Excedeu alocação!</p>
+                              <p className="text-[7px] font-black text-red-500 uppercase mt-0.5 animate-pulse">Excedeu!</p>
                             )}
                           </div>
                         </div>

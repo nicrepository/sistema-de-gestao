@@ -7,7 +7,7 @@ import { Task, Role } from '@/types';
 import { User as UserIcon, Mail, Briefcase, Shield, Edit, Save, Trash2, ArrowLeft, CheckCircle, Clock, AlertCircle, Calendar, Zap, Info, LayoutGrid, ChevronRight } from 'lucide-react';
 import OrganizationalStructureSelector from './OrganizationalStructureSelector';
 import ConfirmationModal from './ConfirmationModal';
-import { getRoleDisplayName, formatDecimalToTime, getStatusDisplayName, formatDateBR } from '@/utils/normalizers';
+import { getRoleDisplayName, formatDecimalToTime, getStatusDisplayName, formatDateBR, parseTimeToDecimal } from '@/utils/normalizers';
 import { supabase } from '@/services/supabaseClient';
 
 import TimesheetCalendar from './TimesheetCalendar';

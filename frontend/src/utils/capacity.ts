@@ -1,4 +1,5 @@
 import { User, Task, Project, ProjectMember, Holiday, TimesheetEntry, TaskMemberAllocation, Absence } from '@/types';
+import { parseTimeToDecimal } from './normalizers';
 
 /**
  * Retorna o número de dias úteis (Segunda a Sexta) em um determinado mês, descontando feriados.
@@ -369,9 +370,20 @@ export const getUserAvailabilityInRange = (
             totalEffort = specificAllocation.reservedHours;
         } else if (!hasAnyAllocationInTask) {
             const teamIds = Array.from(new Set([t.developerId, ...(t.collaboratorIds || [])])).filter(Boolean);
-            totalEffort = (Number(t.estimatedHours) || 0) / (teamIds.length || 1);
+            totalEffort = parseTimeToDecimal(String(t.estimatedHours || 0)) / (teamIds.length || 1);
         } else {
-            totalEffort = 0;
+            // Se houver alocações específicas na tarefa, mas não para o usuário atual:
+            // Regra: O Responsável (developerId) fica com o "resto" das horas. 
+            // Outros colaboradores sem alocação explícita ficam com 0.
+            const isMainDev = String(t.developerId) === String(user.id);
+            if (isMainDev) {
+                const totalAllocatedToOthers = taskMemberAllocations
+                    .filter(a => String(a.taskId) === String(t.id) && String(a.userId) !== String(user.id))
+                    .reduce((sum, a) => sum + (Number(a.reservedHours) || 0), 0);
+                totalEffort = Math.max(0, parseTimeToDecimal(String(t.estimatedHours || 0)) - totalAllocatedToOthers);
+            } else {
+                totalEffort = 0;
+            }
         }
 
         // --- REGRA DE SALDO (DONE RECOUPING) ---

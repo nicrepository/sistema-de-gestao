@@ -1,0 +1,3 @@
+﻿C:\Users\login\OneDrive\Área de Trabalho\Projetos\sistema-de-gest-o\frontend\src\components\TeamMemberDetail.tsx:1032:                                 onClick={() => navigate(`/tasks/${t.id}`)}
+C:\Users\login\OneDrive\Área de Trabalho\Projetos\sistema-de-gest-o\frontend\src\components\TeamMemberDetail.tsx:1192:                                 onClick={() => navigate(`/tasks/${t.id}`)}
+C:\Users\login\OneDrive\Área de Trabalho\Projetos\sistema-de-gest-o\frontend\src\components\TeamMemberDetail.tsx:1376:                              onClick={() => navigate(`/tasks/${t.id}`)}
