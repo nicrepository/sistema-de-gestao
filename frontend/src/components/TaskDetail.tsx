@@ -219,16 +219,34 @@ const TaskDetail: React.FC = () => {
 
   const taskWeight = useMemo(() => {
     const project = projects.find((p: any) => p.id === formData.projectId);
-    if (!project || !project.startDate || !project.estimatedDelivery) return { weight: 0 };
+    if (!project || !(project.horas_vendidas > 0)) return { weight: 0 };
 
-    const projectWorkingDays = CapacityUtils.getWorkingDaysInRange(project.startDate, project.estimatedDelivery, holidays);
-    const taskWorkingDays = (formData.scheduledStart || formData.actualStart) && formData.estimatedDelivery
-      ? CapacityUtils.getWorkingDaysInRange(formData.scheduledStart || formData.actualStart, formData.estimatedDelivery, holidays)
-      : 0;
+    const estimated = Number(formData.estimatedHours) || 0;
+    const effectiveTaskHours = formData.status === 'Done' ? actualHoursSpent : estimated;
 
-    const weight = projectWorkingDays > 0 ? (taskWorkingDays / projectWorkingDays) * 100 : 0;
+    const weight = (effectiveTaskHours / project.horas_vendidas) * 100;
     return { weight };
-  }, [formData.scheduledStart, formData.actualStart, formData.estimatedDelivery, formData.projectId, projects, holidays]);
+  }, [formData.projectId, formData.estimatedHours, formData.status, actualHoursSpent, projects]);
+
+  const projectAvailableHours = useMemo(() => {
+    const project = projects.find((p: any) => p.id === formData.projectId);
+    if (!project || !(project.horas_vendidas > 0)) return null;
+
+    const otherTasks = tasks.filter((t: any) => t.projectId === project.id && t.id !== taskId);
+
+    const usedByOthers = otherTasks.reduce((sum: number, t: any) => {
+      let taskReported = 0;
+      if (t.status === 'Done') {
+        taskReported = timesheetEntries
+          .filter((e: any) => e.taskId === t.id)
+          .reduce((s: number, e: any) => s + (Number(e.totalHours) || 0), 0);
+      }
+      const effective = t.status === 'Done' ? taskReported : (Number(t.estimatedHours) || 0);
+      return sum + effective;
+    }, 0);
+
+    return project.horas_vendidas - usedByOthers;
+  }, [formData.projectId, projects, tasks, taskId, timesheetEntries]);
 
   const isOwner = task && task.developerId === currentUser?.id;
   const isCollaborator = !isNew && task && task.collaboratorIds?.includes(currentUser?.id || '');
@@ -684,7 +702,7 @@ const TaskDetail: React.FC = () => {
             </div>
 
             {/* CARD 4: TIMELINE */}
-            <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col justify-between h-[290px] group hover:shadow-md transition-all duration-300 ${hasError('timeline') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('timeline') ? undefined : 'var(--surface)', borderColor: hasError('timeline') ? undefined : 'var(--border)' }}>
+            <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col justify-between min-h-[290px] group hover:shadow-md transition-all duration-300 ${hasError('timeline') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('timeline') ? undefined : 'var(--surface)', borderColor: hasError('timeline') ? undefined : 'var(--border)' }}>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
@@ -744,6 +762,15 @@ const TaskDetail: React.FC = () => {
                         className="w-full bg-transparent text-[11px] font-black text-[var(--text)] outline-none tabular-nums p-0 border-none leading-none focus:text-blue-500 font-mono"
                         placeholder="00:00"
                       />
+                      {projectAvailableHours !== null && (
+                        <div className="mt-2.5 pt-2 border-t border-dashed border-blue-500/10 flex items-center justify-between">
+                          <span className="text-[7.5px] font-black text-blue-500/50 uppercase tracking-widest whitespace-nowrap">Saldo Disp.</span>
+                          <div className="flex items-baseline gap-1 whitespace-nowrap">
+                            <span className="text-[10px] font-black text-blue-500/80 tabular-nums">{formatDecimalToTime(projectAvailableHours)}</span>
+                            <span className="text-[7.5px] font-bold text-blue-500/50 uppercase">hs</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

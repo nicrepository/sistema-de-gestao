@@ -952,11 +952,11 @@ const ProjectDetailView: React.FC = () => {
                           const startDate = task.scheduledStart ? new Date(task.scheduledStart + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '--/--';
                           const deliveryDate = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : null;
 
-                          // Peso = duração da tarefa / duração total do projeto (= mesma fórmula do TaskDetail)
-                          const taskFactor = performance?.projectFactors?.find((f: { id: string; factor: number }) => f.id === task.id)?.factor || 0;
-                          const weight = taskFactor * 100;
+                          const taskSoldHoursStatic = Number(task.estimatedHours) || 0;
+                          const effectiveHours = task.status === 'Done' ? taskReported : taskSoldHoursStatic;
+                          const weight = (project?.horas_vendidas || 0) > 0 ? (effectiveHours / project!.horas_vendidas) * 100 : 0;
 
-                          const taskSoldHours = (project?.horas_vendidas || 0) > 0 ? (weight / 100) * project!.horas_vendidas : (Number(task.estimatedHours) || 0);
+                          const taskSoldHours = effectiveHours;
                           const collaboratorCount = (task.collaboratorIds?.length || 0);
                           const isHourOverrun = taskSoldHours > 0 && taskReported > taskSoldHours;
                           const isDelayed = task.status !== 'Done' && (
@@ -1035,29 +1035,43 @@ const ProjectDetailView: React.FC = () => {
                     {/* Footer com Totais do Cronograma */}
                     <div className="mt-4 pt-4 border-t border-dashed shrink-0" style={{ borderColor: 'var(--border)' }}>
                       <div className="flex items-center justify-between px-2 gap-4">
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-black uppercase opacity-40 tracking-wider">Total Pesos</span>
-                          <span className="text-[14px] font-black text-purple-600">
+                        <div className="flex flex-col items-start min-w-0 shrink-0">
+                          <span className="text-[7.5px] font-black uppercase opacity-40 tracking-widest whitespace-nowrap">Total Pesos</span>
+                          <span className="text-[14px] font-black text-purple-600 whitespace-nowrap mt-0.5">
                             {(() => {
-                              // Soma de pesos de TODAS as tarefas do projeto para garantir consistência
+                              // Soma de pesos de TODAS as tarefas do projeto
                               const rawSum = projectTasks.reduce((acc: number, t: Task) => {
-                                const f = performance?.projectFactors?.find((pf: any) => pf.id === t.id)?.factor || 0;
-                                return acc + (f * 100);
+                                const tr = timesheetEntries.filter((e: TimesheetEntry) => e.taskId === t.id).reduce((s: number, e: TimesheetEntry) => s + (Number(e.totalHours) || 0), 0);
+                                const est = Number(t.estimatedHours) || 0;
+                                const eff = t.status === 'Done' ? tr : est;
+                                return acc + ((project?.horas_vendidas || 0) > 0 ? (eff / project!.horas_vendidas) * 100 : 0);
                               }, 0);
-                              const sum = Math.min(100, rawSum);
+                              const sum = Math.min(100, Math.max(0, rawSum));
                               return Math.round(sum) + '%';
                             })()}
                           </span>
                         </div>
-                        <div className="flex flex-col text-center">
-                          <span className="text-[8px] font-black uppercase opacity-40 tracking-wider">Capacidade</span>
-                          <span className="text-[14px] font-black text-amber-500">
-                            {((performance?.projectDays || 0) * 8)}h
-                          </span>
+                        <div className="flex flex-col items-center min-w-0 shrink-0">
+                          <span className="text-[7.5px] font-black uppercase opacity-40 tracking-widest whitespace-nowrap">Saldo Disp.</span>
+                          <div className="flex items-baseline gap-1 mt-0.5 whitespace-nowrap">
+                            <span className="text-[14px] font-black text-amber-500">
+                              {(() => {
+                                const totalUsed = projectTasks.reduce((acc: number, t: Task) => {
+                                  const tr = timesheetEntries.filter((e: TimesheetEntry) => e.taskId === t.id).reduce((s: number, e: TimesheetEntry) => s + (Number(e.totalHours) || 0), 0);
+                                  const est = Number(t.estimatedHours) || 0;
+                                  const eff = t.status === 'Done' ? tr : est;
+                                  return acc + eff;
+                                }, 0);
+                                const saldo = (project?.horas_vendidas || 0) - totalUsed;
+                                return formatDecimalToTime(Math.max(0, saldo));
+                              })()}
+                            </span>
+                            <span className="text-[9px] font-bold text-amber-500/60 lowercase">hs</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col text-right">
-                          <span className="text-[8px] font-black uppercase opacity-40 tracking-wider">Horas Vendidas</span>
-                          <span className="text-[14px] font-black" style={{ color: 'var(--text)' }}>
+                        <div className="flex flex-col items-end min-w-0 shrink-0">
+                          <span className="text-[7.5px] font-black uppercase opacity-40 tracking-widest whitespace-nowrap">Horas Vendidas</span>
+                          <span className="text-[14px] font-black whitespace-nowrap mt-0.5" style={{ color: 'var(--text)' }}>
                             {formatDecimalToTime(project?.horas_vendidas || 0)}
                           </span>
                         </div>
