@@ -49,30 +49,34 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
     const method = fetchOptions.method || 'GET';
     const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
 
+    // Assegurar barra inicial para matching robusto
+    if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
+
     const baseMappings: Record<string, { view: string, table: string, pk: string, select?: string }> = {
-        '/support/': { view: '/support_', table: '/support_', pk: 'id' },
-        '/audit-logs': { view: '/audit_logs', table: '/audit_logs', pk: 'id' },
-        '/colaboradores': { view: '/v_colaboradores', table: '/dim_colaboradores', pk: 'id_colaborador' },
-        '/clientes': { view: '/v_clientes', table: '/dim_clientes', pk: 'id_cliente' },
-        '/projetos': { view: '/v_projetos', table: '/dim_projetos', pk: 'ID_Projeto' },
-        '/tarefas': { view: '/v_tarefas', table: '/fato_tarefas', pk: 'id_tarefa_novo' },
-        '/tasks': { view: '/v_tarefas', table: '/fato_tarefas', pk: 'id_tarefa_novo' },
-        '/timesheets': { view: '/horas_trabalhadas', table: '/horas_trabalhadas', pk: 'ID_Horas_Trabalhadas', select: '*,colaborador:dim_colaboradores(NomeColaborador:nome_colaborador)' },
-        '/allocations': { view: '/task_member_allocations', table: '/task_member_allocations', pk: 'id' }
+        '/support/': { view: 'support_', table: 'support_', pk: 'id' },
+        '/audit-logs': { view: 'v_audit_logs', table: 'audit_logs', pk: 'id' },
+        '/colaboradores': { view: 'v_colaboradores', table: 'dim_colaboradores', pk: 'id_colaborador' },
+        '/clientes': { view: 'v_clientes', table: 'dim_clientes', pk: 'id_cliente' },
+        '/projetos': { view: 'v_projetos', table: 'dim_projetos', pk: 'ID_Projeto' },
+        '/tarefas': { view: 'v_tarefas', table: 'fato_tarefas', pk: 'id_tarefa_novo' },
+        '/tasks': { view: 'v_tarefas', table: 'fato_tarefas', pk: 'id_tarefa_novo' },
+        '/timesheets': { view: 'horas_trabalhadas', table: 'horas_trabalhadas', pk: 'ID_Horas_Trabalhadas', select: '*,colaborador:dim_colaboradores(NomeColaborador:nome_colaborador)' },
+        '/allocations': { view: 'task_member_allocations', table: 'task_member_allocations', pk: 'id' }
     };
 
     let matchedPk = 'id';
     let matchedSelect: string | undefined = undefined;
-    let matchedConfig: any = null;
 
     Object.entries(baseMappings).forEach(([key, config]) => {
-        if (finalPath.includes(key)) {
-            finalPath = finalPath.replace(key, isMutation ? config.table : config.view);
+        if (finalPath.startsWith(key) || finalPath === key) {
+            finalPath = finalPath.replace(key, '/' + (isMutation ? config.table : config.view));
             matchedPk = config.pk;
             matchedSelect = config.select;
-            matchedConfig = config;
         }
     });
+
+    // Limpar barras extras no início
+    finalPath = finalPath.replace(/^\/+/, '/');
 
     const urlParts = finalPath.split('?')[0].split('/');
     const lastPart = urlParts.at(-1);
@@ -174,16 +178,6 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
                 const bodyObj = JSON.parse(fetchOptions.body);
                 const map = payloadMappings[targetTable];
 
-                // Conversão de valores específicos de tarefas (Status / Prioridade etc)
-                const mapStatusToDb = (s: string) => {
-                    switch (s) {
-                        case 'Done': return 'Concluído';
-                        case 'In Progress': return 'Andamento';
-                        case 'Review': return 'Análise';
-                        case 'Testing': return 'Teste';
-                        case 'Todo': default: return 'Pré-Projeto';
-                    }
-                };
                 const mapPriorityToDb = (p: string) => {
                     if (!p) return null;
                     switch (p) {
@@ -308,7 +302,10 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         }
     }
 
-    if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
+    // Normalizar Barra Inicial única para concatenar com baseUrl
+    if (finalPath.startsWith('/')) {
+        finalPath = finalPath.substring(1);
+    }
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -326,7 +323,8 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         headers['Authorization'] = `Bearer ${supabaseKey}`;
     }
 
-    const response = await fetch(`${baseUrl}${finalPath}`, { ...fetchOptions, headers });
+    const sep = baseUrl.endsWith('/') ? '' : '/';
+    const response = await fetch(`${baseUrl}${sep}${finalPath}`, { ...fetchOptions, headers });
 
     if (response.status === 401) localStorage.removeItem(AUTH_TOKEN_KEY);
 
@@ -339,44 +337,5 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         throw new Error(`Erro na API (${response.status}): ${errorMsg}`);
     }
 
-    if (response.status === 204) return {} as T;
-    const result = await response.json();
-
-    if (result && typeof result === 'object' && 'success' in result) {
-        if (!result.success) throw new Error(result.error || 'Erro desconhecido na API');
-        return result.data as T;
-    }
-
-    return result as T;
-}
-
-/**
- * Helper para download de arquivos (Blob)
- */
-export async function apiDownload(path: string, options: RequestInit = {}): Promise<Blob> {
-    const baseUrl = await getApiBaseUrl();
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-    const headers: Record<string, string> = {
-        'apikey': supabaseKey,
-        'ngrok-skip-browser-warning': 'true',
-        ...(options.headers as any),
-    };
-
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${baseUrl}${path}`, {
-        ...options,
-        headers,
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Download Error ${response.status}: ${text || response.statusText}`);
-    }
-
-    return response.blob();
+    return await response.json() as T;
 }
