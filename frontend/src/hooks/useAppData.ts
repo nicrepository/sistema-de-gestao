@@ -65,7 +65,7 @@ export function useAppData(): AppData {
   const { currentUser, isLoading: authLoading } = useAuth();
 
   const CACHE_KEY = 'nic_labs_app_data';
-  const CACHE_VERSION = '1.7';
+  const CACHE_VERSION = '1.8';
 
   useEffect(() => {
     try {
@@ -173,12 +173,17 @@ export function useAppData(): AppData {
             }
           }
 
+          const userId = String(r.ID_Colaborador || r.id_colaborador || '').trim();
+          const clientId = String(r.ID_Cliente || r.id_cliente || '').trim();
+          const projectId = String(r.ID_Projeto || r.id_projeto || '').trim();
+          const entryId = String(r.ID_Horas_Trabalhadas || r.id_horas_trabalhadas || crypto.randomUUID()).trim();
+
           return {
-            id: String(r.ID_Horas_Trabalhadas || r.id_horas_trabalhadas || crypto.randomUUID()),
-            userId: String(r.ID_Colaborador || r.id_colaborador || ''),
-            userName: userMap.get(String(r.ID_Colaborador || r.id_colaborador || ''))?.name || r.userName || '',
-            clientId: String(r.ID_Cliente || r.id_cliente || ''),
-            projectId: String(r.ID_Projeto || r.id_projeto || ''),
+            id: entryId,
+            userId: userId,
+            userName: userMap.get(userId)?.name || r.userName || r.nome_colaborador || '',
+            clientId: clientId,
+            projectId: projectId,
             taskId: taskId,
             date: r.Data ? (r.Data.includes('T') ? r.Data.split('T')[0] : r.Data) : formatDate(null),
             startTime: r.Hora_Inicio || '09:00',
