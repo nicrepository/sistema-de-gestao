@@ -9,8 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 type Mode = 'login' | 'set-password' | 'otp-verification' | 'first-access';
 
 // Cliente Supabase para este frontend
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function Login() {

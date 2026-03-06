@@ -5,8 +5,8 @@ let cachedApiUrl: string | null = null;
 
 export async function getApiBaseUrl(): Promise<string> {
     // Tenta pegar do .env do Vite
-    const envUrl = (import.meta as any).env?.VITE_API_URL?.toString()?.trim();
-    
+    const envUrl = import.meta.env.VITE_API_URL?.toString()?.trim();
+
     if (envUrl && envUrl !== 'undefined' && envUrl !== '') {
         let url = envUrl.replace(/\/$/, '');
         if (!url.endsWith('/api')) url += '/api';
@@ -19,8 +19,8 @@ export async function getApiBaseUrl(): Promise<string> {
     // EM PRODUÇÃO: Se não houver VITE_API_URL, o app falharia aqui.
     // Para o Caminho A (Supabase), não queremos o localhost:3000 como padrão.
     // Retornamos vazio ou a URL do Supabase como último recurso para evitar o erro de localhost
-    const supabaseFallback = (import.meta as any).env?.VITE_SUPABASE_URL;
-    return supabaseFallback ? `${supabaseFallback}/rest/v1` : ''; 
+    const supabaseFallback = import.meta.env.VITE_SUPABASE_URL;
+    return supabaseFallback ? `${supabaseFallback}/rest/v1` : '';
 }
 
 /**
@@ -29,7 +29,8 @@ export async function getApiBaseUrl(): Promise<string> {
  */
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
     const baseUrl = await getApiBaseUrl();
-    
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
     if (!baseUrl) {
         throw new Error("Configuração da API não encontrada. Verifique as variáveis de ambiente.");
     }
@@ -38,6 +39,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'apikey': supabaseKey, // Obrigatório para o REST do Supabase
         'ngrok-skip-browser-warning': 'true',
         ...(options.headers as any),
     };
@@ -61,7 +63,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         try {
             const errJson = JSON.parse(text);
             errorMsg = errJson.error || errorMsg;
-        } catch (e) {}
+        } catch (e) { }
         throw new Error(`Erro na API (${response.status}): ${errorMsg}`);
     }
 
@@ -84,8 +86,10 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 export async function apiDownload(path: string, options: RequestInit = {}): Promise<Blob> {
     const baseUrl = await getApiBaseUrl();
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
     const headers: Record<string, string> = {
+        'apikey': supabaseKey,
         'ngrok-skip-browser-warning': 'true',
         ...(options.headers as any),
     };
