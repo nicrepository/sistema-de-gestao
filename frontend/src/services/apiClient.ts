@@ -91,6 +91,92 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
         finalPath = newQuery ? `${urlStr}?${newQuery}` : urlStr;
     }
 
+    if (isMutation && fetchOptions.body && typeof fetchOptions.body === 'string') {
+        const payloadMappings: Record<string, Record<string, string>> = {
+            '/dim_colaboradores': {
+                'NomeColaborador': 'nome_colaborador',
+                'Cargo': 'cargo',
+                'hourlyCost': 'custo_hora',
+                'dailyAvailableHours': 'horas_disponiveis_dia',
+                'monthlyAvailableHours': 'horas_disponiveis_mes'
+            },
+            '/fato_tarefas': {
+                'projectId': 'ID_Projeto',
+                'clientId': 'ID_Cliente',
+                'developerId': 'ID_Colaborador',
+                'title': 'Afazer',
+                'status': 'StatusTarefa',
+                'estimatedDelivery': 'entrega_estimada',
+                'actualDelivery': 'entrega_real',
+                'scheduledStart': 'inicio_previsto',
+                'actualStart': 'inicio_real',
+                'progress': 'Porcentagem',
+                'priority': 'Prioridade',
+                'impact': 'Impacto',
+                'risks': 'Riscos',
+                'notes': 'Observações',
+                'estimatedHours': 'estimated_hours',
+            }
+        };
+
+        const targetTable = Object.keys(payloadMappings).find(t => finalPath.includes(t));
+        if (targetTable) {
+            try {
+                const bodyObj = JSON.parse(fetchOptions.body);
+                const map = payloadMappings[targetTable];
+
+                // Conversão de valores específicos de tarefas (Status / Prioridade etc)
+                const mapStatusToDb = (s: string) => {
+                    switch (s) {
+                        case 'Done': return 'Concluído';
+                        case 'In Progress': return 'Andamento';
+                        case 'Review': return 'Análise';
+                        case 'Testing': return 'Teste';
+                        case 'Todo': default: return 'Pré-Projeto';
+                    }
+                };
+                const mapPriorityToDb = (p: string) => {
+                    if (!p) return null;
+                    switch (p) {
+                        case 'Critical': return 'Crítica';
+                        case 'High': return 'Alta';
+                        case 'Medium': return 'Média';
+                        case 'Low': return 'Baixa';
+                        default: return null;
+                    }
+                };
+                const mapImpactToDb = (i: string) => {
+                    if (!i) return null;
+                    switch (i) {
+                        case 'High': return 'Alto';
+                        case 'Medium': return 'Médio';
+                        case 'Low': return 'Baixo';
+                        default: return null;
+                    }
+                };
+
+                const newBody: any = {};
+                for (const key of Object.keys(bodyObj)) {
+                    const mappedKey = map[key] || key;
+                    let val = bodyObj[key];
+
+                    if (targetTable === '/fato_tarefas') {
+                        if (key === 'status') val = mapStatusToDb(val);
+                        if (key === 'priority') val = mapPriorityToDb(val);
+                        if (key === 'impact') val = mapImpactToDb(val);
+                        if (key === 'em_testes') val = val ? 1 : 0;
+                    }
+
+                    newBody[mappedKey] = val;
+                }
+
+                fetchOptions.body = JSON.stringify(newBody);
+            } catch (e) {
+                console.error('API Client Fallback Body Transform Error:', e);
+            }
+        }
+    }
+
     return { finalPath, fetchOptions };
 }
 
