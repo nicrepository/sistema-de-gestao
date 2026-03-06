@@ -1,6 +1,8 @@
 // frontend/src/services/api.ts (ou o nome do seu arquivo de api)
 
 const AUTH_TOKEN_KEY = 'nic_labs_auth_token';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 let cachedApiUrl: string | null = null;
 
 export async function getApiBaseUrl(): Promise<string> {
@@ -61,18 +63,21 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
 
     let matchedPk = 'id';
     let matchedSelect: string | undefined = undefined;
+    let matchedConfig: any = null;
 
     Object.entries(baseMappings).forEach(([key, config]) => {
         if (finalPath.includes(key)) {
             finalPath = finalPath.replace(key, isMutation ? config.table : config.view);
             matchedPk = config.pk;
             matchedSelect = config.select;
+            matchedConfig = config;
         }
     });
 
     const urlParts = finalPath.split('?')[0].split('/');
     const lastPart = urlParts.at(-1);
-    if (urlParts.length > 2 && lastPart && !Number.isNaN(Number(lastPart))) {
+    // Verificar se o último componente é um ID numérico (ex: /tarefas/41)
+    if (urlParts.length >= 2 && lastPart && !Number.isNaN(Number(lastPart))) {
         urlParts.pop();
         const resource = urlParts.join('/');
         finalPath = `${resource}?${matchedPk}=eq.${lastPart}${finalPath.includes('?') ? '&' + finalPath.split('?')[1] : ''}`;
@@ -265,8 +270,8 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
 
                 // If it's a POST, remove the primary key from body if it's null or empty
                 if (method === 'POST') {
-                    const pk = baseMappings[Object.keys(baseMappings).find(k => finalPath.includes(k)) || '']?.pk;
-                    if (pk && (newBody[pk] === null || newBody[pk] === undefined || newBody[pk] === '')) {
+                    const pk = matchedPk || 'id';
+                    if (newBody[pk] === null || newBody[pk] === undefined || newBody[pk] === '') {
                         delete newBody[pk];
                     }
                 }
@@ -286,7 +291,7 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
  */
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
     const baseUrl = await getApiBaseUrl();
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    const supabaseKey = SUPABASE_KEY;
 
     if (!baseUrl) throw new Error("Configuração da API não encontrada.");
 
@@ -298,6 +303,9 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 
     if (isPostgrest) {
         ({ finalPath, fetchOptions } = applyPostgrestTransformations(path, options));
+        if (!supabaseKey) {
+            console.error('[API] Erro: VITE_SUPABASE_ANON_KEY não definida no ambiente!');
+        }
     }
 
     if (!finalPath.startsWith('/')) finalPath = '/' + finalPath;
@@ -310,7 +318,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         ...(options.headers as any),
     };
 
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    // Para Supabase, se não houver token de usuário, usamos o anon key também no Authorization
+    // Isso ajuda em builds onde o header 'apikey' pode ser barrado ou ignorado por proxies/bolhas de rede
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    } else if (isPostgrest) {
+        headers['Authorization'] = `Bearer ${supabaseKey}`;
+    }
 
     const response = await fetch(`${baseUrl}${finalPath}`, { ...fetchOptions, headers });
 
@@ -319,12 +333,9 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     if (!response.ok) {
         let errorMsg = response.statusText;
         try {
-            const text = await response.text();
-            const errJson = JSON.parse(text);
-            errorMsg = errJson.error || errorMsg;
-        } catch {
-            // Se falhar o parse do JSON, mantemos o statusText original
-        }
+            const errData = await response.json();
+            errorMsg = errData.message || JSON.stringify(errData);
+        } catch (e) { /* ignore */ }
         throw new Error(`Erro na API (${response.status}): ${errorMsg}`);
     }
 
