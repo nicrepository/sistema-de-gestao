@@ -156,18 +156,40 @@ function applyPostgrestTransformations(path: string, options: RequestInit): { fi
                 };
 
                 const newBody: any = {};
-                for (const key of Object.keys(bodyObj)) {
-                    const mappedKey = map[key] || key;
-                    let val = bodyObj[key];
 
-                    if (targetTable === '/fato_tarefas') {
-                        if (key === 'status') val = mapStatusToDb(val);
-                        if (key === 'priority') val = mapPriorityToDb(val);
-                        if (key === 'impact') val = mapImpactToDb(val);
-                        if (key === 'em_testes') val = val ? 1 : 0;
+                // Set of known extra columns that frontend might send correctly in their db name
+                const validExtraColumns: Record<string, string[]> = {
+                    '/dim_colaboradores': ['deleted_at', 'ativo', 'role', 'torre', 'nivel', 'email', 'avatar_url', 'atrasado', 'nome_colaborador', 'cargo', 'custo_hora', 'horas_disponiveis_dia', 'horas_disponiveis_mes'],
+                    '/fato_tarefas': ['em_testes', 'deleted_at', 'attachment', 'link_ef', 'is_impediment', 'task_weight', 'ID_Projeto', 'ID_Cliente', 'ID_Colaborador', 'Afazer', 'StatusTarefa', 'entrega_estimada', 'entrega_real', 'inicio_previsto', 'inicio_real', 'Porcentagem', 'Prioridade', 'Impacto', 'Riscos', 'Observações', 'estimated_hours', 'dias_atraso', 'ID_Tarefa']
+                };
+
+                for (const key of Object.keys(bodyObj)) {
+                    let mappedKey = map[key];
+                    let isKnownColumn = false;
+
+                    // Se a chave não estiver no mapa (ex: 'developer', 'project'), verificar se já é o nome de uma coluna
+                    if (!mappedKey) {
+                        const validCols = validExtraColumns[targetTable] || [];
+                        if (validCols.includes(key)) {
+                            mappedKey = key;
+                            isKnownColumn = true;
+                        }
+                    } else {
+                        isKnownColumn = true;
                     }
 
-                    newBody[mappedKey] = val;
+                    if (isKnownColumn && mappedKey) {
+                        let val = bodyObj[key];
+
+                        if (targetTable === '/fato_tarefas') {
+                            if (key === 'status' || mappedKey === 'StatusTarefa') val = mapStatusToDb(val);
+                            if (key === 'priority' || mappedKey === 'Prioridade') val = mapPriorityToDb(val);
+                            if (key === 'impact' || mappedKey === 'Impacto') val = mapImpactToDb(val);
+                            if (key === 'em_testes' || mappedKey === 'em_testes') val = val ? 1 : 0;
+                        }
+
+                        newBody[mappedKey] = val;
+                    }
                 }
 
                 fetchOptions.body = JSON.stringify(newBody);
