@@ -172,8 +172,9 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
 
     const userEntries = allEntries.filter((e: TimesheetEntry) => {
       if (!e.date) return false;
-      const [y, m] = e.date.split('-').map(Number);
-      return e.userId === uid && (m - 1) === month && y === year;
+      const dateStr = String(e.date);
+      const [y, m] = dateStr.includes('-') ? dateStr.split('-').map(Number) : dateStr.split('/').reverse().map(Number);
+      return String(e.userId) === String(uid) && (m - 1) === month && y === year;
     });
 
     const userAbsences = (absences || []).filter((a: Absence) => a.userId === uid);
@@ -236,7 +237,7 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
 
   const currentEntries = useMemo(() => {
     if (!targetUserId) return [];
-    return allEntries.filter((e: TimesheetEntry) => e.userId === targetUserId);
+    return allEntries.filter((e: TimesheetEntry) => String(e.userId) === String(targetUserId));
   }, [allEntries, targetUserId]);
 
   const selectedUserStats = useMemo(() => {

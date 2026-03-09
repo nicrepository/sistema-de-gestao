@@ -65,7 +65,7 @@ export function useAppData(): AppData {
   const { currentUser, isLoading: authLoading } = useAuth();
 
   const CACHE_KEY = 'nic_labs_app_data';
-  const CACHE_VERSION = '1.9';
+  const CACHE_VERSION = '2.0';
 
   useEffect(() => {
     try {
@@ -163,34 +163,46 @@ export function useAppData(): AppData {
         const taskExternalMap = new Map(tasksData.filter(t => t.ID_Tarefa).map(t => [String(t.ID_Tarefa).toLowerCase(), String(t.id_tarefa_novo)]));
 
         const timesheetMapped: TimesheetEntry[] = (rawTimesheets || []).map((r: any) => {
-          let taskId = String(r.id_tarefa_novo || '');
+          // Helper para pegar valor de coluna de forma case-insensitive
+          const getV = (obj: any, keys: string[]) => {
+            const lowerObj: any = {};
+            Object.keys(obj).forEach(k => lowerObj[k.toLowerCase()] = obj[k]);
+            for (const k of keys) {
+              const val = lowerObj[k.toLowerCase()];
+              if (val !== undefined && val !== null) return val;
+            }
+            return null;
+          };
+
+          let taskId = String(getV(r, ['id_tarefa_novo', 'taskId']) || '');
           if (!taskId || taskId === 'null' || taskId === '0') {
-            const extId = String(r.ID_Tarefa || '').toLowerCase();
+            const extId = String(getV(r, ['ID_Tarefa', 'id_tarefa']) || '').toLowerCase();
             if (extId && taskExternalMap.has(extId)) {
               taskId = taskExternalMap.get(extId)!;
             } else {
-              taskId = String(r.ID_Tarefa || '');
+              taskId = extId;
             }
           }
 
-          const userId = String(r.ID_Colaborador || r.id_colaborador || '').trim();
-          const clientId = String(r.ID_Cliente || r.id_cliente || '').trim();
-          const projectId = String(r.ID_Projeto || r.id_projeto || '').trim();
-          const entryId = String(r.ID_Horas_Trabalhadas || r.id_horas_trabalhadas || crypto.randomUUID()).trim();
+          const userId = String(getV(r, ['ID_Colaborador', 'id_colaborador', 'userId']) || '').trim();
+          const clientId = String(getV(r, ['ID_Cliente', 'id_cliente', 'clientId']) || '').trim();
+          const projectId = String(getV(r, ['ID_Projeto', 'id_projeto', 'projectId']) || '').trim();
+          const entryId = String(getV(r, ['ID_Horas_Trabalhadas', 'id_horas_trabalhadas', 'id']) || crypto.randomUUID()).trim();
+          const rawDate = getV(r, ['Data', 'data', 'date']);
 
           return {
             id: entryId,
             userId: userId,
-            userName: userMap.get(userId)?.name || r.userName || r.nome_colaborador || '',
+            userName: userMap.get(userId)?.name || getV(r, ['userName', 'nome_colaborador']) || '',
             clientId: clientId,
             projectId: projectId,
             taskId: taskId,
-            date: r.Data ? (r.Data.includes('T') ? r.Data.split('T')[0] : r.Data) : formatDate(null),
-            startTime: r.Hora_Inicio || '09:00',
-            endTime: r.Hora_Fim || '18:00',
-            totalHours: Number(r.Horas_Trabalhadas || 0),
-            lunchDeduction: !!r.Almoco_Deduzido,
-            description: r.Descricao || undefined,
+            date: rawDate ? (String(rawDate).includes('T') ? String(rawDate).split('T')[0] : String(rawDate).split(' ')[0]) : formatDate(null),
+            startTime: getV(r, ['Hora_Inicio', 'startTime']) || '09:00',
+            endTime: getV(r, ['Hora_Fim', 'endTime']) || '18:00',
+            totalHours: Number(getV(r, ['Horas_Trabalhadas', 'hours', 'totalHours']) || 0),
+            lunchDeduction: !!getV(r, ['Almoco_Deduzido', 'lunchDeduction']),
+            description: getV(r, ['Descricao', 'description']) || undefined,
           };
         });
 
