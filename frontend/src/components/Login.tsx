@@ -4,14 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, ShieldCheck, Key, UserCheck } from 'lucide-react';
 import { Role } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@supabase/supabase-js';
+import { supabase as sb } from '@/services/supabaseClient';
 
 type Mode = 'login' | 'set-password' | 'otp-verification' | 'first-access';
-
-// Cliente Supabase para este frontend
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function Login() {
     const navigate = useNavigate()
