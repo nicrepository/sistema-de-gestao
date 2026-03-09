@@ -116,7 +116,7 @@ export async function fetchTasks(): Promise<DbTaskRow[]> {
 
 export async function fetchTimesheets(): Promise<any[]> {
   // deleted_at=is.null → PostgREST syntax for IS NULL filter
-  const data = await apiRequest<any[]>('/timesheets?limit=5000&deleted_at=is.null');
+  const data = await apiRequest<any[]>('/timesheets?limit=20000&deleted_at=is.null');
   return Array.isArray(data) ? data : [];
 }
 
