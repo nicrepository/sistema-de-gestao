@@ -10,5 +10,16 @@ export const collaboratorController = {
         } catch (e) {
             return handleRouteError(res, e, 'CollaboratorController.getCollaborators');
         }
+    },
+
+    async updateCollaborator(req, res) {
+        try {
+            const { id } = req.params;
+            const body = req.body;
+            const updated = await collaboratorService.updateCollaborator(Number(id), body);
+            return sendSuccess(res, updated);
+        } catch (e) {
+            return handleRouteError(res, e, 'CollaboratorController.updateCollaborator');
+        }
     }
 };

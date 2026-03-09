@@ -65,7 +65,7 @@ export function useAppData(): AppData {
   const { currentUser, isLoading: authLoading } = useAuth();
 
   const CACHE_KEY = 'nic_labs_app_data';
-  const CACHE_VERSION = '2.0';
+  const CACHE_VERSION = '3.0'; // bump: remove timesheets do cache
 
   useEffect(() => {
     try {
@@ -257,13 +257,20 @@ export function useAppData(): AppData {
             clients: clientsData,
             projects: projectsData,
             tasks: tasksMapped,
-            timesheetEntries: timesheetMapped,
+            // timesheets NÃO são cacheados (volume excessivo para localStorage)
             projectMembers: uniqueMembers,
             taskMemberAllocations: allocationsData,
             absences: absencesMapped,
             holidays: holidaysMapped
           };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          } catch (quotaErr) {
+            // Se o localStorage estiver cheio, limpa caches antigos e tenta novamente
+            console.warn('[useAppData] localStorage cheio, limpando cache antigo...');
+            localStorage.removeItem(CACHE_KEY);
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData)); } catch { /* ignora */ }
+          }
         }
 
       } catch (err) {

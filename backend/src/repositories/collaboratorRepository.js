@@ -1,4 +1,4 @@
-import { dbFindAll } from '../database/index.js';
+import { dbFindAll, dbUpdate } from '../database/index.js';
 
 // Colunas existentes na view v_colaboradores:
 // id, nome, cargo, nivel, torre, role, email, avatar_url, ativo
@@ -29,5 +29,22 @@ export const collaboratorRepository = {
         }
 
         return await dbFindAll('v_colaboradores', query);
+    },
+
+    async update(id, data) {
+        // Permitir apenas colunas seguras para atualização
+        const ALLOWED_FIELDS = ['nome_colaborador', 'cargo', 'nivel', 'torre', 'role', 'ativo', 'custo_hora', 'horas_disponiveis_dia', 'horas_disponiveis_mes', 'avatar_url'];
+        const safeData = {};
+        for (const [key, val] of Object.entries(data)) {
+            if (ALLOWED_FIELDS.includes(key)) {
+                safeData[key] = val;
+            }
+        }
+
+        if (Object.keys(safeData).length === 0) {
+            throw new Error('Nenhum campo válido para atualizar.');
+        }
+
+        return await dbUpdate('dim_colaboradores', { id_colaborador: id }, safeData);
     }
 };
