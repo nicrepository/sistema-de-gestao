@@ -51,10 +51,9 @@ export async function saveTaskAllocations(
     // 1. Limpa as alocações atuais da tarefa
     await deleteAllocationsForTask(taskId);
 
-    // 2. Insere as novas alocações uma a uma (Simulando bulk no front por agora)
-    const promises = allocations
-        .filter(a => a.reservedHours > 0)
-        .map(a => upsertAllocation(taskId, a.userId, a.reservedHours));
+    // 2. Insere as novas alocações uma a uma
+    const validAllocations = allocations.filter(a => a.reservedHours > 0);
+    const promises = validAllocations.map(a => upsertAllocation(taskId, a.userId, a.reservedHours));
 
     await Promise.all(promises);
 }

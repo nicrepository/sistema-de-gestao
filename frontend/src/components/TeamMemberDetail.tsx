@@ -297,14 +297,13 @@ const TeamMemberDetail: React.FC = () => {
                <div className="w-10 h-10 rounded-xl bg-[var(--primary-soft)] border border-[var(--border)] shadow-sm overflow-hidden flex items-center justify-center text-sm font-black text-[var(--primary)]">
                   {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : user.name.substring(0, 2).toUpperCase()}
                </div>
-               <div>
-                  <h1 className="text-base font-black text-[var(--text)] tracking-tight leading-tight">{user.name}</h1>
-                  <div className="flex items-center gap-2 mt-0.5">
-                     <span className="text-[9px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded bg-[var(--primary)] text-white">{user.cargo || 'Operacional'}</span>
-                     <span className="text-[var(--muted)] opacity-30">•</span>
-                     <span className="text-[11px] font-bold text-[var(--text-2)]">{getRoleDisplayName(user.role)}</span>
-                  </div>
-               </div>
+                <div>
+                   <h1 className="text-base font-black text-[var(--text)] tracking-tight leading-tight">{user.name}</h1>
+                   <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[9px] font-black uppercase tracking-tight px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white shadow-sm">{user.role.toUpperCase().replace(/_/g, ' ')}</span>
+                      <span className="text-[11px] font-bold text-[var(--text-2)]">{getRoleDisplayName(user.role)}</span>
+                   </div>
+                </div>
             </div>
 
             <div className="flex items-center gap-3">

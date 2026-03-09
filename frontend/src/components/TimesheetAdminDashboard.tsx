@@ -22,6 +22,11 @@ const TimesheetAdminDashboard: React.FC = () => {
    const [activeTab, setActiveTab] = useState<'projects' | 'collaborators' | 'status'>(initialTab);
    const [expandedCollaborators, setExpandedCollaborators] = useState<Set<string>>(new Set());
 
+   // Filtros de Data para Status Geral
+   const today = new Date();
+   const [selectedMonth, setSelectedMonth] = useState(today.getMonth());
+   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+
    // Sync URL State
    useEffect(() => {
       const params: any = {};
@@ -37,21 +42,23 @@ const TimesheetAdminDashboard: React.FC = () => {
 
    // Status dos Colaboradores - verificar dias em dia
    const collaboratorsStatus = useMemo(() => {
+      // Calcular dias úteis do mês selecionado até hoje (ou fim do mês se passado)
+      const lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0);
       const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
+      const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
 
-      // Calcular dias úteis do mês até ontem
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      const workDaysUntilYesterday: string[] = [];
-      const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+      const endDate = isCurrentMonth ? yesterday : lastDayOfMonth;
 
-      for (let d = new Date(firstDayOfMonth); d <= yesterday; d.setDate(d.getDate() + 1)) {
+      const workDaysInPeriod: string[] = [];
+      const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1);
+
+      for (let d = new Date(firstDayOfMonth); d <= endDate; d.setDate(d.getDate() + 1)) {
          const dayOfWeek = d.getDay();
-         if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Seg-Mex
-            workDaysUntilYesterday.push(d.toISOString().split('T')[0]);
+         if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Seg-Sex
+            workDaysInPeriod.push(d.toISOString().split('T')[0]);
          }
       }
 
@@ -63,17 +70,17 @@ const TimesheetAdminDashboard: React.FC = () => {
       return monitoredCollaborators.map((user: User) => {
          const userEntries = entries.filter((e: TimesheetEntry) => {
             if (!e.date) return false;
-            const [y, m, d] = e.date.split('-').map(Number);
-            return e.userId === user.id && (m - 1) === currentMonth && y === currentYear;
+            const entryDate = new Date(e.date + 'T00:00:00'); // Garante local date
+            return e.userId === user.id && entryDate.getMonth() === selectedMonth && entryDate.getFullYear() === selectedYear;
          });
 
          const datesWithEntries = new Set(userEntries.map((e: TimesheetEntry) => e.date));
 
          const isExempt = ['ceo', 'diretoria', 'executive'].includes(user.role?.toLowerCase() || '') || user.torre?.toLowerCase() === 'pmo' || user.torre === 'N/A';
-         const missingDays = isExempt ? [] : workDaysUntilYesterday.filter(day => !datesWithEntries.has(day));
+         const missingDays = isExempt ? [] : workDaysInPeriod.filter(day => !datesWithEntries.has(day));
 
          const dailyGoal = user.dailyAvailableHours || 8;
-         const expectedHours = workDaysUntilYesterday.length * dailyGoal;
+         const expectedHours = workDaysInPeriod.length * dailyGoal;
 
          // Status unificado via getUserStatus
          const userStatus = getUserStatus(user, tasks, projects, clients, absences);
@@ -91,7 +98,7 @@ const TimesheetAdminDashboard: React.FC = () => {
          return {
             user,
             statusLabel, // Label específico (Férias, etc.)
-            totalDays: workDaysUntilYesterday.length,
+            totalDays: workDaysInPeriod.length,
             daysWithEntries: datesWithEntries.size,
             missingDays: missingDays.length,
             missingDates: missingDays,
@@ -103,7 +110,7 @@ const TimesheetAdminDashboard: React.FC = () => {
             activeTasksCount: tasks.filter((t: Task) => (t.developerId === user.id || t.collaboratorIds?.includes(user.id)) && t.status !== 'Done').length
          };
       }).sort((a: any, b: any) => b.missingDays - a.missingDays);
-   }, [users, entries, tasks, projects, clients, absences]);
+   }, [users, entries, tasks, projects, clients, absences, selectedMonth, selectedYear]);
 
    const getClientStats = (clientId: string) => {
       const clientEntries = entries.filter((e: TimesheetEntry) => e.clientId === clientId);
@@ -225,6 +232,29 @@ const TimesheetAdminDashboard: React.FC = () => {
                   </p>
                </div>
                <div className="flex items-center gap-3">
+                  {activeTab === 'status' && !selectedClientId && (
+                     <div className="flex items-center gap-2 bg-white/10 p-1 rounded-xl border border-white/20">
+                        <select
+                           value={selectedMonth}
+                           onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                           className="bg-transparent text-white text-xs font-bold outline-none border-none py-1 px-2 cursor-pointer"
+                        >
+                           {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((m, i) => (
+                              <option key={i} value={i} className="text-slate-800">{m}</option>
+                           ))}
+                        </select>
+                        <select
+                           value={selectedYear}
+                           onChange={(e) => setSelectedYear(Number(e.target.value))}
+                           className="bg-transparent text-white text-xs font-bold outline-none border-none py-1 px-2 cursor-pointer border-l border-white/20"
+                        >
+                           {[2024, 2025, 2026].map(y => (
+                              <option key={y} value={y} className="text-slate-800">{y}</option>
+                           ))}
+                        </select>
+                     </div>
+                  )}
+
                   <button
                      onClick={() => {
                         const newTab = activeTab === 'projects' ? 'status' : 'projects';

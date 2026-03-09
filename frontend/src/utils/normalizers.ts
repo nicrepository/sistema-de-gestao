@@ -212,12 +212,16 @@ export function mapDbUserToUser(row: any): User {
         id: safeString(row.id),
         name: row.nome || "Sem nome",
         email: String(row.email || "").trim().toLowerCase(),
-        avatarUrl: row.avatarUrl || undefined,
+        avatarUrl: row.avatarUrl || row.avatar_url || undefined,
         cargo: row.cargo || undefined,
         role: normalizeUserRole(row.role),
         active: row.ativo !== false,
         torre: row.torre || undefined,
-        nivel: row.nivel || undefined
+        nivel: row.nivel || undefined,
+        hourlyCost: row.custo_hora ? Number(row.custo_hora) : undefined,
+        dailyAvailableHours: row.horas_disponiveis_dia ? Number(row.horas_disponiveis_dia) : undefined,
+        monthlyAvailableHours: row.horas_disponiveis_mes ? Number(row.horas_disponiveis_mes) : undefined,
+        atrasado: !!row.atrasado
     };
 }
 

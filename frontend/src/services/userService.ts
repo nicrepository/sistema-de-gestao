@@ -43,6 +43,7 @@ export async function updateUser(userId: string, updates: Partial<User>): Promis
     if (updates.dailyAvailableHours !== undefined) payload.dailyAvailableHours = updates.dailyAvailableHours;
     if (updates.monthlyAvailableHours !== undefined) payload.monthlyAvailableHours = updates.monthlyAvailableHours;
     if (updates.torre !== undefined) payload.torre = updates.torre;
+    if (updates.atrasado !== undefined) payload.atrasado = updates.atrasado;
 
     await apiRequest(`/colaboradores/${userId}`, {
         method: 'PUT',

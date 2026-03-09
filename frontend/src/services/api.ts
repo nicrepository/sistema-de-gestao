@@ -18,6 +18,10 @@ export interface DbUserRow {
   ativo?: boolean | null;
   torre?: string | null;
   nivel?: string | null;
+  custo_hora?: number | null;
+  horas_disponiveis_dia?: number | null;
+  horas_disponiveis_mes?: number | null;
+  atrasado?: boolean | null;
 }
 
 export interface DbClientRow {
@@ -115,9 +119,28 @@ export async function fetchTasks(): Promise<DbTaskRow[]> {
 }
 
 export async function fetchTimesheets(): Promise<any[]> {
-  // deleted_at=is.null → PostgREST syntax for IS NULL filter
-  const data = await apiRequest<any[]>('/timesheets?limit=20000&deleted_at=is.null');
-  return Array.isArray(data) ? data : [];
+  const allData: any[] = [];
+  let offset = 0;
+  const PAGE_SIZE = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await apiRequest<any[]>(`/timesheets?limit=${PAGE_SIZE}&offset=${offset}&deleted_at=is.null&order=Data.desc,ID_Horas_Trabalhadas.desc`);
+
+    if (Array.isArray(data) && data.length > 0) {
+      allData.push(...data);
+      offset += data.length;
+      if (data.length < PAGE_SIZE) {
+        hasMore = false;
+      }
+    } else {
+      hasMore = false;
+    }
+
+    if (offset >= 30000) hasMore = false;
+  }
+
+  return allData;
 }
 
 export async function fetchTaskCollaborators(): Promise<{ taskId: string, userId: string }[]> {

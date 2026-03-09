@@ -308,7 +308,7 @@ const RHManagement: React.FC = () => {
                                     <div className="space-y-3">
                                         {[
                                             { text: 'Solicite com 30d de antecedência', color: 'bg-amber-400' },
-                                            { text: 'Um período deve ter 14d+', color: 'bg-emerald-400' },
+                                            { text: 'Um período deve ter 14d+', color: 'bg-cyan-400' },
                                             { text: 'Duração mínima de 5d fixos', color: 'bg-indigo-400' }
                                         ].map((rule, idx) => (
                                             <div key={idx} className="flex items-center gap-3 p-3 bg-[#1B1429]/80 rounded-xl border border-[#2A233C]/50">

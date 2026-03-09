@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext';
-import { Task, Project, Client, User, TimesheetEntry, Absence, Holiday } from '@/types';
+import { Task, Project, Client, User, TimesheetEntry } from '@/types';
 import * as clientService from '@/services/clientService';
 import * as projectService from '@/services/projectService';
 import * as taskService from '@/services/taskService';
@@ -169,7 +169,7 @@ export const useDataController = () => {
         getTasksByUser: (userId: string) => tasks.filter(t => t.developerId === userId),
         createTask: async (taskData: Partial<Task>) => {
             const id = await taskService.createTask(taskData);
-            setTasks(prev => [{ ...taskData, id: String(id) } as Task, ...prev]);
+            setTasks(prev => [{ ...taskData, id: String(id), collaboratorIds: taskData.collaboratorIds || [] } as Task, ...prev]);
             return String(id);
         },
         updateTask: async (taskId: string, updates: Partial<Task>) => {
