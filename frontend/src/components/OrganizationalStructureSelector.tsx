@@ -23,6 +23,12 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
     const [torre, setTorre] = useState(initialTorre);
     const [isManualMode, setIsManualMode] = useState(false);
 
+    useEffect(() => {
+        if (initialCargo !== undefined && initialCargo !== cargo) setCargo(initialCargo);
+        if (initialLevel !== undefined && initialLevel !== nivel) setNivel(initialLevel);
+        if (initialTorre !== undefined && initialTorre !== torre) setTorre(initialTorre);
+    }, [initialCargo, initialLevel, initialTorre]);
+
     // Se já tinha dados que não batem com o config, entra em modo manual
     useEffect(() => {
         const isStandardCargo = CARGOS.some(c => c.id === initialCargo);
@@ -38,16 +44,16 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
         setCargo(newCargo);
         setNivel('');
         setTorre('');
+        onChange({ cargo: newCargo, nivel: '', torre: '' });
     };
 
     const handleLevelChange = (newLevel: string) => {
         setNivel(newLevel);
         setTorre('');
+        onChange({ cargo, nivel: newLevel, torre: '' });
     };
 
-    useEffect(() => {
-        onChange({ cargo, nivel, torre });
-    }, [cargo, nivel, torre]);
+
 
     const StepIndicator = ({ title, active, completed, stepNumber, onClick }: any) => (
         <button
@@ -101,15 +107,15 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-[10px] font-black text-[var(--muted)] uppercase mb-1">Cargo / Função</label>
-                        <input type="text" value={cargo} onChange={(e) => setCargo(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Desenvolvedor Fullstack" />
+                        <input type="text" value={cargo} onChange={(e) => { setCargo(e.target.value); onChange({ cargo: e.target.value, nivel, torre }); }} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Desenvolvedor Fullstack" />
                     </div>
                     <div>
                         <label className="block text-[10px] font-black text-[var(--muted)] uppercase mb-1">Nível / Senioridade</label>
-                        <input type="text" value={nivel} onChange={(e) => setNivel(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Pleno II" />
+                        <input type="text" value={nivel} onChange={(e) => { setNivel(e.target.value); onChange({ cargo, nivel: e.target.value, torre }); }} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Pleno II" />
                     </div>
                     <div>
                         <label className="block text-[10px] font-black text-[var(--muted)] uppercase mb-1">Área / Torre</label>
-                        <input type="text" value={torre} onChange={(e) => setTorre(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Core Banking" />
+                        <input type="text" value={torre} onChange={(e) => { setTorre(e.target.value); onChange({ cargo, nivel, torre: e.target.value }); }} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-[var(--primary)] outline-none" placeholder="Ex: Core Banking" />
                     </div>
                 </div>
             </div>
@@ -119,9 +125,9 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
     return (
         <div className="space-y-6">
             <div className="flex border-b border-[var(--border)]">
-                <StepIndicator stepNumber={1} title="Função" active={!cargo} completed={!!cargo} onClick={() => setCargo('')} />
-                <StepIndicator stepNumber={2} title="Sênior" active={!!cargo && !nivel} completed={!!nivel} onClick={() => cargo && setNivel('')} />
-                <StepIndicator stepNumber={3} title="Área" active={!!nivel && !torre} completed={!!torre} onClick={() => nivel && setTorre('')} />
+                <StepIndicator stepNumber={1} title="Função" active={!cargo} completed={!!cargo} onClick={() => { setCargo(''); setNivel(''); setTorre(''); onChange({ cargo: '', nivel: '', torre: '' }); }} />
+                <StepIndicator stepNumber={2} title="Sênior" active={!!cargo && !nivel} completed={!!nivel} onClick={() => { if(cargo){ setNivel(''); setTorre(''); onChange({ cargo, nivel: '', torre: '' }); } }} />
+                <StepIndicator stepNumber={3} title="Área" active={!!nivel && !torre} completed={!!torre} onClick={() => { if(nivel){ setTorre(''); onChange({ cargo, nivel, torre: '' }); } }} />
             </div>
 
             <div className="min-h-[220px] bg-[var(--surface-2)]/30 rounded-2xl p-6 border border-[var(--border)] relative">
@@ -181,7 +187,7 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
                                                         <button
                                                             type="button"
                                                             key={spec.id}
-                                                            onClick={() => setTorre(`${t.name}: ${spec.name}`)}
+                                                            onClick={() => { const newTorre = `${t.name}: ${spec.name}`; setTorre(newTorre); onChange({ cargo, nivel, torre: newTorre }); }}
                                                             className="px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--surface)] text-[10px] font-bold transition-all"
                                                         >
                                                             {spec.name}
@@ -204,7 +210,7 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
                                 <button type="button" onClick={() => setIsManualMode(true)} className="px-4 py-2 text-[10px] font-black text-[var(--muted)] uppercase tracking-wider hover:text-[var(--primary)] transition-colors">Digitar Customizado</button>
                                 <button
                                     type="button"
-                                    onClick={() => setTorre('N/A')}
+                                    onClick={() => { setTorre('N/A'); onChange({ cargo, nivel, torre: 'N/A' }); }}
                                     className="px-4 py-2 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all"
                                     style={{ backgroundColor: 'var(--text)' }}
                                 >

@@ -97,7 +97,7 @@ export async function upsertProjectCost(id_projeto: number, budget: number | nul
     });
 }
 
-export async function exportReportExcel(filters: PreviewFilters): Promise<Blob> {
+export async function exportReportExcel(filters: PreviewFilters): Promise<{ blob: Blob, filename: string }> {
     const params = new URLSearchParams();
     if (filters.startDate) params.set('startDate', filters.startDate);
     if (filters.endDate) params.set('endDate', filters.endDate);
@@ -112,7 +112,7 @@ export async function exportReportExcel(filters: PreviewFilters): Promise<Blob> 
     return apiDownload(`/admin/report/excel?${params.toString()}`);
 }
 
-export async function exportReportPowerBI(filters: PreviewFilters): Promise<Blob> {
+export async function exportReportPowerBI(filters: PreviewFilters): Promise<{ blob: Blob, filename: string }> {
     const params = new URLSearchParams();
     if (filters.startDate) params.set('startDate', filters.startDate);
     if (filters.endDate) params.set('endDate', filters.endDate);
@@ -131,7 +131,7 @@ export async function syncExcel(file: File): Promise<{ message: string; details:
     const baseUrl = await (await import('./apiClient')).getApiBaseUrl();
     const token = localStorage.getItem('nic_labs_auth_token');
 
-    const res = await fetch(`${baseUrl}/admin/sync/excel`, {
+    const res = await fetch(`${baseUrl}/sync/excel`, {
         method: 'POST',
         headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -149,6 +149,6 @@ export async function syncExcel(file: File): Promise<{ message: string; details:
     return result.success ? result.data : result;
 }
 
-export async function exportDatabaseExcel(): Promise<Blob> {
-    return apiDownload('/admin/sync/export-database');
+export async function exportDatabaseExcel(): Promise<{ blob: Blob, filename: string }> {
+    return apiDownload('/sync/export-database');
 }

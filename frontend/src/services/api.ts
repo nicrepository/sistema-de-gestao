@@ -122,17 +122,12 @@ export async function fetchTimesheets(): Promise<any[]> {
   const allData: any[] = [];
   let offset = 0;
   const PAGE_SIZE = 1000;
-  const MAX_RECORDS = 5000; // Limite razoável para performance
+  const MAX_RECORDS = 20000; // Limite razoável para performance
   let hasMore = true;
-
-  // Filtra apenas os últimos 12 meses para reduzir volume de dados
-  const twelveMonthsAgo = new Date();
-  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-  const dateFilter = twelveMonthsAgo.toISOString().split('T')[0];
 
   while (hasMore && offset < MAX_RECORDS) {
     const data = await apiRequest<any[]>(
-      `/timesheets?limit=${PAGE_SIZE}&offset=${offset}&deleted_at=is.null&order=Data.desc,ID_Horas_Trabalhadas.desc&startDate=${dateFilter}`
+      `/timesheets?limit=${PAGE_SIZE}&offset=${offset}&deleted_at=is.null&order=Data.desc,ID_Horas_Trabalhadas.desc`
     );
 
     if (Array.isArray(data) && data.length > 0) {

@@ -75,6 +75,17 @@ export const reportService = {
                 alignment: { vertical: 'middle', horizontal: 'center' },
                 border: { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
             },
+            executivoHeader: {
+                fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }, // Slate 900
+                font: { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 },
+                alignment: { vertical: 'middle', horizontal: 'center' },
+                border: {
+                    top: { style: 'thin', color: { argb: 'FF334155' } },
+                    left: { style: 'thin', color: { argb: 'FF334155' } },
+                    bottom: { style: 'thin', color: { argb: 'FF334155' } },
+                    right: { style: 'thin', color: { argb: 'FF334155' } }
+                }
+            },
             summaryHeader: {
                 fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
                 font: { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 }
@@ -103,23 +114,24 @@ export const reportService = {
         };
 
         wsDados.columns = [
-            { header: 'DATA', key: 'data', width: 15 },
-            { header: 'COLABORADOR', key: 'colaborador', width: 25 },
-            { header: 'TAREFA', key: 'tarefa', width: 45 },
-            { header: 'HORAS', key: 'horas', width: 12 },
-            { header: 'PROJETOS', key: 'projeto', width: 30 },
-            { header: 'STATUS P.', key: 'status_p', width: 15 },
-            { header: 'CPX', key: 'complexidade_p', width: 10 },
-            { header: 'INÍCIO P.', key: 'data_inicio_p', width: 15 },
-            { header: 'FIM P.', key: 'data_fim_p', width: 15 },
-            { header: 'PROGRESSO P. (%)', key: 'progresso_p', width: 15 },
+            { header: 'DATA DO APONTAMENTO', key: 'data', width: 22 },
+            { header: 'MEMBRO DA EQUIPE', key: 'colaborador', width: 28 },
+            { header: 'ATIVIDADE DESENVOLVIDA', key: 'tarefa', width: 50 },
+            { header: 'ESFORÇO APLICADO', key: 'horas', width: 20 },
+            { header: 'NOME DO PROJETO', key: 'projeto', width: 40 },
+            { header: 'STATUS DO PROJETO', key: 'status_p', width: 20 },
+            { header: 'COMPLEXIDADE', key: 'complexidade_p', width: 18 },
+            { header: 'MENSURAÇÃO: INÍCIO O.', key: 'data_inicio_p', width: 24 },
+            { header: 'MENSURAÇÃO: TÉRMINO P.', key: 'data_fim_p', width: 24 },
+            { header: 'EVOLUÇÃO ESPERADA (%)', key: 'progresso_p', width: 24 },
         ];
 
+        wsDados.getRow(1).height = 25;
         wsDados.getRow(1).eachCell(cell => {
-            cell.fill = styles.header.fill;
-            cell.font = styles.header.font;
-            cell.alignment = styles.header.alignment;
-            cell.border = styles.header.border;
+            cell.fill = styles.executivoHeader.fill;
+            cell.font = styles.executivoHeader.font;
+            cell.alignment = styles.executivoHeader.alignment;
+            cell.border = styles.executivoHeader.border;
         });
 
         const collabMap = new Map();
@@ -175,9 +187,17 @@ export const reportService = {
 
         const wsResumo = wb.addWorksheet('Resumos');
         wsResumo.columns = [
-            { header: 'DESCRIÇÃO', key: 'desc', width: 40 },
-            { header: 'TOTAL HORAS / VALOR FILTRO', key: 'horas', width: 60 }
+            { header: 'MÉTRICAS & AGRUPAMENTOS', key: 'desc', width: 45 },
+            { header: 'DETALHAMENTO E RESULTADOS GLOBAIS', key: 'horas', width: 65 }
         ];
+
+        wsResumo.getRow(1).height = 25;
+        wsResumo.getRow(1).eachCell(cell => {
+            cell.fill = styles.executivoHeader.fill;
+            cell.font = styles.executivoHeader.font;
+            cell.alignment = styles.executivoHeader.alignment;
+            cell.border = styles.executivoHeader.border;
+        });
 
         const getFilterNames = (ids, fieldName, allLabel) => {
             if (!ids || ids.length === 0) return allLabel;
@@ -272,6 +292,118 @@ export const reportService = {
             cell.font = styles.header.font;
             cell.numFmt = formats.hours;
         });
+
+        const wsExecutivo = wb.addWorksheet('Executivo');
+        wsExecutivo.columns = [
+            { header: 'PARCEIRO', key: 'parceiro', width: 20 },
+            { header: 'CLIENTE', key: 'cliente', width: 30 },
+            { header: 'PROJETO', key: 'projeto', width: 40 },
+            { header: 'FIM PLANEJADO', key: 'fim_p', width: 20 },
+            { header: 'PROG. ESTIMADO (%)', key: 'progresso_p', width: 22 },
+            { header: 'STATUS REAL', key: 'status_r', width: 18 },
+            { header: 'INÍCIO REAL', key: 'inicio_r', width: 18 },
+            { header: 'FIM REAL', key: 'fim_r', width: 18 },
+            { header: 'PROG. REAL (%)', key: 'progresso_r', width: 22 },
+            { header: 'HORAS ORÇADAS', key: 'horas_p', width: 20 },
+            { header: 'HORAS CONSUMIDAS', key: 'horas_r', width: 20 },
+            { header: 'RECEITA LÍQUIDA', key: 'vendido', width: 22 },
+            { header: 'CUSTO TOTAL', key: 'custo_real', width: 20 },
+            { header: 'RESULTADO (L. / PREJ.)', key: 'resultado', width: 28 },
+            { header: 'MARGEM DE LUCRO', key: 'margem', width: 22 }
+        ];
+
+        wsExecutivo.getRow(1).height = 25; // row height for headers
+        wsExecutivo.getRow(1).eachCell(cell => {
+            cell.fill = styles.executivoHeader.fill;
+            cell.font = styles.executivoHeader.font;
+            cell.alignment = styles.executivoHeader.alignment;
+            cell.border = styles.executivoHeader.border;
+        });
+
+        // Congelar cabeçalho para facilitar rolagem de grandes tabelas
+        wsExecutivo.views = [{ state: 'frozen', ySplit: 1 }];
+
+        const execMap = new Map();
+        rows.forEach(r => {
+            const id = r.id_projeto;
+            if (!id && !r.projeto) return;
+            const pKey = id || r.projeto;
+
+            if (!execMap.has(pKey)) {
+                execMap.set(pKey, {
+                    parceiro: 'N/A', // Não disponivel via query genérica
+                    cliente: r.nome_cliente || r.cliente || 'Sem cliente',
+                    projeto: r.nome_projeto || r.projeto || '(Sem nome)',
+                    fim_p: r.data_fim_p,
+                    progresso_p: r.progresso_p || 0,
+                    status_r: 'INICIADO', // Padrão
+                    inicio_r: r.data_registro,
+                    fim_r: r.data_registro,
+                    horas_p: Number(r.horas_projeto_total || 0),
+                    horas_r: 0,
+                    vendido: Number(r.valor_projeto || 0),
+                    custo_real: 0
+                });
+            }
+
+            const pt = execMap.get(pKey);
+            pt.horas_r += Number(r.horas || 0);
+            pt.custo_real += Number(r.valor_rateado || 0);
+
+            if (r.data_registro && (!pt.inicio_r || r.data_registro < pt.inicio_r)) {
+                pt.inicio_r = r.data_registro;
+            }
+            if (r.data_registro && (!pt.fim_r || r.data_registro > pt.fim_r)) {
+                pt.fim_r = r.data_registro;
+            }
+
+            // update status se necessario
+            if (r.status_p) {
+                const st = r.status_p.toUpperCase();
+                if (st === 'CONCLUÍDO' || st === 'CONCLUIDO') pt.status_r = 'CONCLUÍDO';
+            }
+        });
+
+        Array.from(execMap.values()).forEach((pt, idx) => {
+            const rowData = wsExecutivo.addRow({
+                parceiro: pt.parceiro,
+                cliente: pt.cliente,
+                projeto: pt.projeto,
+                fim_p: pt.fim_p ? new Date(pt.fim_p + 'T12:00:00') : null,
+                progresso_p: Number(pt.progresso_p) / 100,
+                status_r: pt.status_r,
+                inicio_r: pt.inicio_r ? new Date(pt.inicio_r + 'T12:00:00') : null,
+                fim_r: pt.fim_r ? new Date(pt.fim_r + 'T12:00:00') : null,
+                progresso_r: pt.horas_p > 0 ? Math.min(pt.horas_r / pt.horas_p, 1) : 0,
+                horas_p: pt.horas_p / 24,
+                horas_r: pt.horas_r / 24,
+                vendido: pt.vendido,
+                custo_real: pt.custo_real,
+                resultado: pt.vendido - pt.custo_real,
+                margem: pt.vendido > 0 ? ((pt.vendido - pt.custo_real) / pt.vendido) : 0
+            });
+
+            rowData.getCell('fim_p').numFmt = formats.date;
+            rowData.getCell('inicio_r').numFmt = formats.date;
+            rowData.getCell('fim_r').numFmt = formats.date;
+            rowData.getCell('progresso_p').numFmt = '0%';
+            rowData.getCell('progresso_r').numFmt = '0%';
+            rowData.getCell('horas_p').numFmt = formats.hours;
+            rowData.getCell('horas_r').numFmt = formats.hours;
+            rowData.getCell('vendido').numFmt = '"R$" #,##0.00';
+            rowData.getCell('custo_real').numFmt = '"R$" #,##0.00';
+            rowData.getCell('resultado').numFmt = '"R$" #,##0.00';
+            rowData.getCell('margem').numFmt = '0%';
+
+            rowData.eachCell(cell => {
+                cell.border = styles.border;
+                cell.fill = idx % 2 === 0 ? styles.zebraWhite.fill : styles.zebraGray.fill;
+            });
+        });
+
+        // Move a aba Executivo para o começo para maior destaque se preferir, ou deixe no fim.
+        // O usuário pediu pra "baixar tbm o executivo", vamos deixar na frente
+        wb.worksheets.unshift(wb.worksheets.pop());
 
         return wb;
     }

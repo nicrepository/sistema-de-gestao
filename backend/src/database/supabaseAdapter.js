@@ -66,7 +66,11 @@ export const supabaseAdapter = {
         }
 
         // Paginação
-        if (query.page && query.limit) {
+        if (query.offset !== undefined && query.limit) {
+            const from = Number.parseInt(query.offset);
+            const to = from + Number.parseInt(query.limit) - 1;
+            q = q.range(from, to);
+        } else if (query.page && query.limit) {
             const page = Number.parseInt(query.page);
             const limit = Number.parseInt(query.limit);
             const from = (page - 1) * limit;
@@ -139,7 +143,10 @@ export const supabaseAdapter = {
             q = q.select(options.select || '*').single();
         }
         const { data: updated, error } = await q;
-        if (error) throw error;
+        if (error) {
+            console.error(`[SupabaseAdapter] Erro no update:`, error);
+            throw error;
+        }
         return updated;
     },
 

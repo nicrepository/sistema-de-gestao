@@ -43,10 +43,13 @@ export const reportController = {
 
             const data = await reportService.getReportData(filters);
             res.json({
-                generatedAt: new Date().toISOString(),
-                filters,
-                count: data.rows.length,
-                ...data
+                success: true,
+                data: {
+                    generatedAt: new Date().toISOString(),
+                    filters,
+                    count: data.rows.length,
+                    ...data
+                }
             });
         } catch (e) {
             console.error('[ReportController] Preview error:', e);
@@ -92,9 +95,52 @@ export const reportController = {
             const { rows } = await reportService.getReportData(filters);
             const wb = await reportService.generateExcel(rows, filters);
 
-            const fileName = `Relatorio_BI_${new Date().getTime()}.xlsx`;
+            let baseName = "Relatorio Geral";
+
+            if (filters.clientIds?.length === 1 && rows.length > 0) {
+                const cId = filters.clientIds[0];
+                const item = rows.find(r => r.id_cliente === cId);
+                const nome = item ? (item.nome_cliente || item.cliente) : null;
+                if (nome) baseName = `Relatorio de Cliente ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+            } else if (filters.projectIds?.length === 1 && rows.length > 0) {
+                const pId = filters.projectIds[0];
+                const item = rows.find(r => r.id_projeto === pId);
+                const nome = item ? (item.nome_projeto || item.projeto) : null;
+                if (nome) baseName = `Relatorio do Projeto ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+            } else if (filters.collaboratorIds?.length === 1 && rows.length > 0) {
+                const cId = filters.collaboratorIds[0];
+                const item = rows.find(r => r.id_colaborador === cId);
+                const nome = item ? (item.nome_colaborador || item.colaborador) : null;
+                if (nome) baseName = `Relatorio do Colaborador ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+            }
+
+            let dateParams = 'de Todo o Periodo';
+            if (filters.startDate && filters.endDate) {
+                const d1 = new Date(filters.startDate + 'T12:00:00');
+                const d2 = new Date(filters.endDate + 'T12:00:00');
+
+                const m1 = d1.toLocaleString('pt-BR', { month: 'long' });
+                const m2 = d2.toLocaleString('pt-BR', { month: 'long' });
+                const y1 = d1.getFullYear();
+                const y2 = d2.getFullYear();
+
+                if (m1 === m2 && y1 === y2) {
+                    if (d1.getDate() === 1 && new Date(y1, d1.getMonth() + 1, 0).getDate() === d2.getDate()) {
+                        dateParams = `de ${m1} de ${y1}`;
+                    } else {
+                        dateParams = `de ${String(d1.getDate()).padStart(2, '0')} a ${String(d2.getDate()).padStart(2, '0')} de ${m1} de ${y1}`;
+                    }
+                } else if (y1 === y2) {
+                    dateParams = `de ${String(d1.getDate()).padStart(2, '0')} de ${m1} a ${String(d2.getDate()).padStart(2, '0')} de ${m2} de ${y1}`;
+                } else {
+                    dateParams = `de ${String(d1.getDate()).padStart(2, '0')} de ${m1} de ${y1} a ${String(d2.getDate()).padStart(2, '0')} de ${m2} de ${y2}`;
+                }
+            }
+
+            const fileName = `${baseName} ${dateParams}.xlsx`.replace(/\s+/g, ' ');
+
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);
 
             await wb.xlsx.write(res);
             res.end();

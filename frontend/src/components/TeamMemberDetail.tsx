@@ -56,6 +56,7 @@ const TeamMemberDetail: React.FC = () => {
    // --- FORM STATE ---
    const [loading, setLoading] = useState(false);
    const [isEditing, setIsEditing] = useState(false);
+   const [monthlyHoursMode, setMonthlyHoursMode] = useState<'auto' | 'manual'>('auto');
    const [formData, setFormData] = useState({
       name: '',
       email: '',
@@ -86,8 +87,9 @@ const TeamMemberDetail: React.FC = () => {
             torre: user.torre || '',
             hourlyCost: user.hourlyCost || 0,
             dailyAvailableHours: user.dailyAvailableHours || 8,
-            monthlyAvailableHours: user.monthlyAvailableHours || 160
+            monthlyAvailableHours: user.monthlyAvailableHours || 0
          });
+         setMonthlyHoursMode((user.monthlyAvailableHours && user.monthlyAvailableHours > 0) ? 'manual' : 'auto');
       }
 
       // Restauração de Scroll
@@ -110,15 +112,58 @@ const TeamMemberDetail: React.FC = () => {
       sessionStorage.setItem(`teamMember_scroll_${userId}_${activeTab}`, e.currentTarget.scrollTop.toString());
    };
 
+   const capacityStats = useMemo(() => {
+      const currentMonth = capacityMonth;
+      const bizDays = CapacityUtils.getWorkingDaysInMonth(currentMonth, holidays || []);
+      const userAbsences = absences.filter(a =>
+         String(a.userId) === String(userId) &&
+         (a.status === 'aprovada_gestao' || a.status === 'aprovada_rh' || a.status === 'finalizada_dp')
+      );
+      let absenceDays = 0;
+      userAbsences.forEach(abs => {
+         const start = abs.startDate > `${currentMonth}-01` ? abs.startDate : `${currentMonth}-01`;
+         const [year, month] = currentMonth.split('-').map(Number);
+         const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+         const end = abs.endDate < lastDay ? abs.endDate : lastDay;
+         if (start <= end) {
+            absenceDays += CapacityUtils.getWorkingDaysInRange(start, end, holidays || []);
+         }
+      });
+      const totalWorkingDays = Math.max(0, bizDays - absenceDays);
+      const dailyMeta = Number(String(formData.dailyAvailableHours).replace(',', '.')) || 0;
+      const calculatedTotal = dailyMeta * totalWorkingDays;
+
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const isCurrentMonth = todayStr.startsWith(currentMonth);
+      const [year, month] = currentMonth.split('-').map(Number);
+      const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+      const residualStart = isCurrentMonth ? todayStr : `${currentMonth}-01`;
+      const residualBizDays = CapacityUtils.getWorkingDaysInRange(residualStart, lastDay, holidays || []);
+      let residualAbsenceDays = 0;
+      userAbsences.forEach(abs => {
+         const end = abs.endDate < lastDay ? abs.endDate : lastDay;
+         const rStart = abs.startDate > residualStart ? abs.startDate : residualStart;
+         if (rStart <= end) {
+            residualAbsenceDays += CapacityUtils.getWorkingDaysInRange(rStart, end, holidays || []);
+         }
+      });
+      const finalResidualDays = Math.max(0, residualBizDays - residualAbsenceDays);
+      const calculatedResidual = dailyMeta * finalResidualDays;
+
+      return { totalWorkingDays, calculatedTotal, finalResidualDays, calculatedResidual, isCurrentMonth };
+   }, [capacityMonth, holidays, absences, userId, formData.dailyAvailableHours]);
+
    const capData = useMemo(() => {
       if (!user) return null;
       // Usar valores do formulário para feedback em tempo real no dashboard superior
       const simulatedUser = {
          ...user,
-         dailyAvailableHours: Number(String(formData.dailyAvailableHours).replace(',', '.')) || 0
+         dailyAvailableHours: Number(String(formData.dailyAvailableHours).replace(',', '.')) || 0,
+         monthlyAvailableHours: monthlyHoursMode === 'auto' ? 0 : Number(String(formData.monthlyAvailableHours).replace(',', '.'))
       };
       return CapacityUtils.getUserMonthlyAvailability(simulatedUser, capacityMonth, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences);
-   }, [user, capacityMonth, projects, projectMembers, timesheetEntries, tasks, holidays, formData.dailyAvailableHours]);
+   }, [user, capacityMonth, projects, projectMembers, timesheetEntries, tasks, holidays, formData.dailyAvailableHours, formData.monthlyAvailableHours, monthlyHoursMode]);
 
    const releaseDate = useMemo(() => {
       if (!user) return null;
@@ -136,20 +181,23 @@ const TeamMemberDetail: React.FC = () => {
          return;
       }
       setLoading(true);
+      const payload = {
+         name: formData.name,
+         email: formData.email,
+         cargo: formData.cargo,
+         nivel: formData.nivel,
+         role: formData.role,
+         active: formData.active,
+         avatarUrl: formData.avatarUrl,
+         torre: formData.torre,
+         hourlyCost: Number(String(formData.hourlyCost).replace(',', '.')),
+         dailyAvailableHours: Number(String(formData.dailyAvailableHours).replace(',', '.')),
+         monthlyAvailableHours: monthlyHoursMode === 'auto' ? 0 : Number(String(formData.monthlyAvailableHours).replace(',', '.'))
+      };
+      console.log('[TeamMemberDetail] Enviando payload:', payload);
+
       try {
-         await updateUser(userId!, {
-            name: formData.name,
-            email: formData.email,
-            cargo: formData.cargo,
-            nivel: formData.nivel,
-            role: formData.role,
-            active: formData.active,
-            avatarUrl: formData.avatarUrl,
-            torre: formData.torre,
-            hourlyCost: Number(String(formData.hourlyCost).replace(',', '.')),
-            dailyAvailableHours: Number(String(formData.dailyAvailableHours).replace(',', '.')),
-            monthlyAvailableHours: Number(String(formData.monthlyAvailableHours).replace(',', '.'))
-         });
+         await updateUser(userId!, payload);
 
          alert('Dados atualizados com sucesso!');
          setIsEditing(false);
@@ -297,13 +345,13 @@ const TeamMemberDetail: React.FC = () => {
                <div className="w-10 h-10 rounded-xl bg-[var(--primary-soft)] border border-[var(--border)] shadow-sm overflow-hidden flex items-center justify-center text-sm font-black text-[var(--primary)]">
                   {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : user.name.substring(0, 2).toUpperCase()}
                </div>
-                <div>
-                   <h1 className="text-base font-black text-[var(--text)] tracking-tight leading-tight">{user.name}</h1>
-                   <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] font-black uppercase tracking-tight px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white shadow-sm">{user.role.toUpperCase().replace(/_/g, ' ')}</span>
-                      <span className="text-[11px] font-bold text-[var(--text-2)]">{getRoleDisplayName(user.role)}</span>
-                   </div>
-                </div>
+               <div>
+                  <h1 className="text-base font-black text-[var(--text)] tracking-tight leading-tight">{user.name}</h1>
+                  <div className="flex items-center gap-2 mt-0.5">
+                     <span className="text-[9px] font-black uppercase tracking-tight px-2 py-0.5 rounded-lg bg-[var(--primary)] text-white shadow-sm">{user.role.toUpperCase().replace(/_/g, ' ')}</span>
+                     <span className="text-[11px] font-bold text-[var(--text-2)]">{getRoleDisplayName(user.role)}</span>
+                  </div>
+               </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -707,77 +755,53 @@ const TeamMemberDetail: React.FC = () => {
                                        <input type="text" value={formData.dailyAvailableHours || ''} onChange={(e) => handleNumberChange('dailyAvailableHours', e.target.value)} placeholder="0" className="w-full px-4 py-3 bg-[var(--surface-2)] border border-[var(--border)] rounded-xl text-sm text-[var(--text)] font-bold focus:ring-2 focus:ring-[var(--primary)]/20 outline-none disabled:bg-transparent disabled:px-0 disabled:border-none" />
                                     </div>
                                     <div className="space-y-1.5">
-                                       <label className="block text-[10px] font-black text-[var(--muted)] uppercase">Hrs Meta Mês</label>
-                                       {(() => {
-                                          const currentMonth = capacityMonth;
-                                          const bizDays = CapacityUtils.getWorkingDaysInMonth(currentMonth, holidays || []);
-
-                                          // Subtrair ausências aprovadas do colaborador que caem em dias úteis
-                                          const userAbsences = absences.filter(a =>
-                                             String(a.userId) === String(userId) &&
-                                             (a.status === 'aprovada_gestao' || a.status === 'aprovada_rh' || a.status === 'finalizada_dp')
-                                          );
-
-                                          let absenceDays = 0;
-                                          userAbsences.forEach(abs => {
-                                             const start = abs.startDate > `${currentMonth}-01` ? abs.startDate : `${currentMonth}-01`;
-                                             const [year, month] = currentMonth.split('-').map(Number);
-                                             const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-                                             const end = abs.endDate < lastDay ? abs.endDate : lastDay;
-
-                                             if (start <= end) {
-                                                absenceDays += CapacityUtils.getWorkingDaysInRange(start, end, holidays || []);
-                                             }
-                                          });
-
-                                          const totalWorkingDays = Math.max(0, bizDays - absenceDays);
-                                          const today = new Date();
-                                          const todayStr = today.toISOString().split('T')[0];
-                                          const isCurrentMonth = todayStr.startsWith(currentMonth);
-                                          const [year, month] = currentMonth.split('-').map(Number);
-                                          const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
-
-                                          const residualStart = isCurrentMonth ? todayStr : `${currentMonth}-01`;
-                                          const residualBizDays = CapacityUtils.getWorkingDaysInRange(residualStart, lastDay, holidays || []);
-
-                                          let residualAbsenceDays = 0;
-                                          userAbsences.forEach(abs => {
-                                             const end = abs.endDate < lastDay ? abs.endDate : lastDay;
-                                             const rStart = abs.startDate > residualStart ? abs.startDate : residualStart;
-                                             if (rStart <= end) {
-                                                residualAbsenceDays += CapacityUtils.getWorkingDaysInRange(rStart, end, holidays || []);
-                                             }
-                                          });
-
-                                          const finalResidualDays = Math.max(0, residualBizDays - residualAbsenceDays);
-                                          const dailyMeta = Number(formData.dailyAvailableHours) || 0;
-
-                                          const calculatedTotal = dailyMeta * totalWorkingDays;
-                                          const calculatedResidual = dailyMeta * finalResidualDays;
-
-                                          return (
-                                             <div className="space-y-1">
-                                                <div className={`w-full px-4 py-3 border border-[var(--border)] rounded-xl text-sm text-[var(--text)] font-black flex justify-between items-center transition-all ${isEditing ? 'bg-[var(--surface-2)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20' : 'bg-transparent border-transparent px-0'}`}>
-                                                   <input
-                                                      type="text"
-                                                      value={formData.monthlyAvailableHours ?? ''}
-                                                      onChange={(e) => handleNumberChange('monthlyAvailableHours', e.target.value)}
-                                                      placeholder={formatDecimalToTime(calculatedTotal).replace(':', '.')}
-                                                      className="w-24 bg-transparent border-none outline-none font-black p-0 focus:ring-0 disabled:text-[var(--text)]"
-                                                   />
-                                                   {isCurrentMonth && (
-                                                      <span className="text-[10px] bg-purple-500/10 text-purple-600 px-2 py-1 rounded-lg font-black uppercase tracking-tight">
-                                                         RESTAM: {formatDecimalToTime(calculatedResidual)}
-                                                      </span>
-                                                   )}
-                                                </div>
-                                                <p className="text-[8px] font-bold uppercase opacity-40 mt-1">
-                                                   REF: {new Date(capacityMonth + '-02').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()} |
-                                                   TOTAL: {totalWorkingDays} DIAS | {isCurrentMonth ? `SALDO: ${finalResidualDays} DIAS ÚTEIS` : ''}
-                                                </p>
-                                             </div>
-                                          );
-                                       })()}
+                                       <div className="flex items-center justify-between">
+                                          <label className="block text-[10px] font-black text-[var(--muted)] uppercase">Hrs Meta Mês</label>
+                                          {isEditing && (
+                                             <button
+                                                type="button"
+                                                onClick={() => {
+                                                   const newMode = monthlyHoursMode === 'auto' ? 'manual' : 'auto';
+                                                   setMonthlyHoursMode(newMode);
+                                                   if (newMode === 'manual') {
+                                                      setFormData(prev => ({
+                                                         ...prev,
+                                                         monthlyAvailableHours: String(capacityStats.calculatedTotal).replace('.', ',')
+                                                      }));
+                                                   }
+                                                }}
+                                                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${monthlyHoursMode === 'auto'
+                                                   ? 'bg-[var(--primary-soft)] text-[var(--primary)]'
+                                                   : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                                   }`}
+                                             >
+                                                {monthlyHoursMode === 'auto' ? <Clock className="w-3 h-3" /> : <Edit className="w-3 h-3" />}
+                                                {monthlyHoursMode === 'auto' ? 'Automático' : 'Manual'}
+                                             </button>
+                                          )}
+                                       </div>
+                                       <div className="space-y-1">
+                                          <div className={`w-full px-4 py-3 border border-[var(--border)] rounded-xl text-sm text-[var(--text)] font-black flex justify-between items-center transition-all ${isEditing ? 'bg-[var(--surface-2)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20' : 'bg-transparent border-transparent px-0'}`}>
+                                             <input
+                                                type="text"
+                                                value={monthlyHoursMode === 'auto'
+                                                   ? formatDecimalToTime(capacityStats.calculatedTotal).replace(':', '.')
+                                                   : (formData.monthlyAvailableHours ?? '')}
+                                                onChange={(e) => handleNumberChange('monthlyAvailableHours', e.target.value)}
+                                                disabled={!isEditing || monthlyHoursMode === 'auto'}
+                                                className="w-24 bg-transparent border-none outline-none font-black p-0 focus:ring-0 disabled:text-[var(--text)]"
+                                             />
+                                             {capacityStats.isCurrentMonth && (
+                                                <span className="text-[10px] bg-purple-500/10 text-purple-600 px-2 py-1 rounded-lg font-black uppercase tracking-tight">
+                                                   RESTAM: {formatDecimalToTime(capacityStats.calculatedResidual)}
+                                                </span>
+                                             )}
+                                          </div>
+                                          <p className="text-[8px] font-bold uppercase opacity-40 mt-1">
+                                             REF: {new Date(capacityMonth + '-02').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()} |
+                                             TOTAL: {capacityStats.totalWorkingDays} DIAS | {capacityStats.isCurrentMonth ? `SALDO: ${capacityStats.finalResidualDays} DIAS ÚTEIS` : ''}
+                                          </p>
+                                       </div>
                                     </div>
                                  </div>
                               </div>

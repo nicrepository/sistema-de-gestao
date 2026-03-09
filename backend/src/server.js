@@ -52,7 +52,8 @@ app.use(cors({
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "apikey", "ngrok-skip-browser-warning", "Prefer", "Access-Control-Request-Private-Network"]
+    allowedHeaders: ["Content-Type", "Authorization", "apikey", "ngrok-skip-browser-warning", "Prefer", "Access-Control-Request-Private-Network"],
+    exposedHeaders: ["Content-Disposition"]
 }));
 
 // Chrome Private Network Access: permite que sites HTTPS/externos chamem este servidor local
@@ -150,6 +151,11 @@ app.use("/api/support", supportRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/audit-logs", authMiddleware, auditLogsRoutes);
 app.get("/api/allocations", authMiddleware, allocationController.list);
+
+// Admin / Relatórios
+app.use("/api/admin", adminBaseRouter);
+app.use("/api/admin/users", adminUsersRouter);
+app.use("/api/admin/report", reportRoutes);
 
 // 11. Tratamento de Erro Global
 app.use((err, req, res, next) => {

@@ -26,9 +26,8 @@ export const userService = {
 
         // 2) upsert na dim_colaboradores
         const payload = {
-            "NomeColaborador": nome.trim(),
-            "Cargo": cargo ? cargo.trim() : null,
-            "E-mail": normalizedEmail,
+            nome_colaborador: nome.trim(),
+            cargo: cargo ? cargo.trim() : null,
             email: normalizedEmail,
             role: role.trim(),
             ativo: !!ativo,

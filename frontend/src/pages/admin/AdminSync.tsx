@@ -83,13 +83,13 @@ const AdminSync: React.FC = () => {
     const handleExport = async () => {
         try {
             addToast("Gerando planilha de backup...", 'success');
-            const blob = await exportDatabaseExcel();
+            const { blob, filename } = await exportDatabaseExcel();
 
             // Criar link para download
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `backup_completo_${new Date().toISOString().split('T')[0]}.xlsx`;
+            a.download = filename || `backup_completo_${new Date().toISOString().split('T')[0]}.xlsx`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

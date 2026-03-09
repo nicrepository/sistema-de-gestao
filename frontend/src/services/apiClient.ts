@@ -85,6 +85,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     const sep = baseUrl.endsWith('/') ? '' : '/';
     const fullUrl = `${baseUrl}${sep}${finalPath}`;
 
+    console.debug(`[API] ${options.method || 'GET'} ${fullUrl}`, options.body ? JSON.parse(String(options.body)) : '');
     const response = await fetch(fullUrl, { ...options, headers });
 
     if (response.status === 401) {
@@ -121,7 +122,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 /**
  * Helper para download de arquivos/blobs
  */
-export async function apiDownload(path: string, options: RequestInit = {}): Promise<Blob> {
+export async function apiDownload(path: string, options: RequestInit = {}): Promise<{ blob: Blob, filename: string }> {
     const baseUrl = await getApiBaseUrl();
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
 
@@ -147,5 +148,19 @@ export async function apiDownload(path: string, options: RequestInit = {}): Prom
         throw new Error(`Erro no download (${response.status}): ${errorMsg}`);
     }
 
-    return await response.blob();
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = 'download.xlsx'; // Fallback
+
+    if (contentDisposition) {
+        let filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (!filenameMatch) {
+            filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+        }
+        if (filenameMatch && filenameMatch[1]) {
+            filename = decodeURIComponent(filenameMatch[1]);
+        }
+    }
+
+    return { blob, filename };
 }

@@ -157,7 +157,7 @@ export const syncService = {
     filterAllowedFields(tableName, rowData) {
         const mapping = {
             'dim_clientes': ['ID_Cliente', 'NomeCliente', 'contato_principal', 'ativo', 'Contrato', 'Criado', 'NewLogo', 'Pais', 'Desativado'],
-            'dim_colaboradores': ['ID_Colaborador', 'NomeColaborador', 'email', 'Cargo', 'role', 'ativo', 'avatar_url', 'auth_user_id'],
+            'dim_colaboradores': ['id_colaborador', 'nome_colaborador', 'email', 'cargo', 'role', 'ativo', 'avatar_url', 'auth_user_id'],
             'dim_projetos': ['ID_Projeto', 'ID_Cliente', 'NomeProjeto', 'StatusProjeto', 'budget', 'startDate', 'estimatedDelivery', 'manager', 'description', 'ativo', 'valor_total_rs'],
             'fato_tarefas': ['ID_Tarefa', 'ID_Cliente', 'ID_Projeto', 'Afazer', 'ID_Colaborador', 'inicio_previsto', 'inicio_real', 'entrega_estimada', 'entrega_real', 'Prioridade', 'Impacto', 'Riscos', 'Porcentagem', 'StatusTarefa', 'id_tarefa_novo'],
             'horas_trabalhadas': ['ID_Horas_Trabalhadas', 'Data', 'ID_Colaborador', 'ID_Cliente', 'ID_Projeto', 'ID_Tarefa', 'Horas_Trabalhadas', 'Hora_Inicio', 'Hora_Fim', 'Almoco_Deduzido', 'Descricao', 'id_tarefa_novo']
@@ -166,12 +166,26 @@ export const syncService = {
         const allowed = mapping[tableName];
         if (!allowed) return rowData;
 
+        // Mapeamento específico para lidar com cabeçalhos de importação
+        const colabRemap = {
+            'ID_Colaborador': 'id_colaborador',
+            'NomeColaborador': 'nome_colaborador',
+            'Cargo': 'cargo'
+        };
+
         const filtered = {};
         Object.keys(rowData).forEach(key => {
-            if (allowed.includes(key)) filtered[key] = rowData[key];
+            let targetKey = key;
+            if (tableName === 'dim_colaboradores' && colabRemap[key]) {
+                targetKey = colabRemap[key];
+            }
+            if (allowed.includes(targetKey)) {
+                filtered[targetKey] = rowData[key];
+            }
         });
         return filtered;
     },
+
 
     async generateExport() {
         const workbook = new ExcelJS.Workbook();

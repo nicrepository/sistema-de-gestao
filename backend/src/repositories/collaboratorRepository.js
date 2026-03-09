@@ -14,6 +14,10 @@ const COLAB_SELECT = [
     'email',
     '"avatarUrl"',
     'ativo',
+    'custo_hora',
+    'horas_disponiveis_dia',
+    'horas_disponiveis_mes',
+    'atrasado',
 ].join(', ');
 
 export const collaboratorRepository = {
@@ -32,12 +36,32 @@ export const collaboratorRepository = {
     },
 
     async update(id, data) {
-        // Permitir apenas colunas seguras para atualização
-        const ALLOWED_FIELDS = ['nome_colaborador', 'cargo', 'nivel', 'torre', 'role', 'ativo', 'custo_hora', 'horas_disponiveis_dia', 'horas_disponiveis_mes', 'avatar_url'];
+        // Mapeamento de campos Frontend -> Backend
+        const fieldMapping = {
+            name: 'nome_colaborador',
+            nome_colaborador: 'nome_colaborador',
+            email: 'email',
+            cargo: 'cargo',
+            nivel: 'nivel',
+            torre: 'torre',
+            role: 'role',
+            active: 'ativo',
+            ativo: 'ativo',
+            avatarUrl: 'avatar_url',
+            avatar_url: 'avatar_url',
+            hourlyCost: 'custo_hora',
+            custo_hora: 'custo_hora',
+            dailyAvailableHours: 'horas_disponiveis_dia',
+            horas_disponiveis_dia: 'horas_disponiveis_dia',
+            monthlyAvailableHours: 'horas_disponiveis_mes',
+            horas_disponiveis_mes: 'horas_disponiveis_mes'
+        };
+
         const safeData = {};
         for (const [key, val] of Object.entries(data)) {
-            if (ALLOWED_FIELDS.includes(key)) {
-                safeData[key] = val;
+            const dbKey = fieldMapping[key];
+            if (dbKey) {
+                safeData[dbKey] = val;
             }
         }
 
@@ -45,6 +69,7 @@ export const collaboratorRepository = {
             throw new Error('Nenhum campo válido para atualizar.');
         }
 
+        console.log(`[CollaboratorRepository] Atualizando ${id} com:`, safeData);
         return await dbUpdate('dim_colaboradores', { id_colaborador: id }, safeData);
     }
 };

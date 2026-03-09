@@ -118,7 +118,7 @@ export const useDataController = () => {
 
     const updateUser = async (userId: string, updates: Partial<User>): Promise<void> => {
         await userService.updateUser(userId, updates);
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+        setUsers(prev => prev.map(u => String(u.id) === String(userId) ? { ...u, ...updates } : u));
     };
 
     const deleteUser = async (userId: string): Promise<void> => {

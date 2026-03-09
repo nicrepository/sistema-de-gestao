@@ -26,6 +26,10 @@ export const timesheetRepository = {
             query.limit = 500;
         }
 
+        if (filters.offset !== undefined) {
+            query.offset = Number(filters.offset);
+        }
+
         return await dbFindAll('timesheets', query);
     },
 

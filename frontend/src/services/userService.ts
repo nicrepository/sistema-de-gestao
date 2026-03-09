@@ -10,9 +10,9 @@ const safeNum = (val: any) => {
 
 export async function createUser(userData: Partial<User>): Promise<string> {
     const payload = {
-        NomeColaborador: userData.name,
+        nome_colaborador: userData.name,
         email: userData.email,
-        Cargo: userData.cargo,
+        cargo: userData.cargo,
         nivel: userData.nivel,
         role: userData.role ? userData.role.charAt(0).toUpperCase() + userData.role.slice(1) : 'Resource',
         ativo: userData.active ?? true,
@@ -32,16 +32,16 @@ export async function createUser(userData: Partial<User>): Promise<string> {
 
 export async function updateUser(userId: string, updates: Partial<User>): Promise<void> {
     const payload: any = {};
-    if (updates.name !== undefined) payload.NomeColaborador = updates.name;
+    if (updates.name !== undefined) payload.nome_colaborador = updates.name;
     if (updates.email !== undefined) payload.email = updates.email;
-    if (updates.cargo !== undefined) payload.Cargo = updates.cargo;
+    if (updates.cargo !== undefined) payload.cargo = updates.cargo;
     if (updates.nivel !== undefined) payload.nivel = updates.nivel;
     if (updates.role !== undefined) payload.role = updates.role.charAt(0).toUpperCase() + updates.role.slice(1);
     if (updates.active !== undefined) payload.ativo = updates.active;
     if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
-    if (updates.hourlyCost !== undefined) payload.hourlyCost = updates.hourlyCost;
-    if (updates.dailyAvailableHours !== undefined) payload.dailyAvailableHours = updates.dailyAvailableHours;
-    if (updates.monthlyAvailableHours !== undefined) payload.monthlyAvailableHours = updates.monthlyAvailableHours;
+    if (updates.hourlyCost !== undefined) payload.custo_hora = updates.hourlyCost;
+    if (updates.dailyAvailableHours !== undefined) payload.horas_disponiveis_dia = updates.dailyAvailableHours;
+    if (updates.monthlyAvailableHours !== undefined) payload.horas_disponiveis_mes = updates.monthlyAvailableHours;
     if (updates.torre !== undefined) payload.torre = updates.torre;
     if (updates.atrasado !== undefined) payload.atrasado = updates.atrasado;
 

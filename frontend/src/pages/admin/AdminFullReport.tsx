@@ -133,7 +133,7 @@ const AdminFullReport: React.FC = () => {
     const handleExportExcel = async () => {
         setExporting(true);
         try {
-            const blob = await exportReportExcel({
+            const { blob, filename } = await exportReportExcel({
                 startDate: startDate || undefined,
                 endDate: endDate || undefined,
                 clientIds: selectedClients.length ? selectedClients : undefined,
@@ -146,7 +146,7 @@ const AdminFullReport: React.FC = () => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `relatorio_${startDate}_${endDate}.xlsx`;
+            a.download = filename;
             a.click();
             addToast('Exportação concluída!', 'success');
         } catch (err) {
