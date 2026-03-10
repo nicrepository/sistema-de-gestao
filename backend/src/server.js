@@ -152,6 +152,8 @@ app.use("/api/support", supportRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/audit-logs", authMiddleware, auditLogsRoutes);
 app.get("/api/allocations", authMiddleware, allocationController.list);
+app.post("/api/allocations", authMiddleware, allocationController.upsert);
+app.delete("/api/allocations/task/:taskId", authMiddleware, allocationController.deleteByTask);
 
 // Admin / Relatórios
 app.use("/api/admin", adminBaseRouter);
