@@ -152,7 +152,7 @@ const ClientForm: React.FC = () => {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`px - 6 py - 2.5 text - white rounded - lg font - bold shadow hover: opacity - 90 transition - all flex items - center gap - 2 disabled: opacity - 50 ${tipo_cliente === 'parceiro' ? 'bg-purple-600' : 'bg-blue-600'} `}
+          className={`px-6 py-2.5 text-white rounded-lg font-bold shadow hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 ${tipo_cliente === 'parceiro' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
         >
           <Save className="w-4 h-4" />
           {loading ? 'Salvando...' : 'Salvar Cadastro'}
