@@ -10,18 +10,22 @@ jobs:
     runs-on: self-hosted # Força a execução no servidor da Nic-Labs
 
     steps:
+      - name: Tratar permissões (Git Safe Directory)
+        run: |
+          sudo git config --global --add safe.directory /opt/nic-labs/core/sistema-de-gestao
+
       - name: Atualizar o código-fonte (Git Pull)
         run: |
           cd /opt/nic-labs/core/sistema-de-gestao
-          git reset --hard
-          git pull origin main
+          sudo git fetch --all
+          sudo git reset --hard origin/main
 
       - name: Reconstruir e reiniciar contêineres (Docker Compose)
         run: |
           cd /opt/nic-labs/core
-          # Reconstrói apenas as imagens do sistema de gestão, sem afetar o resto da infra
-          docker compose build gestao_backend gestao_frontend
-          docker compose up -d gestao_backend gestao_frontend
+          # Reconstrói apenas as imagens do sistema de gestão
+          sudo docker compose build gestao_backend gestao_frontend
+          sudo docker compose up -d gestao_backend gestao_frontend
           
-          # Limpa as imagens antigas para não lotar o disco do servidor
-          docker image prune -f
+          # Limpeza do disco
+          sudo docker image prune -f
