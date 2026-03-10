@@ -23,7 +23,7 @@ interface UserNotification {
 }
 
 export const SystemTimelinePage: React.FC = () => {
-    const { users, clients, timesheetEntries, loading: dataLoading } = useDataController();
+    const { users, clients, projects, timesheetEntries, loading: dataLoading } = useDataController();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
 
@@ -80,8 +80,10 @@ export const SystemTimelinePage: React.FC = () => {
 
     const getTaskNotification = (log: AuditLog, locationStr: string) => {
         const action = log.action.toUpperCase();
-        const tName = log.new_data?.title || log.old_data?.title || 'uma tarefa';
-        const pName = log.new_data?.project_name || log.old_data?.project_name || log.new_data?.projeto_id || 'um projeto';
+        const tName = log.new_data?.tarefa || log.old_data?.tarefa || log.new_data?.title || log.old_data?.title || 'uma tarefa';
+        const pId = log.new_data?.projeto_id || log.old_data?.projeto_id || log.new_data?.ID_Projeto || log.old_data?.ID_Projeto;
+        const foundProject = projects.find(p => String(p.id) === String(pId));
+        const pName = foundProject ? foundProject.name : (log.new_data?.project_name || log.old_data?.project_name || pId || 'um projeto');
 
         if (action === 'UPDATE') {
             if (log.new_data?.status === 'Done' && log.old_data?.status !== 'Done') {
@@ -127,9 +129,14 @@ export const SystemTimelinePage: React.FC = () => {
         }
 
         if (entity === 'fato_tarefas') {
-            const tName = log.new_data?.title || log.old_data?.title || 'uma tarefa';
-            const pName = log.new_data?.project_name || log.old_data?.project_name || log.new_data?.projeto_id || 'um projeto';
-            const cName = log.new_data?.client_name || log.old_data?.client_name || '';
+            const tName = log.new_data?.tarefa || log.old_data?.tarefa || log.new_data?.title || log.old_data?.title || 'uma tarefa';
+            const pId = log.new_data?.projeto_id || log.old_data?.projeto_id || log.new_data?.ID_Projeto || log.old_data?.ID_Projeto;
+            const foundProject = projects.find(p => String(p.id) === String(pId));
+            const pName = foundProject ? foundProject.name : (log.new_data?.project_name || log.old_data?.project_name || pId || 'um projeto');
+
+            const foundClient = foundProject ? clients.find(c => String(c.id) === String(foundProject.clientId)) : null;
+            const cName = foundClient ? foundClient.name : (log.new_data?.client_name || log.old_data?.client_name || '');
+
             const loc = `na tarefa "${tName}", projeto "${pName}"${cName ? `, cliente ${cName}` : ''}`;
             const res = getTaskNotification(log, loc);
             return res ? { ...res, type: res.type || 'info' as const, clientLogo } : null;
@@ -165,11 +172,14 @@ export const SystemTimelinePage: React.FC = () => {
         logs.forEach(log => {
             const res = getLogNotification(log);
             if (!res) return;
+            const foundUser = users.find(u => String(u.id) === String(log.user_id));
+            const resolvedUserName = foundUser ? foundUser.name : (log.user_name && isNaN(Number(log.user_name)) ? log.user_name : 'Usuário Desconhecido');
+
             feed.push({
                 id: `log-${log.id}`,
                 date: new Date(log.created_at),
                 userId: String(log.user_id),
-                userName: log.user_name || 'Usuário Desconhecido',
+                userName: resolvedUserName,
                 message: res.message,
                 details: '',
                 type: res.type,
@@ -460,7 +470,7 @@ export const SystemTimelinePage: React.FC = () => {
                                     <div>
                                         <h3 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Dados Técnicos da Alteração</h3>
                                         <p className="font-medium" style={{ color: 'var(--text-muted)' }}>
-                                            {selectedLog.user_name} registrou esta ação
+                                            {users.find(u => String(u.id) === String(selectedLog.user_id))?.name || (selectedLog.user_name && isNaN(Number(selectedLog.user_name)) ? selectedLog.user_name : 'Usuário')} registrou esta ação
                                         </p>
                                     </div>
                                 </div>
