@@ -3,6 +3,7 @@ import { auditService } from '../audit/auditService.js';
 import { auditContext } from '../audit/auditMiddleware.js';
 import { isAdmUser } from '../utils/security.js';
 import { projectService } from './projectService.js';
+import { notifyUpdates } from '../utils/realtime.js';
 
 const safeNum = (val) => {
     if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
@@ -83,6 +84,7 @@ export const timesheetService = {
             ip: context.ip
         });
 
+        await notifyUpdates('timesheet');
         return created;
     },
 
@@ -118,6 +120,7 @@ export const timesheetService = {
             ip: context.ip
         });
 
+        await notifyUpdates('timesheet');
         return updated;
     },
 
@@ -137,6 +140,7 @@ export const timesheetService = {
             ip: context.ip
         });
 
+        await notifyUpdates('timesheet');
         return true;
     }
 };

@@ -65,8 +65,15 @@ export const useDataController = () => {
     };
 
     const updateClient = async (clientId: string, updates: Partial<Client>): Promise<void> => {
-        await clientService.updateClient(clientId, updates);
+        const previousClients = [...clients];
         setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updates } : c));
+
+        try {
+            await clientService.updateClient(clientId, updates);
+        } catch (error) {
+            setClients(previousClients);
+            throw error;
+        }
     };
 
     const deactivateClient = async (clientId: string, reason: string): Promise<void> => {
@@ -99,8 +106,15 @@ export const useDataController = () => {
     };
 
     const updateProject = async (projectId: string, updates: Partial<Project>): Promise<void> => {
-        await projectService.updateProject(projectId, updates);
+        const previousProjects = [...projects];
         setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...updates } : p));
+
+        try {
+            await projectService.updateProject(projectId, updates);
+        } catch (error) {
+            setProjects(previousProjects);
+            throw error;
+        }
     };
 
     // === USER CONTROLLERS ===
@@ -117,8 +131,15 @@ export const useDataController = () => {
     };
 
     const updateUser = async (userId: string, updates: Partial<User>): Promise<void> => {
-        await userService.updateUser(userId, updates);
+        const previousUsers = [...users];
         setUsers(prev => prev.map(u => String(u.id) === String(userId) ? { ...u, ...updates } : u));
+
+        try {
+            await userService.updateUser(userId, updates);
+        } catch (error) {
+            setUsers(previousUsers);
+            throw error;
+        }
     };
 
     const deleteUser = async (userId: string): Promise<void> => {
@@ -168,39 +189,94 @@ export const useDataController = () => {
         getTasksByProject: (projectId: string) => tasks.filter(t => t.projectId === projectId),
         getTasksByUser: (userId: string) => tasks.filter(t => t.developerId === userId),
         createTask: async (taskData: Partial<Task>) => {
-            const id = await taskService.createTask(taskData);
-            setTasks(prev => [{ ...taskData, id: String(id), collaboratorIds: taskData.collaboratorIds || [] } as Task, ...prev]);
-            return String(id);
+            const tempId = `temp-${Date.now()}`;
+            const previousTasks = [...tasks];
+            const newTask = { ...taskData, id: tempId, collaboratorIds: taskData.collaboratorIds || [] } as Task;
+
+            setTasks(prev => [newTask, ...prev]);
+
+            try {
+                const id = await taskService.createTask(taskData);
+                // Replace temp ID with real ID from server
+                setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: String(id) } : t));
+                return String(id);
+            } catch (error) {
+                setTasks(previousTasks);
+                throw error;
+            }
         },
         updateTask: async (taskId: string, updates: Partial<Task>) => {
-            await taskService.updateTask(taskId, updates);
+            const previousTasks = [...tasks];
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+
+            try {
+                await taskService.updateTask(taskId, updates);
+            } catch (error) {
+                setTasks(previousTasks);
+                throw error;
+            }
         },
         deleteTask: async (taskId: string, force: boolean = false, deleteHours: boolean = false) => {
-            await taskService.deleteTask(taskId, force, deleteHours);
+            const previousTasks = [...tasks];
             setTasks(prev => prev.filter(t => t.id !== taskId));
+
+            try {
+                await taskService.deleteTask(taskId, force, deleteHours);
+            } catch (error) {
+                setTasks(previousTasks);
+                throw error;
+            }
         },
         getTimesheetsByUser: (userId: string) => timesheetEntries.filter(e => e.userId === userId),
         createTimesheet: async (entry: TimesheetEntry) => {
-            const saved = await timesheetService.createTimesheet(entry);
-            // Garantir que o objeto salvo tenha o ID mapeado corretamente do Banco para o Front
-            const savedMapped = saved ? {
-                ...saved,
-                id: String((saved as any).ID_Horas_Trabalhadas || (saved as any).id || entry.id)
-            } : entry;
-            setTimesheetEntries(prev => [savedMapped, ...prev]);
+            const tempId = `temp-${Date.now()}`;
+            const previousEntries = [...timesheetEntries];
+            const newEntry = { ...entry, id: tempId };
+
+            setTimesheetEntries(prev => [newEntry, ...prev]);
+
+            try {
+                const saved = await timesheetService.createTimesheet(entry);
+                const savedMapped = saved ? {
+                    ...saved,
+                    id: String((saved as any).ID_Horas_Trabalhadas || (saved as any).id || entry.id)
+                } : entry;
+
+                // Replace temp entry with real one from server
+                setTimesheetEntries(prev => prev.map(e => e.id === tempId ? savedMapped : e));
+            } catch (error) {
+                setTimesheetEntries(previousEntries);
+                throw error;
+            }
         },
         updateTimesheet: async (entry: TimesheetEntry) => {
-            const saved = await timesheetService.updateTimesheet(entry.id!, entry);
-            const savedMapped = saved ? {
-                ...saved,
-                id: String((saved as any).ID_Horas_Trabalhadas || (saved as any).id || entry.id)
-            } : entry;
-            setTimesheetEntries(prev => prev.map(e => e.id === entry.id ? savedMapped : e));
+            const previousEntries = [...timesheetEntries];
+            // Update UI immediately
+            setTimesheetEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...entry } : e));
+
+            try {
+                const saved = await timesheetService.updateTimesheet(entry.id!, entry);
+                const savedMapped = saved ? {
+                    ...saved,
+                    id: String((saved as any).ID_Horas_Trabalhadas || (saved as any).id || entry.id)
+                } : entry;
+                // Sync with exact data from server (id mapping, etc)
+                setTimesheetEntries(prev => prev.map(e => e.id === entry.id ? savedMapped : e));
+            } catch (error) {
+                setTimesheetEntries(previousEntries);
+                throw error;
+            }
         },
         deleteTimesheet: async (entryId: string) => {
-            await timesheetService.deleteTimesheet(entryId);
+            const previousEntries = [...timesheetEntries];
             setTimesheetEntries(prev => prev.filter(e => e.id !== entryId));
+
+            try {
+                await timesheetService.deleteTimesheet(entryId);
+            } catch (error) {
+                setTimesheetEntries(previousEntries);
+                throw error;
+            }
         },
         getUserById, getActiveUsers: () => users.filter(u => u.active !== false),
         createUser, updateUser, deleteUser,

@@ -3,6 +3,7 @@ import { projectRepository } from '../repositories/projectRepository.js';
 import { auditService } from '../audit/auditService.js';
 import { auditContext } from '../audit/auditMiddleware.js';
 import { isAdmUser } from '../utils/security.js';
+import { notifyUpdates } from '../utils/realtime.js';
 
 export const projectService = {
     async getAllProjects(user, filters) {
@@ -101,6 +102,7 @@ export const projectService = {
             ip: context.ip
         });
 
+        await notifyUpdates('projects');
         return created;
     },
 
@@ -125,6 +127,7 @@ export const projectService = {
             ip: context.ip
         });
 
+        await notifyUpdates('projects');
         return updated;
     },
 
@@ -165,6 +168,7 @@ export const projectService = {
             ip: context.ip
         });
 
+        await notifyUpdates('projects');
         return true;
     }
 };

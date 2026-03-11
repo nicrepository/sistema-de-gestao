@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAppData } from '@/hooks/useAppData';
 import { Task, Project, Client, User, TimesheetEntry, Absence, ProjectMember, Holiday, TaskMemberAllocation } from '@/types';
 import { enrichProjectsWithTaskDates } from '@/utils/projectUtils';
+import { supabase } from '@/services/supabaseClient';
 
 
 interface DataContextType {
@@ -16,6 +17,7 @@ interface DataContextType {
     holidays: Holiday[];
     loading: boolean;
     error: string | null;
+    refreshData: () => Promise<void>;
 
     // Actions (para updates otimistas se necessário)
     setClients: React.Dispatch<React.SetStateAction<Client[]>>;
@@ -44,6 +46,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         taskMemberAllocations: loadedTaskMemberAllocations,
         absences: loadedAbsences,
         holidays: loadedHolidays,
+        refreshData,
         loading: dataLoading,
         error: dataError
     } = useAppData();
@@ -74,6 +77,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHolidays(loadedHolidays || []);
     }, [dataLoading, loadedClients, loadedProjects, loadedTasks, loadedUsers, loadedTimesheets, loadedProjectMembers, loadedAbsences, loadedHolidays]);
 
+    // REALTIME: Escuta avisos do backend para recarregar dados
+    useEffect(() => {
+        const channel = supabase.channel('app-updates')
+            .on('broadcast', { event: 'refresh' }, ({ payload }) => {
+                console.log('[Realtime] Recebido sinal de refresh:', payload);
+                refreshData();
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Realtime] Ouvindo canal app-updates');
+                }
+            });
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [refreshData]);
+
     const value = React.useMemo(() => ({
         clients,
         projects: projects.filter(p => p.active !== false),
@@ -86,6 +107,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         holidays,
         loading: dataLoading && (clients.length === 0),
         error: dataError,
+        refreshData,
         setClients,
         setProjects,
         setTasks,
@@ -95,7 +117,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTaskMemberAllocations,
         setAbsences,
         setHolidays
-    }), [clients, projects, tasks, users, timesheetEntries, projectMembers, absences, holidays, dataLoading, dataError]);
+    }), [clients, projects, tasks, users, timesheetEntries, projectMembers, absences, holidays, dataLoading, dataError, refreshData]);
 
     return (
         <DataContext.Provider value={value}>
