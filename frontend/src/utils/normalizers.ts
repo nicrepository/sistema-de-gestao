@@ -53,7 +53,7 @@ export function getRoleDisplayName(role: string): string {
         case 'pmo': return 'Planejamento / PMO';
         case 'tech_lead': return 'Tech Lead / Liderança';
         case 'developer':
-        case 'consultor': return 'Operacional / Consultor';
+        case 'consultor': return 'Padrão';
         case 'gestor': return 'Gestor / Gerente';
         case 'financeiro': return 'Financeiro';
         default: return role.charAt(0).toUpperCase() + role.slice(1);
