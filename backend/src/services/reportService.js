@@ -1,9 +1,31 @@
 import ExcelJS from 'exceljs';
 import { reportRepository } from '../repositories/reportRepository.js';
+import { isAdmUser } from '../utils/security.js';
+import { projectService } from './projectService.js';
 
 export const reportService = {
-    async getReportData(filters) {
-        const rows = await reportRepository.fetchRelatorioHorasCustos(filters);
+    async getReportData(user, filters) {
+        let finalFilters = { ...filters };
+
+        if (!isAdmUser(user)) {
+            const userProjectIds = await projectService._getUserLinkedProjectIds(user);
+
+            if (userProjectIds.length === 0) {
+                return { rows: [], projectTotals: [], totals: { horas_total: 0, valor_total_rateado: 0 } };
+            }
+
+            // Intersect com os projetos que o usuário pediu, ou usa todos os vinculados
+            if (finalFilters.projectIds && finalFilters.projectIds.length > 0) {
+                finalFilters.projectIds = finalFilters.projectIds.filter(id => userProjectIds.includes(id));
+                if (finalFilters.projectIds.length === 0) {
+                    return { rows: [], projectTotals: [], totals: { horas_total: 0, valor_total_rateado: 0 } };
+                }
+            } else {
+                finalFilters.projectIds = userProjectIds;
+            }
+        }
+
+        const rows = await reportRepository.fetchRelatorioHorasCustos(finalFilters);
 
         const mapped = rows.map(r => ({
             ...r,

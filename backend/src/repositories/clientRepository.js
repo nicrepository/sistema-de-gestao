@@ -19,13 +19,10 @@ export const clientRepository = {
     async findAll(query = {}) {
         const dbQuery = {
             select: CLIENT_SELECT,
-            order: { column: 'nome' },
-            filters: {}
+            order: query.order || { column: 'nome' },
+            filters: query.filters || {},
+            in: query.in || {}
         };
-
-        if (query.filters?.ativo !== undefined) {
-            dbQuery.filters.ativo = query.filters.ativo;
-        }
 
         return await dbFindAll('v_clientes', dbQuery);
     },

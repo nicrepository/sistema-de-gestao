@@ -11,7 +11,8 @@ export const timesheetRepository = {
             order: { column: 'Data', ascending: false },
             filters: {},
             gte: {},
-            lte: {}
+            lte: {},
+            in: {}
         };
 
         if (filters.userId) query.filters.ID_Colaborador = filters.userId;
@@ -19,6 +20,21 @@ export const timesheetRepository = {
         if (filters.taskId) query.filters.id_tarefa_novo = filters.taskId;
         if (filters.startDate) query.gte.Data = filters.startDate;
         if (filters.endDate) query.lte.Data = filters.endDate;
+
+        // RBAC: (ID_Colaborador = idColaborador) OR (ID_Projeto IN projectIds)
+        if (filters.idColaborador && filters.projectIds) {
+            const pIds = Array.isArray(filters.projectIds) ? filters.projectIds : [filters.projectIds];
+            let orQuery = `ID_Colaborador.eq.${filters.idColaborador}`;
+            if (pIds.length > 0) {
+                orQuery += `,ID_Projeto.in.(${pIds.join(',')})`;
+            }
+            query.or = orQuery;
+        } else if (filters.projectIds) {
+            const pIds = Array.isArray(filters.projectIds) ? filters.projectIds : [filters.projectIds];
+            query.in.ID_Projeto = pIds;
+        } else if (filters.idColaborador) {
+            query.filters.ID_Colaborador = filters.idColaborador;
+        }
 
         if (filters.limit) {
             query.limit = Math.min(Number(filters.limit), 1000);

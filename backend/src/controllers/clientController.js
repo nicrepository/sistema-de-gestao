@@ -5,7 +5,7 @@ export const clientController = {
     async getClients(req, res) {
         try {
             const { includeInactive, page, limit, sort, order } = req.query;
-            const clients = await clientService.getAllClients(includeInactive, { page, limit, sort, order });
+            const clients = await clientService.getAllClients(req.user, includeInactive, { page, limit, sort, order });
             return sendSuccess(res, clients);
         } catch (e) {
             return handleRouteError(res, e, 'ClientController.getClients');
@@ -15,7 +15,7 @@ export const clientController = {
     async getById(req, res) {
         try {
             const { id } = req.params;
-            const client = await clientService.getClientById(id);
+            const client = await clientService.getClientById(req.user, id);
             if (!client) return handleRouteError(res, { message: 'Cliente não encontrado', status: 404 });
             return sendSuccess(res, client);
         } catch (e) {

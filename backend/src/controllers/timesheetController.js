@@ -4,7 +4,7 @@ import { sendSuccess, handleRouteError, sendError } from '../utils/responseHelpe
 export const timesheetController = {
     async getTimesheets(req, res) {
         try {
-            const timesheets = await timesheetService.getTimesheets(req.query);
+            const timesheets = await timesheetService.getTimesheets(req.user, req.query);
             return sendSuccess(res, timesheets);
         } catch (e) {
             return handleRouteError(res, e, 'TimesheetController.getTimesheets');
@@ -14,7 +14,7 @@ export const timesheetController = {
     async getTimesheetById(req, res) {
         try {
             const { id } = req.params;
-            const timesheet = await timesheetService.getTimesheetById(id);
+            const timesheet = await timesheetService.getTimesheetById(req.user, id);
             return sendSuccess(res, timesheet);
         } catch (e) {
             if (e.message === 'Apontamento não encontrado') {

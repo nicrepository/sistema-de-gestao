@@ -28,7 +28,7 @@ const TASK_SELECT = [
 ].join(', ');
 
 export const taskRepository = {
-    async findAll({ projectId, projectIds, clientId, clientIds, status } = {}) {
+    async findAll({ projectId, projectIds, clientId, clientIds, status, idColaborador } = {}) {
         const query = {
             select: TASK_SELECT,
             order: { column: 'inicio_previsto', ascending: false },
@@ -37,9 +37,22 @@ export const taskRepository = {
         };
 
         if (projectId) query.filters.projeto_id = projectId;
-        if (projectIds) {
+
+        // Se houver projectIds ou idColaborador, montamos o filtro OR se necessário
+        // Ou se projectIds for passado como filtro comum (sem idColaborador)
+        if (projectIds && !idColaborador) {
             const ids = typeof projectIds === 'string' ? projectIds.split(',').map(Number) : projectIds;
             query.in.projeto_id = ids;
+        }
+
+        if (idColaborador) {
+            // Se tiver idColaborador, queremos: (colaborador_id = idColaborador) OR (projeto_id IN projectIds)
+            const pIds = Array.isArray(projectIds) ? projectIds : (projectIds ? [projectIds] : []);
+            let orQuery = `colaborador_id.eq.${idColaborador}`;
+            if (pIds.length > 0) {
+                orQuery += `,projeto_id.in.(${pIds.join(',')})`;
+            }
+            query.or = orQuery;
         }
 
         if (clientId) query.filters.cliente_id = clientId;

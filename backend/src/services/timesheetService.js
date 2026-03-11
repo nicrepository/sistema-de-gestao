@@ -1,11 +1,13 @@
 import { timesheetRepository } from '../repositories/timesheetRepository.js';
 import { auditService } from '../audit/auditService.js';
 import { auditContext } from '../audit/auditMiddleware.js';
+import { isAdmUser } from '../utils/security.js';
+import { projectService } from './projectService.js';
 
 const safeNum = (val) => {
     if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
     const n = Number(val);
-    return isNaN(n) ? null : n;
+    return Number.isNaN(n) ? null : n;
 };
 
 const safeString = (val) => {
@@ -14,15 +16,36 @@ const safeString = (val) => {
 };
 
 export const timesheetService = {
-    async getTimesheets(filters) {
+    async getTimesheets(user, filters) {
+        if (!isAdmUser(user)) {
+            const projectIds = await projectService._getUserLinkedProjectIds(user);
+            return await timesheetRepository.findAll({
+                ...filters,
+                idColaborador: user.id,
+                projectIds
+            });
+        }
         return await timesheetRepository.findAll(filters);
     },
 
-    async getTimesheetById(id) {
+    async getTimesheetById(user, id) {
         const timesheet = await timesheetRepository.findById(id);
         if (!timesheet) {
             throw new Error('Apontamento não encontrado');
         }
+
+        if (!isAdmUser(user)) {
+            const projectIds = await projectService._getUserLinkedProjectIds(user);
+            const isOwner = String(timesheet.ID_Colaborador) === String(user.id);
+            const isInLinkedProject = projectIds.includes(Number(timesheet.ID_Projeto));
+
+            if (!isOwner && !isInLinkedProject) {
+                const error = new Error('Você não tem permissão para visualizar este apontamento.');
+                error.status = 403;
+                throw error;
+            }
+        }
+
         return timesheet;
     },
 
@@ -55,7 +78,7 @@ export const timesheetService = {
             userId: context.userId,
             action: 'CREATE',
             entity: 'horas_trabalhadas',
-            entityId: created.ID_Horas_Trabalhadas,
+            entityId: created?.ID_Horas_Trabalhadas,
             newData: created,
             ip: context.ip
         });

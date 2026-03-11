@@ -1,25 +1,50 @@
 import { clientRepository } from '../repositories/clientRepository.js';
 import { auditService } from '../audit/auditService.js';
 import { auditContext } from '../audit/auditMiddleware.js';
+import { isAdmUser } from '../utils/security.js';
+import { projectService } from './projectService.js';
 
 export const clientService = {
-    async getAllClients(includeInactive, options = {}) {
+    async getAllClients(user, includeInactive, options = {}) {
         const query = {
             page: options.page,
             limit: options.limit,
             order: options.sort ? { column: options.sort, ascending: options.order !== 'desc' } : { column: 'nome', ascending: true },
-            filters: {}
+            filters: {},
+            in: {}
         };
 
         if (includeInactive !== 'true') {
             query.filters.ativo = true;
         }
 
+        if (!isAdmUser(user)) {
+            // Se não for admin, busca apenas clientes de projetos vinculados
+            const projects = await projectService.getAllProjects(user);
+            const clientIds = [...new Set(projects.map(p => p.cliente_id))];
+
+            if (clientIds.length === 0) return [];
+            query.in.id = clientIds;
+        }
+
         return await clientRepository.findAll(query);
     },
 
-    async getClientById(id) {
-        return await clientRepository.findById(id);
+    async getClientById(user, id) {
+        const client = await clientRepository.findById(id);
+
+        if (client && !isAdmUser(user)) {
+            const projects = await projectService.getAllProjects(user);
+            const clientIds = [...new Set(projects.map(p => p.cliente_id))];
+
+            if (!clientIds.includes(Number(id))) {
+                const error = new Error('Você não tem permissão para visualizar este cliente.');
+                error.status = 403;
+                throw error;
+            }
+        }
+
+        return client;
     },
 
     async createClient(data) {

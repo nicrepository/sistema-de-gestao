@@ -2,20 +2,78 @@ import { supabaseAdmin } from '../config/supabaseAdmin.js';
 import { projectRepository } from '../repositories/projectRepository.js';
 import { auditService } from '../audit/auditService.js';
 import { auditContext } from '../audit/auditMiddleware.js';
+import { isAdmUser } from '../utils/security.js';
 
 export const projectService = {
-    async getAllProjects(filters) {
+    async getAllProjects(user, filters) {
+        if (!isAdmUser(user)) {
+            // Se não for admin, filtra apenas os projetos que o usuário tem vínculo
+            const userProjectIds = await this._getUserLinkedProjectIds(user);
+            if (userProjectIds.length === 0) return [];
+
+            return await projectRepository.findAll({
+                ...filters,
+                projectIds: userProjectIds
+            });
+        }
         return await projectRepository.findAll(filters);
     },
 
-    async getProjectById(id) {
+    async getProjectById(user, id) {
         const project = await projectRepository.findById(id);
         if (!project) {
             const error = new Error('Projeto não encontrado');
             error.status = 404;
             throw error;
         }
+
+        // Se não for admin, verifica se tem vínculo
+        if (!isAdmUser(user)) {
+            const isMember = await checkUserIsMember(id, user.id);
+            const hasTasks = await checkUserHasTasks(id, user.id);
+            const isManager = project.manager === user.nome || project.manager === user.email;
+
+            if (!isMember && !hasTasks && !isManager) {
+                const error = new Error('Você não tem permissão para visualizar este projeto.');
+                error.status = 403;
+                throw error;
+            }
+        }
+
         return project;
+    },
+
+    /**
+     * Auxiliar para buscar IDs de projetos vinculados ao usuário
+     */
+    async _getUserLinkedProjectIds(user) {
+        // Busca em project_members
+        const { data: memberProjects } = await supabaseAdmin
+            .from('project_members')
+            .select('id_projeto')
+            .eq('id_colaborador', user.id);
+
+        // Busca em fato_tarefas
+        const { data: taskProjects } = await supabaseAdmin
+            .from('fato_tarefas')
+            .select('ID_Projeto')
+            .eq('ID_Colaborador', user.id)
+            .is('deleted_at', null);
+
+        // Busca por gerência
+        const { data: managedProjects } = await supabaseAdmin
+            .from('dim_projetos')
+            .select('ID_Projeto')
+            .or(`manager.eq."${user.nome}",manager.eq."${user.email}"`)
+            .is('deleted_at', null);
+
+        const ids = new Set([
+            ...(memberProjects || []).map(p => p.id_projeto),
+            ...(taskProjects || []).map(p => p.ID_Projeto),
+            ...(managedProjects || []).map(p => p.ID_Projeto)
+        ]);
+
+        return Array.from(ids).map(Number).filter(id => !Number.isNaN(id));
     },
 
     async createProject(data) {

@@ -65,6 +65,10 @@ export const supabaseAdapter = {
             q = q.order(query.order.column, { ascending });
         }
 
+        if (query.or) {
+            q = q.or(query.or);
+        }
+
         // Paginação
         if (query.offset !== undefined && query.limit) {
             const from = Number.parseInt(query.offset);

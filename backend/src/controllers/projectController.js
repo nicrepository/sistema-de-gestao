@@ -4,7 +4,7 @@ import { sendSuccess, handleRouteError } from '../utils/responseHelper.js';
 export const projectController = {
     async getProjects(req, res) {
         try {
-            const projects = await projectService.getAllProjects(req.query);
+            const projects = await projectService.getAllProjects(req.user, req.query);
             return sendSuccess(res, projects);
         } catch (e) {
             return handleRouteError(res, e, 'ProjectController.getProjects');
@@ -14,7 +14,7 @@ export const projectController = {
     async getById(req, res) {
         try {
             const { id } = req.params;
-            const project = await projectService.getProjectById(id);
+            const project = await projectService.getProjectById(req.user, id);
             return sendSuccess(res, project);
         } catch (e) {
             return handleRouteError(res, e, 'ProjectController.getById');

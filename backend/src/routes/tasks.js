@@ -10,7 +10,7 @@ router.use(authMiddleware);
 router.get('/', roleMiddleware(['ADMIN', 'MANAGER', 'USER']), taskController.getTasks);
 router.get('/:id', roleMiddleware(['ADMIN', 'MANAGER', 'USER']), taskController.getTaskById);
 router.post('/', roleMiddleware(['ADMIN', 'MANAGER']), taskController.createTask);
-router.put('/:id', roleMiddleware(['ADMIN', 'MANAGER']), taskController.updateTask);
+router.put('/:id', roleMiddleware(['ADMIN', 'MANAGER', 'USER']), taskController.updateTask);
 router.delete('/:id', roleMiddleware(['ADMIN', 'MANAGER']), taskController.deleteTask);
 
 export default router;

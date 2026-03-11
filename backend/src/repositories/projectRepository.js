@@ -21,7 +21,7 @@ const PROJECT_SELECT = [
 ].join(', ');
 
 export const projectRepository = {
-    async findAll({ clientIds, includeInactive = false, status } = {}) {
+    async findAll({ clientIds, projectIds, includeInactive = false, status } = {}) {
         const query = {
             select: PROJECT_SELECT,
             order: { column: 'nome' },
@@ -40,6 +40,10 @@ export const projectRepository = {
         if (clientIds) {
             const ids = typeof clientIds === 'string' ? clientIds.split(',').map(Number) : clientIds;
             query.in.cliente_id = ids;
+        }
+
+        if (projectIds) {
+            query.in.id = projectIds;
         }
 
         return await dbFindAll('v_projetos', query);

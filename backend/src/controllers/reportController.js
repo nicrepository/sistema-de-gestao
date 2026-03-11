@@ -41,7 +41,7 @@ export const reportController = {
                 statuses: parseCsvStringArray(req.query.statuses)
             };
 
-            const data = await reportService.getReportData(filters);
+            const data = await reportService.getReportData(req.user, filters);
             res.json({
                 success: true,
                 data: {
@@ -68,7 +68,7 @@ export const reportController = {
                 statuses: parseCsvStringArray(req.query.statuses)
             };
 
-            const { rows } = await reportService.getReportData(filters);
+            const { rows } = await reportService.getReportData(req.user, filters);
             res.json({
                 dataset: 'relatorio_horas_custos',
                 generatedAt: new Date().toISOString(),
@@ -92,7 +92,7 @@ export const reportController = {
                 statuses: parseCsvStringArray(req.query.statuses)
             };
 
-            const { rows } = await reportService.getReportData(filters);
+            const { rows } = await reportService.getReportData(req.user, filters);
             const wb = await reportService.generateExcel(rows, filters);
 
             let baseName = "Relatorio Geral";
@@ -101,17 +101,17 @@ export const reportController = {
                 const cId = filters.clientIds[0];
                 const item = rows.find(r => r.id_cliente === cId);
                 const nome = item ? (item.nome_cliente || item.cliente) : null;
-                if (nome) baseName = `Relatorio de Cliente ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+                if (nome) baseName = `Relatorio de Cliente ${nome.replaceAll(/[^a-zA-Z0-9À-ÿ\s-]+/g, '')}`;
             } else if (filters.projectIds?.length === 1 && rows.length > 0) {
                 const pId = filters.projectIds[0];
                 const item = rows.find(r => r.id_projeto === pId);
                 const nome = item ? (item.nome_projeto || item.projeto) : null;
-                if (nome) baseName = `Relatorio do Projeto ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+                if (nome) baseName = `Relatorio do Projeto ${nome.replaceAll(/[^a-zA-Z0-9À-ÿ\s-]+/g, '')}`;
             } else if (filters.collaboratorIds?.length === 1 && rows.length > 0) {
                 const cId = filters.collaboratorIds[0];
                 const item = rows.find(r => r.id_colaborador === cId);
                 const nome = item ? (item.nome_colaborador || item.colaborador) : null;
-                if (nome) baseName = `Relatorio do Colaborador ${nome.replace(/[^a-zA-Z0-9À-ÿ\s\-]+/g, '')}`;
+                if (nome) baseName = `Relatorio do Colaborador ${nome.replaceAll(/[^a-zA-Z0-9À-ÿ\s-]+/g, '')}`;
             }
 
             let dateParams = 'de Todo o Periodo';
@@ -137,7 +137,7 @@ export const reportController = {
                 }
             }
 
-            const fileName = `${baseName} ${dateParams}.xlsx`.replace(/\s+/g, ' ');
+            const fileName = `${baseName} ${dateParams}.xlsx`.replaceAll(/\s+/g, ' ');
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);

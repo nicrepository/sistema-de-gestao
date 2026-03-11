@@ -1,5 +1,6 @@
 import { sendError } from "../utils/responseHelper.js";
 import { logger } from "../utils/logger.js";
+import { isAdmUser } from "../utils/security.js";
 
 /**
  * Middleware de controle de acesso baseado em Roles (RBAC)
@@ -12,15 +13,13 @@ export const roleMiddleware = (allowedRoles) => {
                 return sendError(res, "Usuário não autenticado", 401);
             }
 
-            // Normaliza o role do usuário para comparação (remove espaços, transforma em uppercase)
-            const userRole = String(req.user.role || '').trim().toUpperCase().replace(/\s+/g, '_');
-
-            // ADMIN, SYSTEM_ADMIN, EXECUTIVOS e GESTORES tem acesso total sempre
-            const ADMIN_ROLES = ['ADMIN', 'ADMINISTRADOR', 'SYSTEM_ADMIN', 'EXECUTIVE', 'DEVELOPER', 'CEO', 'GESTOR', 'PMO', 'DIRETORIA', 'GERENTE'];
-
-            if (ADMIN_ROLES.includes(userRole)) {
+            // Se for admin/gestão, tem acesso total sempre
+            if (isAdmUser(req.user)) {
                 return next();
             }
+
+            // Normaliza o role do usuário para comparação
+            const userRole = String(req.user.role || '').trim().toUpperCase().replaceAll(/\s+/g, '_');
 
             // Normaliza as permissões da rota
             const normalizedAllowed = allowedRoles.map(r => r.toUpperCase());
