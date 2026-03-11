@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { Task, Status, Priority, Impact } from '@/types';
 import {
-  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock
+  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil
 } from 'lucide-react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import ConfirmationModal from './ConfirmationModal';
@@ -21,7 +21,7 @@ const TaskDetail: React.FC = () => {
   const { currentUser, isAdmin } = useAuth();
   const {
     tasks, clients, projects, users, projectMembers, timesheetEntries,
-    createTask, updateTask, deleteTask, holidays,
+    createTask, updateTask, deleteTask, holidays, deleteTimesheet,
     taskMemberAllocations, setTaskMemberAllocations, absences
   } = useDataController();
 
@@ -448,6 +448,21 @@ const TaskDetail: React.FC = () => {
     const membersIds = projectMembers.filter((pm: any) => String(pm.id_projeto) === formData.projectId).map((pm: any) => String(pm.id_colaborador));
     return users.filter((u: any) => u.active !== false && (membersIds.includes(u.id) || u.id === formData.developerId));
   }, [users, projectMembers, formData.projectId, formData.developerId]);
+
+  const handleEditTimesheet = (id: string) => {
+    navigate(`/timesheet/${id}`);
+  };
+
+  const handleDeleteTimesheet = async (id: string) => {
+    if (window.confirm('Deseja excluir este apontamento?')) {
+      try {
+        await deleteTimesheet(id);
+        alert('Apontamento excluído com sucesso!');
+      } catch (e) {
+        alert('Erro ao excluir apontamento.');
+      }
+    }
+  };
 
   if (!isNew && !task) return <div className="p-8 text-center" style={{ color: 'var(--text-muted)' }}>Tarefa não encontrada.</div>;
 
@@ -1090,6 +1105,7 @@ const TaskDetail: React.FC = () => {
                           <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Colaborador</th>
                           <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Horas</th>
                           <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Descrição</th>
+                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40 text-right" style={{ color: 'var(--muted)' }}>Ações</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[var(--border)]">
@@ -1129,6 +1145,30 @@ const TaskDetail: React.FC = () => {
                                 <p className="text-[11px] leading-relaxed opacity-80" style={{ color: 'var(--text)' }}>
                                   {entry.description || <span className="italic opacity-30">Sem descrição detalhada...</span>}
                                 </p>
+                              </div>
+                            </td>
+                            <td className="py-5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {(isAdmin || entry.userId === currentUser?.id) && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditTimesheet(entry.id)}
+                                      className="p-2 rounded-lg hover:bg-emerald-500/10 text-emerald-500 transition-colors"
+                                      title="Editar Apontamento"
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteTimesheet(entry.id)}
+                                      className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                                      title="Excluir Apontamento"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>

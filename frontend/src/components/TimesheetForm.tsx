@@ -374,10 +374,13 @@ const TimesheetForm: React.FC = () => {
     const validStatus = ['Todo', 'In Progress', 'Review', 'Testing'].includes(t.status || '');
     const validTitle = t.title && t.title !== '(Sem título)' && t.title.trim() !== '';
 
-    if (!validStatus || !validTitle) return false;
-
     // Se a tarefa for a que já está salva neste lançamento, permite que ela apareça mesmo se concluída
     if (formData.taskId && t.id === formData.taskId) return true;
+
+    // Permite que todas as tarefas, inclusive concluídas (Done), apareçam na lista para apontamentos/edições atrasadas 
+    // ou seja, se for Done, o validStatus seria falso, mas vamos permitir caso seja o desejado pelo cliente
+    if (!validStatus && t.status !== 'Done') return false;
+    if (!validTitle) return false;
 
     // Se for admin, mostra todas as tarefas do projeto que passaram no filtro de status
     if (isAdmin) return true;

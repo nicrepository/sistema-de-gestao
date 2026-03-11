@@ -26,7 +26,7 @@ export const timesheetController = {
 
     async createTimesheet(req, res) {
         try {
-            const newTimesheet = await timesheetService.createTimesheet(req.body);
+            const newTimesheet = await timesheetService.createTimesheet(req.user, req.body);
             return sendSuccess(res, newTimesheet, 201);
         } catch (e) {
             if (e.message?.includes('Dados incompletos')) {
@@ -39,7 +39,7 @@ export const timesheetController = {
     async updateTimesheet(req, res) {
         try {
             const { id } = req.params;
-            const updatedTimesheet = await timesheetService.updateTimesheet(id, req.body);
+            const updatedTimesheet = await timesheetService.updateTimesheet(req.user, id, req.body);
             return sendSuccess(res, updatedTimesheet);
         } catch (e) {
             if (e.message === 'Apontamento não encontrado') {
@@ -52,7 +52,7 @@ export const timesheetController = {
     async deleteTimesheet(req, res) {
         try {
             const { id } = req.params;
-            await timesheetService.deleteTimesheet(id);
+            await timesheetService.deleteTimesheet(req.user, id);
             return sendSuccess(res, { message: 'Apontamento excluído com sucesso.' });
         } catch (e) {
             if (e.message === 'Apontamento não encontrado') {

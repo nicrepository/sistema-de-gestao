@@ -49,7 +49,7 @@ export const timesheetService = {
         return timesheet;
     },
 
-    async createTimesheet(data) {
+    async createTimesheet(user, data) {
         // Validation
         if (!data.userId || !data.projectId || !data.taskId || !data.date) {
             throw new Error('Dados incompletos para criação de apontamento');
@@ -86,8 +86,8 @@ export const timesheetService = {
         return created;
     },
 
-    async updateTimesheet(id, data) {
-        const oldTimesheet = await this.getTimesheetById(id);
+    async updateTimesheet(user, id, data) {
+        const oldTimesheet = await this.getTimesheetById(user, id);
 
         const payload = {};
         if (data.userId !== undefined) payload.ID_Colaborador = safeNum(data.userId);
@@ -121,9 +121,9 @@ export const timesheetService = {
         return updated;
     },
 
-    async deleteTimesheet(id) {
+    async deleteTimesheet(user, id) {
         // Verificar existencia
-        const oldTimesheet = await this.getTimesheetById(id);
+        const oldTimesheet = await this.getTimesheetById(user, id);
 
         await timesheetRepository.delete(id);
 

@@ -176,8 +176,8 @@ export const useDataController = () => {
             await taskService.updateTask(taskId, updates);
             setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
         },
-        deleteTask: async (taskId: string) => {
-            await taskService.deleteTask(taskId);
+        deleteTask: async (taskId: string, force: boolean = false, deleteHours: boolean = false) => {
+            await taskService.deleteTask(taskId, force, deleteHours);
             setTasks(prev => prev.filter(t => t.id !== taskId));
         },
         getTimesheetsByUser: (userId: string) => timesheetEntries.filter(e => e.userId === userId),

@@ -144,6 +144,7 @@ app.use("/api/v1", apiV1);
 app.use("/api/auth", authRoutes);
 app.use("/api/clientes", clientsRoutes);
 app.use("/api/projetos", projectRoutes);
+app.use("/api/projects", projectRoutes);
 app.use("/api/tarefas", tasksRoutes);
 app.use("/api/tasks", tasksRoutes);
 app.use("/api/colaboradores", collaboratorRoutes);
