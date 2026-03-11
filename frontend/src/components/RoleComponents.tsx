@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole, FINANCIAL_ROLES, PROJECT_EDIT_ROLES, USER_MANAGEMENT_ROLES } from '@/constants/roles';
+import { UserRole, FINANCIAL_ROLES, PROJECT_EDIT_ROLES, USER_MANAGEMENT_ROLES, ALL_ADMIN_ROLES } from '@/constants/roles';
 
 interface ShowForRolesProps {
     roles: UserRole[];
@@ -23,8 +23,8 @@ export const ShowForRoles: React.FC<ShowForRolesProps> = ({
 
     if (!currentUser) return <>{fallback}</>;
 
-    const userRole = currentUser.role || 'resource';
-    const hasPermission = roles.includes(userRole as UserRole);
+    const userRole = String(currentUser.role || 'resource').trim().toLowerCase().replace(/\s+/g, '_');
+    const hasPermission = (roles as string[]).includes(userRole);
 
     return hasPermission ? <>{children}</> : <>{fallback}</>;
 };
@@ -40,8 +40,8 @@ export const HideForRoles: React.FC<ShowForRolesProps> = ({
 
     if (!currentUser) return null;
 
-    const userRole = currentUser.role || 'resource';
-    const shouldHide = roles.includes(userRole as UserRole);
+    const userRole = String(currentUser.role || 'resource').trim().toLowerCase().replace(/\s+/g, '_');
+    const shouldHide = (roles as string[]).includes(userRole);
 
     return shouldHide ? null : <>{children}</>;
 };
@@ -77,7 +77,7 @@ export const ShowProjectEditControls: React.FC<{
     const userRole = currentUser.role || 'resource';
 
     // System Admin sempre pode editar
-    if (userRole === 'system_admin' || userRole === 'ceo' || userRole === 'admin') {
+    if (ALL_ADMIN_ROLES.includes(userRole)) {
         return <>{children}</>;
     }
 
@@ -116,7 +116,7 @@ export const ShowForAdmin: React.FC<{
     children: React.ReactNode
 }> = ({ children }) => {
     return (
-        <ShowForRoles roles={['system_admin', 'ceo', 'admin']}>
+        <ShowForRoles roles={ALL_ADMIN_ROLES as any}>
             {children}
         </ShowForRoles>
     );
@@ -129,7 +129,7 @@ export const ShowForExecutive: React.FC<{
     children: React.ReactNode
 }> = ({ children }) => {
     return (
-        <ShowForRoles roles={['system_admin', 'executive', 'ceo', 'admin']}>
+        <ShowForRoles roles={ALL_ADMIN_ROLES as any}>
             {children}
         </ShowForRoles>
     );
@@ -142,7 +142,7 @@ export const ShowForPMO: React.FC<{
     children: React.ReactNode
 }> = ({ children }) => {
     return (
-        <ShowForRoles roles={['system_admin', 'executive', 'pmo', 'ceo', 'admin']}>
+        <ShowForRoles roles={ALL_ADMIN_ROLES as any}>
             {children}
         </ShowForRoles>
     );
@@ -157,7 +157,7 @@ export const usePermissions = () => {
     const userRole = currentUser?.role || 'resource';
 
     return {
-        isAdmin: userRole === 'system_admin' || userRole === 'ceo' || userRole === 'admin',
+        isAdmin: ALL_ADMIN_ROLES.includes(userRole),
         isExecutive: userRole === 'executive',
         isPMO: userRole === 'pmo',
         isFinancial: userRole === 'financial',

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, PropsWithChildren } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/services/supabaseClient';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -107,10 +108,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const isAdmin = !!currentUser && (() => {
         const role = String(currentUser.role || '').trim().toLowerCase().replace(/\s+/g, '_');
-        return [
-            'admin', 'administrador', 'gestor', 'diretoria', 'pmo', 'financeiro',
-            'system_admin', 'executive', 'ceo', 'gerente', 'coordenador'
-        ].includes(role);
+        return ALL_ADMIN_ROLES.includes(role);
     })();
 
     return (

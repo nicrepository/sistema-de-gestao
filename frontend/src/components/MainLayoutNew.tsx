@@ -3,6 +3,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { ThemeContext } from '@/App';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 import { Role } from '@/types';
 import {
   LayoutDashboard,
@@ -47,8 +48,7 @@ const MainLayoutNew: React.FC = () => {
     { path: '/admin/team', icon: Users, label: 'Colaboradores' },
     { path: '/admin/rh', icon: Palmtree, label: 'Gestão RH' },
     { path: '/admin/reports', icon: LayoutDashboard, label: 'Relatórios' },
-    { path: '/timesheet', icon: Clock, label: 'Meu Timesheet' },
-    { path: '/admin/timesheet', icon: Users, label: 'Timesheet Geral' },
+    { path: '/timesheet', icon: Clock, label: 'Timesheet' },
   ];
 
   const developerMenuItems = [
@@ -60,11 +60,7 @@ const MainLayoutNew: React.FC = () => {
     { path: '/docs', icon: Book, label: 'Documentação' },
   ];
 
-  const adminRoles: Role[] = [
-    'admin', 'administrador', 'gestor', 'gestao', 'gestão', 'gerente',
-    'diretoria', 'pmo', 'financeiro', 'financial', 'tech_lead',
-    'system_admin', 'executive', 'ceo', 'coordenador'
-  ];
+  const adminRoles = ALL_ADMIN_ROLES;
 
   const normalizedRole = String(currentUser?.role || '').trim().toLowerCase().replace(/\s+/g, '_');
   const menuItems = adminRoles.includes(normalizedRole as Role)

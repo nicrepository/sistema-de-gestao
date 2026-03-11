@@ -216,7 +216,6 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
     if (!canViewOthers) return [];
 
     return safeUsers
-      .filter((u: User) => u.active !== false && u.torre !== 'N/A')
       .map((u: User) => {
         const missing = calculateDaysMissing(u.id);
         const status = missing > 0 ? 'late' : 'ontime';

@@ -4,7 +4,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Role } from '@/types';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 interface RoleGuardProps {
     allowedRoles: Role[];
@@ -41,9 +41,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     const userRole = String(currentUser.role || 'resource').trim().toLowerCase().replace(/\s+/g, '_');
 
     // Bypass automático para roles administrativas (opcional, mas recomendado se quiser consistência com backend)
-    const ADMIN_ROLES = ['admin', 'administrador', 'gestor', 'diretoria', 'pmo', 'system_admin', 'executive', 'ceo', 'gerente', 'developer'];
-
-    if (ADMIN_ROLES.includes(userRole)) {
+    if (ALL_ADMIN_ROLES.includes(userRole)) {
         return <>{children}</>;
     }
 
@@ -68,8 +66,7 @@ export const useRoleCheck = () => {
         const userRole = String(currentUser.role || 'resource').trim().toLowerCase().replace(/\s+/g, '_');
 
         // ADMIN Bypass
-        const ADMIN_ROLES = ['admin', 'administrador', 'gestor', 'diretoria', 'pmo', 'system_admin', 'executive', 'ceo', 'gerente', 'developer'];
-        if (ADMIN_ROLES.includes(userRole)) return true;
+        if (ALL_ADMIN_ROLES.includes(userRole)) return true;
 
         const rolesArray = Array.isArray(roles) ? roles : [roles];
         const normalizedRoles = rolesArray.map(r => String(r).trim().toLowerCase().replace(/\s+/g, '_'));

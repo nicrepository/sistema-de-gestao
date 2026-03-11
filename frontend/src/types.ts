@@ -3,7 +3,7 @@
 
 export type Status = 'Todo' | 'In Progress' | 'Testing' | 'Review' | 'Done';
 
-export type Role = 'admin' | 'developer' | 'gestor' | 'diretoria' | 'pmo' | 'rh' | 'financeiro' | 'financial' | 'tech_lead' | 'consultor' | 'system_admin' | 'executive' | 'resource' | 'ceo';
+export type Role = 'admin' | 'administrador' | 'developer' | 'gestor' | 'gestao' | 'gestão' | 'diretoria' | 'diretoria_geral' | 'pmo' | 'rh' | 'financeiro' | 'financial' | 'tech_lead' | 'consultor' | 'system_admin' | 'executive' | 'resource' | 'ceo' | 'gerente' | 'coordenador';
 
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type Impact = 'Low' | 'Medium' | 'High';

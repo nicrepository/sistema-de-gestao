@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import * as CapacityUtils from '@/utils/capacity';
 import * as allocationService from '@/services/allocationService';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -401,7 +402,7 @@ const TaskDetail: React.FC = () => {
     if (!taskId || !deleteConfirmation) return;
 
     // Se houver horas e NÃO for system_admin ou admin, bloqueia no front também
-    if (deleteConfirmation.force && !['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '')) {
+    if (deleteConfirmation.force && !ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase())) {
       alert("Aviso: Como esta tarefa possui banco de horas vinculado, você não possui o nível de acesso à deleção forçada. Apenas o Administrador do Sistema pode excluir tarefas que já possuem horas apontadas.");
       setDeleteConfirmation(null);
       return;
@@ -1238,7 +1239,7 @@ const TaskDetail: React.FC = () => {
                 </label>
               </div>
 
-              {!['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '') ? (
+              {!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) ? (
                 <div className="flex bg-amber-50 rounded-xl p-4 items-start gap-4 mb-3 shadow-inner">
                   <AlertTriangle size={18} className="text-amber-500 shrink-0" />
                   <div>
@@ -1265,7 +1266,7 @@ const TaskDetail: React.FC = () => {
         confirmColor="red"
         onConfirm={performDelete}
         onCancel={() => { setDeleteConfirmation(null); setDeleteConfirmText(''); setShouldDeleteHours(false); }}
-        disabled={!!(deleteConfirmation?.force && (!['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '') || deleteConfirmText !== task?.title))}
+        disabled={!!(deleteConfirmation?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== task?.title))}
       />
 
       {

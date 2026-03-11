@@ -43,11 +43,7 @@ import AdminMonitoringView from '@/components/AdminMonitoringView';
 import AbsenceManager from '@/components/AbsenceManager';
 
 // Definição de grupos de acesso
-const ADMIN_ROLES: Role[] = [
-    'admin', 'administrador', 'gestor', 'gestao', 'gestão', 'gerente',
-    'diretoria', 'pmo', 'financeiro', 'financial', 'tech_lead',
-    'system_admin', 'executive', 'ceo', 'coordenador'
-];
+const ADMIN_ROLES: Role[] = ALL_ADMIN_ROLES as Role[];
 
 interface ProtectedWrapperProps {
     children: React.ReactNode;

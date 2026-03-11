@@ -48,29 +48,36 @@ export const FINANCIAL_ROLES: UserRole[] = [
     'admin' as any // Incluindo admin antigo
 ];
 
-// Roles que podem editar projetos
-export const PROJECT_EDIT_ROLES: UserRole[] = [
-    USER_ROLES.SYSTEM_ADMIN,
-    USER_ROLES.CEO,
-    USER_ROLES.PMO,
-    'admin' as any
-];
-
-// Roles que podem gerenciar usuários
-export const USER_MANAGEMENT_ROLES: UserRole[] = [
-    USER_ROLES.SYSTEM_ADMIN,
-    USER_ROLES.CEO,
-    USER_ROLES.RH,
-    'admin' as any
-];
-
-// Roles que podem ver os lançamentos (Timesheet) de todos os colaboradores
-export const TIMESHEET_VIEW_ALL_ROLES: string[] = [
+// Todos os roles com privilégios administrativos
+export const ALL_ADMIN_ROLES: string[] = [
     'system_admin',
     'admin',
+    'administrador',
     'ceo',
     'executive',
     'diretoria',
+    'diretoria_geral',
     'pmo',
-    'gestor'
+    'gestor',
+    'gestao',
+    'gestão',
+    'gerente',
+    'coordenador',
+    'financial',
+    'financeiro',
+    'tech_lead',
+    'manutencao',
+    'manutenção',
+    'manutencao_do_sistema',
+    'rh',
+    'pmo_gestor',
 ];
+
+// Roles que podem editar projetos
+export const PROJECT_EDIT_ROLES: string[] = ALL_ADMIN_ROLES;
+
+// Roles que podem gerenciar usuários
+export const USER_MANAGEMENT_ROLES: string[] = ALL_ADMIN_ROLES;
+
+// Roles que podem ver os lançamentos (Timesheet) de todos os colaboradores
+export const TIMESHEET_VIEW_ALL_ROLES: string[] = ALL_ADMIN_ROLES;

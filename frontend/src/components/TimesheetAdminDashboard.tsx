@@ -6,6 +6,7 @@ import { Building2, ArrowRight, Clock, Briefcase, Users, TrendingUp, BarChart3, 
 import { Project, User, Absence, Task, Client, TimesheetEntry } from '@/types';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import { getUserStatus } from '@/utils/userStatus';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 const TimesheetAdminDashboard: React.FC = () => {
    const [searchParams, setSearchParams] = useSearchParams();
@@ -62,10 +63,10 @@ const TimesheetAdminDashboard: React.FC = () => {
          }
       }
 
-      const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead'];
-      const monitoredCollaborators = users.filter((u: User) =>
-         true
-      );
+      const monitoredCollaborators = users.filter((u: User) => {
+         const normalizedRole = String(u.role || '').trim().toLowerCase().replace(/\s+/g, '_');
+         return true; // Exibir todos conforme solicitado
+      });
 
       return monitoredCollaborators.map((user: User) => {
          const userEntries = entries.filter((e: TimesheetEntry) => {
@@ -198,7 +199,7 @@ const TimesheetAdminDashboard: React.FC = () => {
 
       collabMap.forEach((collab, userId) => {
          const user = users.find(u => u.id === userId);
-         const activeRoles = ['admin', 'system_admin', 'gestor', 'diretoria', 'pmo', 'ceo', 'tech_lead'];
+         const activeRoles = ALL_ADMIN_ROLES;
 
          // Se o usuário existir e tiver horas, nós o mantemos para fins de histórico.
          // Se for inativo ou de outra torre, mas tiver horas, ele deve aparecer no histórico do projeto.

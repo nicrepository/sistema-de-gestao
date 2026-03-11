@@ -16,6 +16,7 @@ import * as CapacityUtils from '@/utils/capacity';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Absence } from '@/types';
 import { getProjectStatusByTimeline } from '@/utils/projectStatus';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 // --- UTILS ---
 const parseSafeDate = (d: string | null | undefined) => {
@@ -1831,7 +1832,7 @@ const ProjectDetailView: React.FC = () => {
               <p className="text-red-500 font-black">
                 Este projeto possui tarefas e possivelmente horas apontadas. A exclusão forçada removerá permanentemente TODO o histórico do projeto!
               </p>
-              {!['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '') ? (
+              {!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) ? (
                 <p className="text-xs p-3 bg-red-500/10 rounded-lg text-red-600 font-bold border border-red-500/20">
                   Bloqueado: Apenas o Administrador do Sistema pode realizar a exclusão forçada de projetos com dados.
                 </p>
@@ -1856,7 +1857,7 @@ const ProjectDetailView: React.FC = () => {
           if (itemToDelete?.type === 'project') {
             // Validações de segurança para delete forçada
             if (itemToDelete.force) {
-              if (!['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '')) {
+              if (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase())) {
                 alert('Apenas Administradores do Sistema podem excluir projetos com dados ativos.');
                 return;
               }
@@ -1887,7 +1888,7 @@ const ProjectDetailView: React.FC = () => {
           }
         }}
         onCancel={() => { setItemToDelete(null); setDeleteConfirmText(''); }}
-        disabled={!!(itemToDelete?.force && (!['system_admin', 'admin', 'ceo'].includes(currentUser?.role || '') || deleteConfirmText !== project?.name))}
+        disabled={!!(itemToDelete?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== project?.name))}
       />
     </div>
   );

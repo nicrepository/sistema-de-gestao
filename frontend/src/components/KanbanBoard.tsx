@@ -1133,8 +1133,8 @@ export const KanbanBoard = () => {
             <Archive size={18} />
           </button>
 
-          {/* Botão Nova Tarefa (Minhas Tarefas - Modal) */}
-          {location.pathname.includes('/developer/tasks') && (
+          {/* Botão Nova Tarefa (Pode ser criado por admin em qualquer lugar ou dev em sua página) */}
+          {(isAdmin || location.pathname.includes('/developer/tasks')) && (
             <button
               className="text-white px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 font-bold text-sm whitespace-nowrap active:scale-95"
               style={{ backgroundColor: 'var(--primary)' }}

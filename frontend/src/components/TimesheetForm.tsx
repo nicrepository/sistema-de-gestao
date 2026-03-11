@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { TimesheetEntry } from '@/types';
+import { ALL_ADMIN_ROLES } from '@/constants/roles';
 import { ArrowLeft, Save, Clock, Trash2, User as UserIcon, Briefcase, CheckSquare, Calendar, AlertCircle } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
@@ -310,7 +311,7 @@ const TimesheetForm: React.FC = () => {
     // mas a regra solicitada é restritiva ao vínculo.
     // Vamos verificar se o usuário alvo tem cargo de gestão/admin.
     const targetUser = users.find(u => u.id === targetUserId);
-    const targetIsAdmin = ['admin', 'system_admin', 'diretoria', 'gestor', 'pmo'].includes(targetUser?.role?.toLowerCase() || '');
+    const targetIsAdmin = ALL_ADMIN_ROLES.includes(targetUser?.role?.toLowerCase() || '');
 
     if (targetIsAdmin) return projects.map(p => p.id);
 
@@ -343,8 +344,9 @@ const TimesheetForm: React.FC = () => {
     if (!targetUserId) return [];
 
     const targetUser = users.find(u => u.id === targetUserId);
-    const activeRoles = ['admin', 'system_admin', 'diretoria', 'gestor', 'pmo', 'ceo', 'tech_lead'];
-    const targetIsAdmin = activeRoles.includes(targetUser?.role?.toLowerCase() || '');
+    const activeRoles = ALL_ADMIN_ROLES;
+    const normalizedRole = String(targetUser?.role || '').trim().toLowerCase().replace(/\s+/g, '_');
+    const targetIsAdmin = activeRoles.includes(normalizedRole);
 
     if (targetIsAdmin) return clients.map(c => c.id);
 

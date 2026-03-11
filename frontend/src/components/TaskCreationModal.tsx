@@ -112,8 +112,8 @@ export const TaskCreationModal: React.FC<TaskCreationModalProps> = ({ isOpen, on
 
     const eligibleUsers = useMemo(() => {
         return projectId
-            ? users.filter(u => u.active !== false && u.torre !== 'N/A' && projectMembers.some(pm => String(pm.id_projeto) === String(projectId) && String(pm.id_colaborador) === String(u.id)))
-            : users.filter(u => u.active !== false && u.torre !== 'N/A');
+            ? users.filter(u => u.active !== false && projectMembers.some(pm => String(pm.id_projeto) === String(projectId) && String(pm.id_colaborador) === String(u.id)))
+            : users.filter(u => u.active !== false);
     }, [users, projectId, projectMembers]);
 
     const handleSave = async () => {
