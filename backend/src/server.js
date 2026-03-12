@@ -40,7 +40,13 @@ const startTime = Date.now();
 app.use(helmet());
 
 // 2. CORS Seguro
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "https://gestao.nic-labs.com",
+    "https://api-gestao.nic-labs.com"
+];
 app.use(cors({
     origin: (origin, callback) => {
         // Permite requisições sem origin (como mobile apps ou curl) ou se estiver na whitelist ou se CORS_ORIGIN for *
