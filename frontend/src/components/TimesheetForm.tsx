@@ -416,7 +416,8 @@ const TimesheetForm: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
-            className="p-1.5 rounded-full transition-colors hover:bg-white/20 text-white"
+            disabled={loading}
+            className="p-1.5 rounded-full transition-colors hover:bg-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -453,7 +454,8 @@ const TimesheetForm: React.FC = () => {
             {isEditing && (
               <button
                 onClick={() => setDeleteModalOpen(true)}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 font-bold shadow-sm text-sm"
+                disabled={loading}
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 font-bold shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-3 h-3" />
                 Excluir
@@ -471,319 +473,320 @@ const TimesheetForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-4 overflow-hidden flex flex-col">
-        <div className={`grid gap-4 h-full ${isTaskLogMode ? 'grid-cols-1 max-w-xl mx-auto w-full' : 'grid-cols-1 lg:grid-cols-2'}`}>
+        <fieldset disabled={loading} className="border-none p-0 m-0 h-full flex flex-col contents">
+          <div className={`grid gap-4 h-full ${isTaskLogMode ? 'grid-cols-1 max-w-xl mx-auto w-full' : 'grid-cols-1 lg:grid-cols-2'}`}>
 
-          {/* Left Column: Project Info (Hidden in Task Log Mode) */}
-          {!isTaskLogMode && (
-            <div className="flex flex-col gap-4 min-h-0">
-              <div className="p-5 rounded-xl border shadow-sm flex-1 flex flex-col gap-4 overflow-y-auto" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
-                  <UserIcon className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-                  <h2 className="font-bold text-sm uppercase tracking-wider">Projeto & Dados</h2>
-                </div>
-
-                <div className="space-y-3 flex-1 flex flex-col">
-                  {/* Collaborator */}
-                  <div>
-                    <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Colaborador</label>
-                    {isAdmin ? (
-                      <select
-                        value={formData.userId || ''}
-                        onChange={(e) => {
-                          const u = users.find(user => user.id === e.target.value);
-                          markDirty();
-                          setFormData({ ...formData, userId: u?.id || '', userName: u?.name || '' });
-                        }}
-                        disabled={isEditing}
-                        className="w-full p-2.5 border rounded-lg outline-none font-medium text-sm focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                      >
-                        <option value="">Selecione...</option>
-                        {users.filter(u => u.active !== false || u.id === formData.userId).map(u => (
-                          <option key={u.id} value={u.id}>{u.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full p-2.5 border rounded-lg font-bold text-sm opacity-80"
-                        style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--muted)' }}>
-                        {formData.userName || ''}
-                      </div>
-                    )}
+            {/* Left Column: Project Info (Hidden in Task Log Mode) */}
+            {!isTaskLogMode && (
+              <div className="flex flex-col gap-4 min-h-0">
+                <div className="p-5 rounded-xl border shadow-sm flex-1 flex flex-col gap-4 overflow-y-auto" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
+                    <UserIcon className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                    <h2 className="font-bold text-sm uppercase tracking-wider">Projeto & Dados</h2>
                   </div>
 
-                  {/* Client & Project Row */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-3 flex-1 flex flex-col">
+                    {/* Collaborator */}
                     <div>
-                      <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Cliente *</label>
-                      <select
-                        value={formData.clientId}
-                        onChange={(e) => { markDirty(); setFormData({ ...formData, clientId: e.target.value, projectId: '', taskId: '' }); }}
-                        disabled={isEditing}
-                        className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                      >
-                        <option value="">Selecione...</option>
-                        {filteredClients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                      <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Colaborador</label>
+                      {isAdmin ? (
+                        <select
+                          value={formData.userId || ''}
+                          onChange={(e) => {
+                            const u = users.find(user => user.id === e.target.value);
+                            markDirty();
+                            setFormData({ ...formData, userId: u?.id || '', userName: u?.name || '' });
+                          }}
+                          disabled={isEditing}
+                          className="w-full p-2.5 border rounded-lg outline-none font-medium text-sm focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                        >
+                          <option value="">Selecione...</option>
+                          {users.filter(u => u.active !== false || u.id === formData.userId).map(u => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="w-full p-2.5 border rounded-lg font-bold text-sm opacity-80"
+                          style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--muted)' }}>
+                          {formData.userName || ''}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Client & Project Row */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Cliente *</label>
+                        <select
+                          value={formData.clientId}
+                          onChange={(e) => { markDirty(); setFormData({ ...formData, clientId: e.target.value, projectId: '', taskId: '' }); }}
+                          disabled={isEditing}
+                          className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                        >
+                          <option value="">Selecione...</option>
+                          {filteredClients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Projeto *</label>
+                        <select
+                          value={formData.projectId}
+                          onChange={(e) => { markDirty(); setFormData({ ...formData, projectId: e.target.value, taskId: '' }); }}
+                          disabled={!formData.clientId || isEditing}
+                          className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                        >
+                          <option value="">Selecione...</option>
+                          {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Task */}
                     <div>
-                      <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Projeto *</label>
+                      <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Tarefa *</label>
                       <select
-                        value={formData.projectId}
-                        onChange={(e) => { markDirty(); setFormData({ ...formData, projectId: e.target.value, taskId: '' }); }}
-                        disabled={!formData.clientId || isEditing}
+                        value={formData.taskId}
+                        onChange={(e) => { markDirty(); setFormData({ ...formData, taskId: e.target.value }); }}
+                        disabled={!formData.projectId || isEditing}
                         className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
                       >
-                        <option value="">Selecione...</option>
-                        {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        <option value="">Selecione a tarefa...</option>
+                        {filteredTasks.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
                       </select>
                     </div>
-                  </div>
 
-                  {/* Task */}
-                  <div>
-                    <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Tarefa *</label>
-                    <select
-                      value={formData.taskId}
-                      onChange={(e) => { markDirty(); setFormData({ ...formData, taskId: e.target.value }); }}
-                      disabled={!formData.projectId || isEditing}
-                      className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                    >
-                      <option value="">Selecione a tarefa...</option>
-                      {filteredTasks.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Notes in Standard Mode */}
-                  <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[10px] font-bold flex items-center gap-2 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>
-                        <AlertCircle className="w-3 h-3" /> {(isTrainingProject || isPmoTower) ? 'Status (Opcional)' : 'Status (Mín. 120 carac.) *'}
-                      </label>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${(isTrainingProject || isPmoTower) || ((formData.description?.length || 0) >= 120) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                        {formData.description?.length || 0} {(isTrainingProject || isPmoTower) ? '' : '/ 120'}
-                      </span>
+                    {/* Notes in Standard Mode */}
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold flex items-center gap-2 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>
+                          <AlertCircle className="w-3 h-3" /> {(isTrainingProject || isPmoTower) ? 'Status (Opcional)' : 'Status (Mín. 120 carac.) *'}
+                        </label>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${(isTrainingProject || isPmoTower) || ((formData.description?.length || 0) >= 120) ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                          {formData.description?.length || 0} {(isTrainingProject || isPmoTower) ? '' : '/ 120'}
+                        </span>
+                      </div>
+                      <textarea
+                        value={formData.description || ''}
+                        onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
+                        className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all flex-1 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
+                        style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
+                        placeholder="Descreva a atividade realizada (opcional)..."
+                      />
                     </div>
-                    <textarea
-                      value={formData.description || ''}
-                      onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
-                      className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all flex-1 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
-                      style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
-                      placeholder="Descreva a atividade realizada (opcional)..."
-                    />
+
                   </div>
-
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Right Column: Time Info */}
-          <div className="relative flex flex-col min-h-0">
-            {!canEnterTime && !isTaskLogMode && (
-              <div className="absolute inset-0 z-10 backdrop-blur-sm bg-[var(--bg)]/50 flex flex-col items-center justify-center text-center p-6 border rounded-xl border-dashed" style={{ borderColor: 'var(--border)' }}>
-                <div className="w-12 h-12 rounded-full bg-[var(--surface-2)] flex items-center justify-center mb-3">
-                  <Clock className="w-6 h-6 text-[var(--muted)]" />
-                </div>
-                <h3 className="font-bold text-[var(--text)]">Aguardando Dados</h3>
-                <p className="text-sm text-[var(--muted)] max-w-xs mt-1">Selecione um cliente, projeto e tarefa para liberar o apontamento de horas.</p>
               </div>
             )}
 
-            <div className={`p-5 rounded-xl border shadow-sm flex flex-col gap-4 overflow-y-auto h-full ${!canEnterTime && !isTaskLogMode ? 'opacity-40 pointer-events-none' : ''}`} style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-              {isTaskLogMode && (
-                // Minimal Project Info Header for Task Mode
-                <div className="flex items-center gap-2 pb-2 mb-2 border-b border-dashed" style={{ borderColor: 'var(--border)' }}>
-                  <Briefcase className="w-3 h-3 text-[var(--muted)]" />
-                  <span className="text-xs font-bold text-[var(--muted)]">
-                    {clients.find(c => c.id === formData.clientId)?.name}
-                    <span className="mx-1">/</span>
-                    {projects.find(p => p.id === formData.projectId)?.name}
-                  </span>
+            {/* Right Column: Time Info */}
+            <div className="relative flex flex-col min-h-0">
+              {!canEnterTime && !isTaskLogMode && (
+                <div className="absolute inset-0 z-10 backdrop-blur-sm bg-[var(--bg)]/50 flex flex-col items-center justify-center text-center p-6 border rounded-xl border-dashed" style={{ borderColor: 'var(--border)' }}>
+                  <div className="w-12 h-12 rounded-full bg-[var(--surface-2)] flex items-center justify-center mb-3">
+                    <Clock className="w-6 h-6 text-[var(--muted)]" />
+                  </div>
+                  <h3 className="font-bold text-[var(--text)]">Aguardando Dados</h3>
+                  <p className="text-sm text-[var(--muted)] max-w-xs mt-1">Selecione um cliente, projeto e tarefa para liberar o apontamento de horas.</p>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
-                <Clock className="w-4 h-4" style={{ color: 'var(--primary)' }} />
-                <h2 className="font-bold text-sm uppercase tracking-wider">Horário & Jornada</h2>
-              </div>
-
-              <div className="space-y-4 flex-1">
-                <div>
-                  <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Data *</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => { markDirty(); setFormData({ ...formData, date: e.target.value }); }}
-                    className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm shadow-sm focus:ring-1 focus:ring-[var(--ring)]"
-                    style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <TimePicker
-                    label="Início *"
-                    icon={<Clock className="w-3 h-3 text-emerald-500" />}
-                    value={formData.startTime || '09:00'}
-                    onChange={(val) => validateAndSetTime('startTime', val)}
-                  />
-                  <TimePicker
-                    label="Fim *"
-                    icon={<Clock className="w-3 h-3 text-red-500" />}
-                    value={formData.endTime || '18:00'}
-                    onChange={(val) => validateAndSetTime('endTime', val)}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      markDirty();
-                      setFormData(prev => ({ ...prev, startTime: '08:00', endTime: '17:00' }));
-                    }}
-                    className="flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border hover:bg-[var(--surface-hover)] hover:shadow-sm"
-                    style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--muted)' }}
-                  >
-                    Turno 1 (08-17)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      markDirty();
-                      setFormData(prev => ({ ...prev, startTime: '08:30', endTime: '17:30' }));
-                    }}
-                    className="flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border hover:bg-[var(--surface-hover)] hover:shadow-sm"
-                    style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--muted)' }}
-                  >
-                    Turno 2 (08:30-17:30)
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 p-3 rounded-lg border cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
-                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}
-                  onClick={() => { setDeductLunch(!deductLunch); markDirty(); }}>
-                  <input
-                    type="checkbox"
-                    checked={deductLunch}
-                    onChange={() => { }}
-                    className="w-4 h-4 rounded text-[var(--primary)] pointer-events-none"
-                  />
-                  <span className="text-xs font-bold select-none" style={{ color: 'var(--text)' }}>Descontar 1h de almoço</span>
-                </div>
-
-                {/* Total & Progress */}
-                <div className="flex justify-between items-center p-4 rounded-xl border shadow-inner mt-2"
-                  style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                  <div className="flex flex-col">
-                    <span className="font-extrabold text-[10px] uppercase tracking-widest opacity-50" style={{ color: 'var(--text)' }}>Total deste lançamento:</span>
-                    <span className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>
-                      {deductLunch ? '(Considerando 1h de almoço)' : '(Sem desconto de almoço)'}
+              <div className={`p-5 rounded-xl border shadow-sm flex flex-col gap-4 overflow-y-auto h-full ${!canEnterTime && !isTaskLogMode ? 'opacity-40 pointer-events-none' : ''}`} style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                {isTaskLogMode && (
+                  // Minimal Project Info Header for Task Mode
+                  <div className="flex items-center gap-2 pb-2 mb-2 border-b border-dashed" style={{ borderColor: 'var(--border)' }}>
+                    <Briefcase className="w-3 h-3 text-[var(--muted)]" />
+                    <span className="text-xs font-bold text-[var(--muted)]">
+                      {clients.find(c => c.id === formData.clientId)?.name}
+                      <span className="mx-1">/</span>
+                      {projects.find(p => p.id === formData.projectId)?.name}
                     </span>
                   </div>
-                  <div className={`text-4xl font-black transition-all ${adjustedTotalHours > 14 ? 'text-red-500 scale-110' : ''}`} style={{ color: adjustedTotalHours > 14 ? undefined : 'var(--primary)' }}>
-                    {timeDisplay}
-                  </div>
+                )}
+
+                <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
+                  <Clock className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                  <h2 className="font-bold text-sm uppercase tracking-wider">Horário & Jornada</h2>
                 </div>
 
-                {/* Horários já apontados no dia */}
-                <div className="mt-3 p-3 rounded-xl border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                  <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-dashed" style={{ borderColor: 'var(--border)' }}>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
-                        Horários já apontados hoje
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Data *</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => { markDirty(); setFormData({ ...formData, date: e.target.value }); }}
+                      className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm shadow-sm focus:ring-1 focus:ring-[var(--ring)]"
+                      style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <TimePicker
+                      label="Início *"
+                      icon={<Clock className="w-3 h-3 text-emerald-500" />}
+                      value={formData.startTime || '09:00'}
+                      onChange={(val) => validateAndSetTime('startTime', val)}
+                    />
+                    <TimePicker
+                      label="Fim *"
+                      icon={<Clock className="w-3 h-3 text-red-500" />}
+                      value={formData.endTime || '18:00'}
+                      onChange={(val) => validateAndSetTime('endTime', val)}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markDirty();
+                        setFormData(prev => ({ ...prev, startTime: '08:00', endTime: '17:00' }));
+                      }}
+                      className="flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border hover:bg-[var(--surface-hover)] hover:shadow-sm"
+                      style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--muted)' }}
+                    >
+                      Turno 1 (08-17)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markDirty();
+                        setFormData(prev => ({ ...prev, startTime: '08:30', endTime: '17:30' }));
+                      }}
+                      className="flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border hover:bg-[var(--surface-hover)] hover:shadow-sm"
+                      style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--muted)' }}
+                    >
+                      Turno 2 (08:30-17:30)
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 rounded-lg border cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
+                    style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}
+                    onClick={() => { setDeductLunch(!deductLunch); markDirty(); }}>
+                    <input
+                      type="checkbox"
+                      checked={deductLunch}
+                      onChange={() => { }}
+                      className="w-4 h-4 rounded text-[var(--primary)] pointer-events-none"
+                    />
+                    <span className="text-xs font-bold select-none" style={{ color: 'var(--text)' }}>Descontar 1h de almoço</span>
+                  </div>
+
+                  {/* Total & Progress */}
+                  <div className="flex justify-between items-center p-4 rounded-xl border shadow-inner mt-2"
+                    style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-[10px] uppercase tracking-widest opacity-50" style={{ color: 'var(--text)' }}>Total deste lançamento:</span>
+                      <span className="text-[10px] font-bold" style={{ color: 'var(--muted)' }}>
+                        {deductLunch ? '(Considerando 1h de almoço)' : '(Sem desconto de almoço)'}
                       </span>
                     </div>
-                    {entriesForDay.length > 0 && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-                        <span className="text-[10px] font-bold text-[var(--primary)]">
-                          {formatDecimalToTime(entriesForDay.reduce((sum, e) => sum + (e.totalHours || 0), 0))}
-                          <span className="ml-1 opacity-50 font-normal text-[8px]">/ {(users.find(u => u.id === (formData.userId || user?.id))?.dailyAvailableHours || 8)}h Meta</span>
+                    <div className={`text-4xl font-black transition-all ${adjustedTotalHours > 14 ? 'text-red-500 scale-110' : ''}`} style={{ color: adjustedTotalHours > 14 ? undefined : 'var(--primary)' }}>
+                      {timeDisplay}
+                    </div>
+                  </div>
+
+                  {/* Horários já apontados no dia */}
+                  <div className="mt-3 p-3 rounded-xl border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-dashed" style={{ borderColor: 'var(--border)' }}>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                          Horários já apontados hoje
                         </span>
+                      </div>
+                      {entriesForDay.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+                          <span className="text-[10px] font-bold text-[var(--primary)]">
+                            {formatDecimalToTime(entriesForDay.reduce((sum, e) => sum + (e.totalHours || 0), 0))}
+                            <span className="ml-1 opacity-50 font-normal text-[8px]">/ {(users.find(u => u.id === (formData.userId || user?.id))?.dailyAvailableHours || 8)}h Meta</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {entriesForDay.length > 0 ? (
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                        {entriesForDay.map(entry => {
+                          const project = projects.find(p => p.id === entry.projectId);
+                          const task = tasks.find(t => t.id === entry.taskId);
+                          return (
+                            <div key={entry.id} className="p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] hover:bg-[var(--surface-hover)] transition-colors">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-bold text-[var(--primary)] px-2 py-0.5 rounded bg-[var(--primary)]/10">
+                                  {formatDecimalToTime(entry.totalHours)}
+                                </span>
+                                <div className="text-[11px] font-bold text-[var(--text)] truncate flex-1 min-w-[100px]">
+                                  {task?.title || 'Tarefa'}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono">
+                                  <span className="font-bold text-emerald-600">{entry.startTime}</span>
+                                  <span className="text-[var(--muted)]">→</span>
+                                  <span className="font-bold text-red-600">{entry.endTime}</span>
+                                </div>
+                              </div>
+                              <div className="text-[9px] text-[var(--muted)] truncate mt-1 ml-1">
+                                {project?.name || 'Projeto'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-[10px] text-[var(--muted)] opacity-50">
+                        Nenhum horário apontado ainda hoje
                       </div>
                     )}
                   </div>
-                  {entriesForDay.length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                      {entriesForDay.map(entry => {
-                        const project = projects.find(p => p.id === entry.projectId);
-                        const task = tasks.find(t => t.id === entry.taskId);
-                        return (
-                          <div key={entry.id} className="p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] hover:bg-[var(--surface-hover)] transition-colors">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-bold text-[var(--primary)] px-2 py-0.5 rounded bg-[var(--primary)]/10">
-                                {formatDecimalToTime(entry.totalHours)}
-                              </span>
-                              <div className="text-[11px] font-bold text-[var(--text)] truncate flex-1 min-w-[100px]">
-                                {task?.title || 'Tarefa'}
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono">
-                                <span className="font-bold text-emerald-600">{entry.startTime}</span>
-                                <span className="text-[var(--muted)]">→</span>
-                                <span className="font-bold text-red-600">{entry.endTime}</span>
-                              </div>
-                            </div>
-                            <div className="text-[9px] text-[var(--muted)] truncate mt-1 ml-1">
-                              {project?.name || 'Projeto'}
-                            </div>
-                          </div>
-                        );
-                      })}
+
+                  {formData.taskId && (
+                    <div className="pt-2">
+                      <div className="flex justify-between items-end mb-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Progresso</label>
+                        <span className="text-xs font-black" style={{ color: 'var(--primary)' }}>{taskProgress}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={taskProgress}
+                        onChange={(e) => { markDirty(); setTaskProgress(Number(e.target.value)); }}
+                        className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
+                        style={{ backgroundColor: 'var(--border)' }}
+                      />
                     </div>
-                  ) : (
-                    <div className="text-center py-4 text-[10px] text-[var(--muted)] opacity-50">
-                      Nenhum horário apontado ainda hoje
+                  )}
+
+                  {/* Notes in Task Mode (moved from left column) */}
+                  {isTaskLogMode && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold flex items-center gap-2 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>
+                          <AlertCircle className="w-3 h-3" /> Status (Opcional)
+                        </label>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500">
+                          {formData.description?.length || 0} carac.
+                        </span>
+                      </div>
+                      <textarea
+                        value={formData.description || ''}
+                        onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
+                        className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all h-32 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
+                        style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
+                        placeholder="Descreva a atividade realizada (opcional)..."
+                      />
                     </div>
                   )}
                 </div>
-
-                {formData.taskId && (
-                  <div className="pt-2">
-                    <div className="flex justify-between items-end mb-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Progresso</label>
-                      <span className="text-xs font-black" style={{ color: 'var(--primary)' }}>{taskProgress}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={taskProgress}
-                      onChange={(e) => { markDirty(); setTaskProgress(Number(e.target.value)); }}
-                      className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
-                      style={{ backgroundColor: 'var(--border)' }}
-                    />
-                  </div>
-                )}
-
-                {/* Notes in Task Mode (moved from left column) */}
-                {isTaskLogMode && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[10px] font-bold flex items-center gap-2 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>
-                        <AlertCircle className="w-3 h-3" /> Status (Opcional)
-                      </label>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500">
-                        {formData.description?.length || 0} carac.
-                      </span>
-                    </div>
-                    <textarea
-                      value={formData.description || ''}
-                      onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
-                      className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all h-32 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
-                      style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
-                      placeholder="Descreva a atividade realizada (opcional)..."
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
-        </div>
+        </fieldset>
       </div>
 
       <ConfirmationModal
@@ -792,6 +795,7 @@ const TimesheetForm: React.FC = () => {
         message="A tarefa atingiu 100% de progresso. Deseja marcá-la como concluída e salvar?"
         onConfirm={handleConfirmCompletion}
         onCancel={() => { setCompletionModalOpen(false); setPendingSave(null); }}
+        disabled={loading}
       />
       <ConfirmationModal
         isOpen={deleteModalOpen}
@@ -799,6 +803,7 @@ const TimesheetForm: React.FC = () => {
         message="Confirmar exclusão?"
         onConfirm={handleDelete}
         onCancel={() => setDeleteModalOpen(false)}
+        disabled={loading}
       />
       <ConfirmationModal
         isOpen={warningModalOpen}

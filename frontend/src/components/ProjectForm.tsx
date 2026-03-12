@@ -1,9 +1,9 @@
 // components/ProjectForm.tsx - Adaptado para Router e Project Members
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, Users, Briefcase, Calendar, Info, Zap, DollarSign, Target, Shield, Layout, Clock, ChevronDown, LayoutGrid, AlertCircle, FileSpreadsheet, ExternalLink, CheckSquare, User } from 'lucide-react';
+import { Save, Users, Briefcase, Calendar, Info, Zap, DollarSign, Target, Shield, Layout, Clock, ChevronDown, LayoutGrid, AlertCircle, FileSpreadsheet, ExternalLink, CheckSquare, User, ArrowLeft, Check } from 'lucide-react';
 import BackButton from './shared/BackButton';
 import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
@@ -27,7 +27,8 @@ const ProjectForm: React.FC = () => {
     getProjectMembers,
     addProjectMember,
     removeProjectMember,
-    timesheetEntries // Import timesheetEntries to pass to availability function
+    timesheetEntries,
+    absences
   } = useDataController();
 
   const isEdit = !!projectId;
@@ -134,6 +135,30 @@ const ProjectForm: React.FC = () => {
       return;
     }
 
+    // --- NOVA VALIDAÇÃO: Tarefas fora do intervalo do projeto ---
+    if (isEdit && isAdmin) {
+      const pTasks = tasks.filter(t => String(t.projectId) === String(projectId));
+      const projStart = new Date(startDate + 'T00:00:00');
+      const projEnd = new Date(estimatedDelivery + 'T23:59:59');
+
+      const outOfRangeTasks = pTasks.filter(task => {
+        if ((task as any).deleted_at) return false;
+        const tStart = task.scheduledStart ? new Date(task.scheduledStart + 'T00:00:00') : null;
+        const tEnd = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T23:59:59') : null;
+
+        const isStartInvalid = tStart && tStart < projStart;
+        const isEndInvalid = tEnd && tEnd > projEnd;
+        return isStartInvalid || isEndInvalid;
+      });
+
+      if (outOfRangeTasks.length > 0) {
+        const taskList = outOfRangeTasks.slice(0, 3).map(t => t.title).join(', ');
+        const more = outOfRangeTasks.length > 3 ? ` e mais ${outOfRangeTasks.length - 3}` : '';
+        alert(`Não é possível encurtar o período do projeto pois existem ${outOfRangeTasks.length} tarefas fora do novo intervalo (${startDate} a ${estimatedDelivery}).\n\nExemplos: ${taskList}${more}.\n\nPor favor, ajuste as datas das tarefas antes de salvar.`);
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       let targetProjectId = projectId;
@@ -206,33 +231,46 @@ const ProjectForm: React.FC = () => {
 
     } catch (error: any) {
       console.error('Erro ao salvar projeto:', error);
-      alert(`Erro ao salvar projeto: ${error.message || 'Erro desconhecido'}. Tente novamente.`);
+      alert(`Erro: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
   };
 
   const [memberSearch, setMemberSearch] = useState('');
+  const filteredUsers = useMemo(() => {
+    return (users || [])
+      .filter(u => {
+        const status = getUserStatus(u, tasks, projects, clients, absences);
+        const isForaDoFluxo = status.label === 'Fora do Fluxo';
 
-  const filteredUsers = users
-    .filter(u => u.active !== false && u.torre !== 'N/A')
-    .filter(u => u.name.toLowerCase().includes(memberSearch.toLowerCase()) || u.role.toLowerCase().includes(memberSearch.toLowerCase()))
-    .sort((a, b) => {
-      // Selected first
-      const aSelected = selectedUsers.includes(a.id);
-      const bSelected = selectedUsers.includes(b.id);
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return a.name.localeCompare(b.name);
-    });
+        const isAlreadySelected = selectedUsers.includes(u.id) || u.id === responsibleNicLabsId;
+
+        return u.active !== false &&
+          (!isForaDoFluxo || isAlreadySelected) &&
+          (u.name.toLowerCase().includes(memberSearch.toLowerCase()) || (u.cargo || '').toLowerCase().includes(memberSearch.toLowerCase()));
+      })
+      .sort((a, b) => {
+        const aSelected = selectedUsers.includes(a.id) || a.id === responsibleNicLabsId;
+        const bSelected = selectedUsers.includes(b.id) || b.id === responsibleNicLabsId;
+
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [users, memberSearch, selectedUsers, responsibleNicLabsId, tasks, projects, clients, absences]);
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg)] overflow-hidden">
       {/* HEADER - Replicating ProjectDetailView Style */}
       <div className="px-8 py-6 bg-gradient-to-r from-[#1e1b4b] to-[#4c1d95] shadow-lg flex items-center justify-between text-white z-20">
         <div className="flex items-center gap-6">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-            <Calendar className="w-6 h-6" />
+          <button
+            onClick={() => navigate(-1)}
+            disabled={loading}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ArrowLeft size={18} />
           </button>
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
@@ -248,7 +286,8 @@ const ProjectForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:bg-white/10 text-white"
+            disabled={loading}
+            className="px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             CANCELAR
           </button>
@@ -265,7 +304,7 @@ const ProjectForm: React.FC = () => {
 
       {/* Main Content Area - Replicating Dashboard Grid */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <fieldset disabled={loading} className="border-none p-0 m-0 max-w-7xl mx-auto space-y-6">
 
           {/* TOP ROW: 4 KPI-STYLE CARDS */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -531,38 +570,55 @@ const ProjectForm: React.FC = () => {
                 />
               </div>
 
-              <div className={`flex-1 overflow-y-auto custom-scrollbar space-y-2 p-2 rounded-2xl transition-colors min-h-[400px] ${selectedUsers.length === 0 ? 'bg-orange-500/5 border border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
+              <div className={`flex-1 overflow-y-auto custom-scrollbar space-y-1 p-1 pr-2 rounded-2xl transition-colors min-h-[400px] ${selectedUsers.length === 0 ? 'bg-orange-500/5 border border-orange-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
                 {filteredUsers.map(user => {
-                  const isSelected = selectedUsers.includes(user.id);
+                  const isSelected = selectedUsers.includes(user.id) || user.id === responsibleNicLabsId;
+                  const isManager = user.id === responsibleNicLabsId;
+
                   return (
                     <label
                       key={user.id}
-                      className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all group ${isSelected ? 'border-purple-500/30 bg-purple-500/5' : 'border-transparent hover:bg-[var(--surface-hover)]'}`}
+                      className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-purple-500/30 bg-purple-500/5 shadow-sm shadow-purple-500/10' : 'border-transparent hover:bg-[var(--surface-hover)]'} ${isManager ? 'opacity-80' : ''}`}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
+                        disabled={isManager}
                         onChange={(e) => {
+                          if (isManager) return;
                           if (e.target.checked) setSelectedUsers(prev => [...prev, user.id]);
                           else setSelectedUsers(prev => prev.filter(id => id !== user.id));
                         }}
                         className="sr-only"
                       />
-                      <div className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-purple-500' : 'border-transparent'}`}>
-                        {user.avatarUrl ? <img src={user.avatarUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-[var(--surface-2)] font-bold text-xs">{user.name.substring(0, 2).toUpperCase()}</div>}
+                      {/* Selection Indicator Square with Check Mark */}
+                      <div className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-all ${isSelected ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'bg-white/10 border border-white/10 shadow-inner'}`}>
+                        {isSelected && <Check size={12} className="text-white" strokeWidth={4} />}
+                      </div>
+
+                      <div className={`w-8 h-8 rounded-lg overflow-hidden border transition-all ${isSelected ? 'border-purple-500 scale-105 shadow-sm shadow-purple-500/20' : 'border-[var(--border)]'}`}>
+                        {user.avatarUrl ? (
+                          <img src={user.avatarUrl} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-[var(--surface-2)] font-black text-[10px] text-[var(--text-secondary)]">
+                            {user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-bold truncate ${isSelected ? 'text-purple-500' : 'text-white'}`}>{user.name}</p>
-                        <p className="text-[8px] font-black uppercase opacity-40 tracking-widest">{user.cargo || 'Membro'}</p>
+                        <p className={`text-[11px] font-bold truncate transition-colors ${isSelected ? 'text-purple-500' : 'text-[var(--text)]'} uppercase`}>
+                          {user.name}
+                          {isManager && <span className="ml-2 text-[7px] bg-yellow-400 text-black px-1 rounded">GESTOR</span>}
+                        </p>
+                        <p className="text-[8px] font-black uppercase opacity-30 tracking-widest truncate">{user.cargo || 'Membro'}</p>
                       </div>
-                      {isSelected && <CheckSquare className="w-4 h-4 text-purple-500" />}
                     </label>
                   );
                 })}
               </div>
             </div>
           </div>
-        </div>
+        </fieldset>
       </div>
     </div>
   );

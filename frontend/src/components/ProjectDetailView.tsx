@@ -122,6 +122,7 @@ const ProjectDetailView: React.FC = () => {
     valor_diario: 0,
     fora_do_fluxo: false
   });
+  const [memberSearch, setMemberSearch] = useState('');
 
   useEffect(() => {
     if (isNew && paramClientId) {
@@ -573,6 +574,32 @@ const ProjectDetailView: React.FC = () => {
     }
     setValidationErrors([]);
 
+    // --- NOVA VALIDAÇÃO: Tarefas fora do intervalo do projeto ---
+    // Impede que o projeto seja encurtado se houver tarefas que fiquem de fora, 
+    // antecipando o erro 500 que o banco de dados retornaria.
+    if (!isNew && isAdmin) {
+      const projStart = new Date(formData.startDate + 'T00:00:00');
+      const projEnd = new Date(formData.estimatedDelivery + 'T23:59:59');
+
+      const outOfRangeTasks = projectTasks.filter(task => {
+        if ((task as any).deleted_at) return false;
+        const tStart = task.scheduledStart ? new Date(task.scheduledStart + 'T00:00:00') : null;
+        const tEnd = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T23:59:59') : null;
+
+        const isStartInvalid = tStart && tStart < projStart;
+        const isEndInvalid = tEnd && tEnd > projEnd;
+        return isStartInvalid || isEndInvalid;
+      });
+
+      if (outOfRangeTasks.length > 0) {
+        const taskList = outOfRangeTasks.slice(0, 3).map(t => t.title).join(', ');
+        const more = outOfRangeTasks.length > 3 ? ` e mais ${outOfRangeTasks.length - 3}` : '';
+        alert(`Não é possível alterar o período do projeto pois existem ${outOfRangeTasks.length} tarefas fora do novo intervalo (${formData.startDate} a ${formData.estimatedDelivery}).\n\nExemplos: ${taskList}${more}.\n\nPor favor, ajuste as datas das tarefas antes de salvar.`);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       // Colaboradores só podem editar campos não-sensíveis
@@ -631,7 +658,8 @@ const ProjectDetailView: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      alert('Erro ao salvar.');
+      const msg = error.message || 'Erro ao salvar.';
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -835,8 +863,9 @@ const ProjectDetailView: React.FC = () => {
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-5 custom-scrollbar"
+        style={{ backgroundColor: 'var(--bg)' }}
       >
-        <div className="max-w-7xl mx-auto space-y-5">
+        <div className="max-w-7xl mx-auto space-y-5 pb-10">
 
           {/* VALIDATION BANNER FOR MANDATORY FIELDS - only show if fields are actually missing */}
           {isEditing && (
@@ -1349,7 +1378,7 @@ const ProjectDetailView: React.FC = () => {
                 </div>
 
                 {/* MAIN GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
                   <div className="lg:col-span-2 space-y-5">
                     <div className="p-5 rounded-[32px] border shadow-sm" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                       <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--primary)' }}><Info size={14} /> Detalhes Estruturais</h3>
@@ -1513,7 +1542,7 @@ const ProjectDetailView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-6 self-start">
                     {/* SAÚDE QUALITATIVA */}
                     {(isEditing || project?.weeklyStatusReport || project?.gapsIssues) && (
                       <div className="p-6 rounded-[32px] border shadow-sm space-y-4" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
@@ -1547,49 +1576,90 @@ const ProjectDetailView: React.FC = () => {
                           </h3>
                         </div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         {isEditing ? (
-                          <div className={`border rounded-2xl p-4 max-h-[400px] overflow-y-auto space-y-2 custom-scrollbar shadow-inner transition-colors ${selectedUsers.length === 0 ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
-                            {users.filter((u: User) => u.active !== false && u.torre !== 'N/A').sort((a: User, b: User) => a.name.localeCompare(b.name)).map((user: User) => (
-                              <label key={user.id} className={`flex items-center gap-3 cursor-pointer hover:bg-[var(--surface-hover)] p-2 rounded-xl transition-all border ${selectedUsers.includes(user.id) ? 'border-purple-500/30 bg-purple-500/5' : 'border-transparent opacity-60'}`}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedUsers.includes(user.id)}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    if (e.target.checked) {
-                                      const next = [...selectedUsers, user.id];
-                                      setSelectedUsers(next);
-                                    } else {
-                                      const next = selectedUsers.filter(id => id !== user.id);
-                                      setSelectedUsers(next);
-                                    }
-                                  }}
-                                  className="w-4 h-4 rounded border-[var(--border)] text-purple-600 focus:ring-purple-500"
-                                />
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold overflow-hidden bg-[var(--surface-2)] shrink-0" style={{ color: 'var(--text)' }}>
-                                    {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : user.name.substring(0, 2).toUpperCase()}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-tighter truncate" style={{ color: 'var(--text)' }}>{user.name}</p>
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                      <p className="text-[8px] font-bold uppercase opacity-40 tracking-wider truncate" style={{ color: 'var(--text)' }}>{user.cargo || user.role}</p>
-                                    </div>
-                                  </div>
+                          <>
+                            <div className="relative">
+                              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" style={{ color: 'var(--text)' }} />
+                              <input
+                                type="text"
+                                placeholder="Buscar colaborador..."
+                                value={memberSearch}
+                                onChange={(e) => setMemberSearch(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none"
+                                style={{ color: 'var(--text)' }}
+                              />
+                            </div>
+                            <div className={`border rounded-2xl p-4 max-h-[400px] overflow-y-auto space-y-1 custom-scrollbar transition-colors ${selectedUsers.length === 0 ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
+                              {(() => {
+                                const filtered = (users || [])
+                                  .filter((u: any) => {
+                                    const status = getUserStatus(u, tasks, projects, clients, absences);
+                                    const isForaDoFluxo = status.label === 'Fora do Fluxo';
+                                    const isAlreadySelected = selectedUsers.includes(u.id) || u.id === formData.responsibleNicLabsId;
 
-                                  {selectedUsers.includes(user.id) && (
-                                    <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                      <div className="flex items-center gap-1.5 glass-purple px-2 py-1 rounded-lg">
-                                        <Users className="w-3 h-3 text-purple-400" />
-                                        <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter">Membro</span>
+                                    return u.active !== false &&
+                                      (!isForaDoFluxo || isAlreadySelected) &&
+                                      (u.name.toLowerCase().includes(memberSearch.toLowerCase()) || (u.cargo || '').toLowerCase().includes(memberSearch.toLowerCase()));
+                                  })
+                                  .sort((a, b) => {
+                                    // Ordem estável: manager primeiro, depois selecionados, depois alfabético
+                                    // Mas NÃO muda a ordem durante interação — computa por status inicial
+                                    const aManager = a.id === formData.responsibleNicLabsId;
+                                    const bManager = b.id === formData.responsibleNicLabsId;
+                                    if (aManager && !bManager) return -1;
+                                    if (!aManager && bManager) return 1;
+
+                                    const aSelected = selectedUsers.includes(a.id);
+                                    const bSelected = selectedUsers.includes(b.id);
+                                    if (aSelected && !bSelected) return -1;
+                                    if (!aSelected && bSelected) return 1;
+                                    return a.name.localeCompare(b.name);
+                                  });
+
+                                return filtered.map((user: User) => {
+                                  const isSelected = selectedUsers.includes(user.id) || user.id === formData.responsibleNicLabsId;
+                                  const isManager = user.id === formData.responsibleNicLabsId;
+
+                                  return (
+                                    <div
+                                      key={user.id}
+                                      role="checkbox"
+                                      aria-checked={isSelected}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault(); // ← Impede browser de fazer scroll para o elemento
+                                        if (isManager) return;
+                                        setSelectedUsers(prev =>
+                                          prev.includes(user.id)
+                                            ? prev.filter(id => id !== user.id)
+                                            : [...prev, user.id]
+                                        );
+                                      }}
+                                      className={`flex items-center gap-3 cursor-pointer hover:bg-[var(--surface-hover)] p-2 rounded-xl transition-colors border select-none ${isSelected ? 'border-purple-500/30 bg-purple-500/5' : 'border-transparent opacity-60'} ${isManager ? 'cursor-default' : 'cursor-pointer'}`}
+                                    >
+                                      {/* Selection Indicator */}
+                                      <div className={`w-5 h-5 rounded-[4px] flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'bg-purple-500' : 'bg-white/10 border border-white/20'}`}>
+                                        {isSelected && <Check size={12} className="text-white" strokeWidth={4} />}
+                                      </div>
+
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold overflow-hidden bg-[var(--surface-2)] shrink-0 border ${isSelected ? 'border-purple-500' : 'border-[var(--border)]'}`} style={{ color: 'var(--text)' }}>
+                                          {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" /> : user.name.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-[10px] font-black uppercase tracking-tighter truncate ${isSelected ? 'text-purple-400' : 'text-[var(--text)]'}`}>{user.name}</p>
+                                          <p className="text-[8px] font-bold uppercase opacity-40 tracking-wider truncate" style={{ color: 'var(--text)' }}>
+                                            {user.cargo || user.role}
+                                            {isManager && <span className="ml-2 text-[7px] bg-yellow-400 text-black px-1 rounded">GESTOR</span>}
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
-                                  )}
-                                </div>
-                              </label>
-
-                            ))}
-                          </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </>
                         ) : (
                           <>
                             {projectMembers
@@ -1889,7 +1959,7 @@ const ProjectDetailView: React.FC = () => {
           }
         }}
         onCancel={() => { setItemToDelete(null); setDeleteConfirmText(''); }}
-        disabled={!!(itemToDelete?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== project?.name))}
+        disabled={loading || !!(itemToDelete?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== project?.name))}
       />
     </div>
   );

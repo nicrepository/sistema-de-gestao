@@ -170,6 +170,16 @@ export const projectService = {
 
         await notifyUpdates('projects', { id, deleted: true });
         return true;
+    },
+
+    async removeProjectMember(user, projectId, userId) {
+        // Enforce same permanent delete logic as supportController
+        await supabaseAdmin
+            .from('project_members')
+            .delete()
+            .match({ id_projeto: projectId, id_colaborador: userId });
+
+        await notifyUpdates('project_members', { projectId, userId, deleted: true });
     }
 };
 

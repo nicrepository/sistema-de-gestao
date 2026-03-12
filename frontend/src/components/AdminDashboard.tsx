@@ -2523,6 +2523,7 @@ const AdminDashboard: React.FC = () => {
           }
         }}
         onCancel={() => setProjectToDelete(null)}
+        disabled={loading}
       />
       {/* Modal de Documentação de Capacidade */}
       <CapacityDocumentation isOpen={showCapDoc} onClose={() => setShowCapDoc(false)} />

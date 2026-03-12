@@ -365,6 +365,7 @@ const ClientForm: React.FC = () => {
         onCancel={() => setShowDeleteModal(false)}
         confirmText={loading ? 'Excluindo...' : 'Excluir'}
         confirmColor="red"
+        disabled={loading}
       />
     </div>
   );

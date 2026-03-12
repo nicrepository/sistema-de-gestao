@@ -485,6 +485,7 @@ const AbsenceManager: React.FC<AbsenceManagerProps> = ({ targetUserId, targetUse
                 onConfirm={handleDelete}
                 onCancel={() => setItemToDelete(null)}
                 confirmColor="red"
+                disabled={loading}
             />
         </div>
     );

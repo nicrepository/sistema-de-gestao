@@ -22,6 +22,7 @@ export interface User {
   dailyAvailableHours?: number; // Horas liberadas dia
   monthlyAvailableHours?: number; // Horas liberadas mês
   atrasado?: boolean; // Indica se possui atrasos
+  fora_do_fluxo?: boolean; // Ocultar do fluxo principal
 }
 
 export interface Client {

@@ -518,6 +518,7 @@ const TeamList: React.FC = () => {
         message={`Tem certeza que deseja remover "${userToDelete?.name}"?`}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteModalOpen(false)}
+        disabled={loading}
       />
     </div>
   );

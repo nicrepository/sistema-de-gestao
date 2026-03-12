@@ -4,13 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { Task, Status, Priority, Impact } from '@/types';
 import {
-  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil
+  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check
 } from 'lucide-react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import ConfirmationModal from './ConfirmationModal';
 import TransferResponsibilityModal from './TransferResponsibilityModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDecimalToTime } from '@/utils/normalizers';
+import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
 import * as allocationService from '@/services/allocationService';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
@@ -23,8 +24,32 @@ const TaskDetail: React.FC = () => {
   const {
     tasks, clients, projects, users, projectMembers, timesheetEntries,
     createTask, updateTask, deleteTask, holidays, deleteTimesheet,
-    taskMemberAllocations, setTaskMemberAllocations, absences
+    taskMemberAllocations, setTaskMemberAllocations, absences, addProjectMember
   } = useDataController();
+  const [memberSearch, setMemberSearch] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const CARGO_RANK: Record<string, number> = {
+    'ESTAGIARIO': 1, 'ESTAGIÁRIO': 1, 'ESTAGIARIA': 1, 'ESTAGIÁRIA': 1,
+    'TRAINEE': 2,
+    'JUNIOR': 3, 'JÚNIOR': 3,
+    'PLENO': 4,
+    'SENIOR': 5, 'SÊNIOR': 5,
+    'ESPECIALISTA': 6,
+    'LÍDER': 7, 'LEAD': 7,
+    'COORDENADOR': 8, 'COORDENADORA': 8,
+    'GERENTE': 9,
+    'DIRETOR': 10, 'DIRETORA': 10,
+    'CEO': 11, 'PRESIDENTE': 11
+  };
+
+  const getCargoRank = (cargo: string = '') => {
+    const c = cargo.toUpperCase();
+    for (const [key, rank] of Object.entries(CARGO_RANK)) {
+      if (c.includes(key)) return rank;
+    }
+    return 0;
+  };
 
   const isNew = !taskId || taskId === 'new';
   const task = !isNew ? tasks.find((t: any) => t.id === taskId) : undefined;
@@ -132,6 +157,7 @@ const TaskDetail: React.FC = () => {
   const clearError = (field: string) => { };
 
   const { isDirty, showPrompt, markDirty, requestBack, discardChanges, continueEditing } = useUnsavedChangesPrompt();
+
 
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -366,8 +392,21 @@ const TaskDetail: React.FC = () => {
 
       // Save member allocations
       if (finalTaskId) {
-        // Se houver membros alocados mas nenhuma alocação explícita (tudo zero), salva o fallback distribuído.
+        // Link members to project if not already linked
         const teamIds = Array.from(new Set([payload.developerId, ...(payload.collaboratorIds || [])])).filter(Boolean);
+        for (const uid of teamIds) {
+          const isLinked = projectMembers.some(pm => String(pm.id_projeto) === String(formData.projectId) && String(pm.id_colaborador) === String(uid));
+          if (!isLinked) {
+            console.log(`Auto-linking member ${uid} to project ${formData.projectId}`);
+            try {
+              await addProjectMember(String(formData.projectId), String(uid), 100);
+            } catch (err) {
+              console.error(`Failed to auto-link member ${uid}:`, err);
+            }
+          }
+        }
+
+        // Se houver membros alocados mas nenhuma alocação explícita (tudo zero), salva o fallback distribuído.
         const hasAnyAllocation = Object.values(finalAllocations).some(val => val > 0);
 
         let allocationsToSave = [];
@@ -435,7 +474,9 @@ const TaskDetail: React.FC = () => {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
+    if (!requestBack()) return;
+
     if (window.history.length > 1) {
       navigate(-1);
     } else {
@@ -446,13 +487,11 @@ const TaskDetail: React.FC = () => {
         navigate('/admin/clients');
       }
     }
-  };
+  }, [requestBack, navigate, task?.projectId, formData.projectId]);
 
   const responsibleUsers = useMemo(() => {
-    if (!formData.projectId) return [];
-    const membersIds = projectMembers.filter((pm: any) => String(pm.id_projeto) === formData.projectId).map((pm: any) => String(pm.id_colaborador));
-    return users.filter((u: any) => u.active !== false && (membersIds.includes(u.id) || u.id === formData.developerId));
-  }, [users, projectMembers, formData.projectId, formData.developerId]);
+    return users.filter((u: any) => u.active !== false);
+  }, [users]);
 
   const handleEditTimesheet = (id: string) => {
     navigate(`/timesheet/${id}`);
@@ -482,7 +521,8 @@ const TaskDetail: React.FC = () => {
           <button
             type="button"
             onClick={handleBack}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/20 text-white flex items-center justify-center shrink-0"
+            disabled={loading}
+            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/20 text-white flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Voltar"
           >
             <ArrowLeft size={18} />
@@ -525,7 +565,7 @@ const TaskDetail: React.FC = () => {
               <Trash2 size={16} /> EXCLUIR
             </button>
           )}
-          <button type="button" onClick={() => navigate(-1)} className="px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:bg-white/10 text-white">CANCELAR</button>
+          <button type="button" onClick={handleBack} disabled={loading} className="px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:bg-white/10 text-white disabled:opacity-50 disabled:cursor-not-allowed">CANCELAR</button>
           <button onClick={handleSubmit} className="px-8 py-2.5 bg-white text-indigo-950 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xl hover:bg-indigo-50 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50" disabled={loading}>
             <Save className="w-4 h-4" /> {loading ? 'SALVANDO...' : 'SALVAR'}
           </button>
@@ -534,527 +574,524 @@ const TaskDetail: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-8">
         <form onSubmit={handleSubmit} className="max-w-7xl mx-auto space-y-6">
-          <AnimatePresence>
-            {missingFields.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="p-4 bg-yellow-400/10 border border-yellow-400/50 rounded-2xl flex items-center gap-3"
-              >
-                <div className="w-8 h-8 rounded-xl bg-yellow-400 flex items-center justify-center shrink-0 shadow-lg shadow-yellow-400/20">
-                  <AlertTriangle size={18} className="text-black" />
-                </div>
-                <div>
-                  <p className="text-xs font-black uppercase text-yellow-500">Campos Obrigatórios Faltando</p>
-                  <p className="text-[10px] font-bold opacity-70" style={{ color: 'var(--text)' }}>
-                    Por favor, preencha: {missingFields.join(', ')}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* Card 1: Identificação */}
-            <div className="p-4 rounded-[24px] border shadow-sm flex flex-col h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Identificação</h4>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10"><Briefcase size={12} className="text-purple-500" /></div>
-              </div>
-              <div className="flex-1 flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div>
-                    <label className={`text-[9px] font-black uppercase mb-1 block opacity-60 ${hasError('title') ? 'text-yellow-500' : ''}`}>Nome da Tarefa *</label>
-                    <input type="text" value={formData.title || ''} onChange={e => { setFormData({ ...formData, title: e.target.value }); markDirty(); }} className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('title') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`} style={{ color: 'var(--text)' }} />
+          <fieldset disabled={loading} className="border-none p-0 m-0 space-y-6">
+            <AnimatePresence>
+              {missingFields.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-4 bg-yellow-400/10 border border-yellow-400/50 rounded-2xl flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-yellow-400 flex items-center justify-center shrink-0 shadow-lg shadow-yellow-400/20">
+                    <AlertTriangle size={18} className="text-black" />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Status</label>
-                    <select
-                      value={formData.status || 'Todo'}
-                      onChange={e => {
-                        const newStatus = e.target.value as any;
-                        let newProgress = formData.progress;
-                        let newActualDelivery = formData.actualDelivery;
-                        let newActualStart = formData.actualStart;
+                    <p className="text-xs font-black uppercase text-yellow-500">Campos Obrigatórios Faltando</p>
+                    <p className="text-[10px] font-bold opacity-70" style={{ color: 'var(--text)' }}>
+                      Por favor, preencha: {missingFields.join(', ')}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                        if (newStatus === 'Done') {
-                          newProgress = 100;
-                          if (!newActualDelivery) {
-                            newActualDelivery = new Date().toISOString().split('T')[0];
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {/* Card 1: Identificação */}
+              <div className="p-4 rounded-[24px] border shadow-sm flex flex-col h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Identificação</h4>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/10"><Briefcase size={12} className="text-purple-500" /></div>
+                </div>
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div>
+                      <label className={`text-[9px] font-black uppercase mb-1 block opacity-60 ${hasError('title') ? 'text-yellow-500' : ''}`}>Nome da Tarefa *</label>
+                      <input type="text" value={formData.title || ''} onChange={e => { setFormData({ ...formData, title: e.target.value }); markDirty(); }} className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('title') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`} style={{ color: 'var(--text)' }} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Status</label>
+                      <select
+                        value={formData.status || 'Todo'}
+                        onChange={e => {
+                          const newStatus = e.target.value as any;
+                          let newProgress = formData.progress;
+                          let newActualDelivery = formData.actualDelivery;
+                          let newActualStart = formData.actualStart;
+
+                          if (newStatus === 'Done') {
+                            newProgress = 100;
+                            if (!newActualDelivery) {
+                              newActualDelivery = new Date().toISOString().split('T')[0];
+                            }
+                          } else if (newStatus === 'In Progress') {
+                            if (!newActualStart) {
+                              newActualStart = new Date().toISOString().split('T')[0];
+                            }
                           }
-                        } else if (newStatus === 'Review') {
-                          newProgress = Math.max(newProgress, 90);
-                        } else if (newStatus === 'Testing') {
-                          newProgress = Math.max(newProgress, 75);
-                        } else if (newStatus === 'In Progress') {
-                          newProgress = Math.max(newProgress, 10);
-                          if (!newActualStart) {
-                            newActualStart = new Date().toISOString().split('T')[0];
-                          }
-                        } else if (newStatus === 'Todo') {
-                          newProgress = 0;
+
+                          setFormData({
+                            ...formData,
+                            status: newStatus,
+                            progress: newProgress,
+                            actualDelivery: newActualDelivery,
+                            actualStart: newActualStart
+                          });
+                          markDirty();
+                        }}
+                        className="w-full px-3 py-1.5 text-xs font-bold border rounded-lg bg-[var(--bg)] border-[var(--border)] outline-none"
+                        style={{ color: 'var(--text)' }}
+                      >
+                        <option value="Todo">Pré-Projeto</option>
+                        <option value="Review">Análise</option>
+                        <option value="In Progress">Andamento</option>
+                        <option value="Testing">Teste</option>
+                        <option value="Done">Concluído</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setFormData({ ...formData, is_impediment: !formData.is_impediment }); markDirty(); }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl border transition-all font-bold text-[9px] ${formData.is_impediment ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-transparent border-[var(--border)] opacity-60'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Flag size={12} className={formData.is_impediment ? "fill-orange-500" : ""} />
+                      IMPEDIMENTO
+                    </div>
+                    {formData.is_impediment && <span className="text-[7px] bg-orange-500 text-white px-1 py-0.5 rounded font-black">ATIVO</span>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 2: Gestão */}
+              <div className="p-4 rounded-[24px] border shadow-sm flex flex-col h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Gestão</h4>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10"><Shield size={12} className="text-emerald-500" /></div>
+                </div>
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <label className={`text-[9px] font-black uppercase mb-1 flex items-center gap-2 opacity-60 ${hasError('developerId') ? 'text-yellow-500' : ''}`}>
+                      <Crown size={10} className={formData.developerId ? "text-yellow-500" : ""} /> Responsável *
+                    </label>
+                    <select
+                      value={formData.developerId || ''}
+                      onChange={e => {
+                        const selectedId = e.target.value;
+                        const u = users.find(usr => usr.id === selectedId);
+                        const oldResponsibleId = formData.developerId;
+
+                        let updatedCollabs = [...(formData.collaboratorIds || [])];
+
+                        // Mantém o antigo responsável na equipe como colaborador
+                        if (oldResponsibleId && !updatedCollabs.includes(oldResponsibleId)) {
+                          updatedCollabs.push(oldResponsibleId);
+                        }
+
+                        // Garante que o novo responsável também esteja na lista de colaboradores
+                        if (selectedId && !updatedCollabs.includes(selectedId)) {
+                          updatedCollabs.push(selectedId);
                         }
 
                         setFormData({
                           ...formData,
-                          status: newStatus,
-                          progress: newProgress,
-                          actualDelivery: newActualDelivery,
-                          actualStart: newActualStart
+                          developerId: selectedId,
+                          developer: u?.name || '',
+                          collaboratorIds: updatedCollabs
                         });
                         markDirty();
                       }}
-                      className="w-full px-3 py-1.5 text-xs font-bold border rounded-lg bg-[var(--bg)] border-[var(--border)] outline-none"
+                      className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('developerId') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`}
                       style={{ color: 'var(--text)' }}
+                      disabled={!formData.projectId}
                     >
-                      <option value="Todo">Pré-Projeto</option>
-                      <option value="Review">Análise</option>
-                      <option value="In Progress">Andamento</option>
-                      <option value="Testing">Teste</option>
-                      <option value="Done">Concluído</option>
+                      <option value="">Selecione...</option>
+                      {responsibleUsers.map(u => <option key={u.id} value={u.id}>{u.name.split(' (')[0]}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Prioridade</label>
+                    <select value={formData.priority || 'Medium'} onChange={e => { setFormData({ ...formData, priority: e.target.value as any }); markDirty(); }} className="w-full px-3 py-1 text-xs font-bold border rounded-lg bg-[var(--bg)] border-[var(--border)] outline-none" style={{ color: 'var(--text)' }}>
+                      <option value="Low">Baixa</option>
+                      <option value="Medium">Média</option>
+                      <option value="High">Alta</option>
+                      <option value="Critical">Crítica</option>
                     </select>
                   </div>
                 </div>
-                <button
-                  onClick={() => { setFormData({ ...formData, is_impediment: !formData.is_impediment }); markDirty(); }}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl border transition-all font-bold text-[9px] ${formData.is_impediment ? 'bg-orange-500/10 border-orange-500 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-transparent border-[var(--border)] opacity-60'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Flag size={12} className={formData.is_impediment ? "fill-orange-500" : ""} />
-                    IMPEDIMENTO
-                  </div>
-                  {formData.is_impediment && <span className="text-[7px] bg-orange-500 text-white px-1 py-0.5 rounded font-black">ATIVO</span>}
-                </button>
               </div>
-            </div>
 
-            {/* Card 2: Gestão */}
-            <div className="p-4 rounded-[24px] border shadow-sm flex flex-col h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Gestão</h4>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/10"><Shield size={12} className="text-emerald-500" /></div>
-              </div>
-              <div className="space-y-3 flex-1">
+              {/* CARD 3: ESFORÇO */}
+              <div className="p-4 rounded-[24px] border shadow-sm flex flex-col justify-between h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <div>
-                  <label className={`text-[9px] font-black uppercase mb-1 flex items-center gap-2 opacity-60 ${hasError('developerId') ? 'text-yellow-500' : ''}`}>
-                    <Crown size={10} className={formData.developerId ? "text-yellow-500" : ""} /> Responsável *
-                  </label>
-                  <select
-                    value={formData.developerId || ''}
-                    onChange={e => {
-                      const selectedId = e.target.value;
-                      const u = users.find(usr => usr.id === selectedId);
-                      const oldResponsibleId = formData.developerId;
-
-                      let updatedCollabs = [...(formData.collaboratorIds || [])];
-
-                      // Mantém o antigo responsável na equipe como colaborador
-                      if (oldResponsibleId && !updatedCollabs.includes(oldResponsibleId)) {
-                        updatedCollabs.push(oldResponsibleId);
-                      }
-
-                      // Garante que o novo responsável também esteja na lista de colaboradores
-                      if (selectedId && !updatedCollabs.includes(selectedId)) {
-                        updatedCollabs.push(selectedId);
-                      }
-
-                      setFormData({
-                        ...formData,
-                        developerId: selectedId,
-                        developer: u?.name || '',
-                        collaboratorIds: updatedCollabs
-                      });
-                      markDirty();
-                    }}
-                    className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('developerId') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                    style={{ color: 'var(--text)' }}
-                    disabled={!formData.projectId}
-                  >
-                    <option value="">Selecione...</option>
-                    {responsibleUsers.map(u => <option key={u.id} value={u.id}>{u.name.split(' (')[0]}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Prioridade</label>
-                  <select value={formData.priority || 'Medium'} onChange={e => { setFormData({ ...formData, priority: e.target.value as any }); markDirty(); }} className="w-full px-3 py-1 text-xs font-bold border rounded-lg bg-[var(--bg)] border-[var(--border)] outline-none" style={{ color: 'var(--text)' }}>
-                    <option value="Low">Baixa</option>
-                    <option value="Medium">Média</option>
-                    <option value="High">Alta</option>
-                    <option value="Critical">Crítica</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: ESFORÇO */}
-            <div className="p-4 rounded-[24px] border shadow-sm flex flex-col justify-between h-[290px] group hover:shadow-md transition-all duration-300" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-indigo-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
-                    <Clock size={12} /> Esforço
-                  </div>
-                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform"><Activity size={12} /></div>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Big Display for Hours Spent */}
-                  <div className="flex items-center justify-between p-4 rounded-2xl border border-emerald-500/20 shadow-inner group/effort relative overflow-hidden" style={{ backgroundColor: 'rgba(16,185,129,0.08)' }}>
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 group-hover/effort:scale-125 transition-transform duration-700" />
-                    <div className="flex items-center gap-2.5 relative z-10">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                        <Clock size={18} />
-                      </div>
-                      <div className="flex flex-col">
-                        <p className="text-[8px] font-black uppercase text-emerald-500/60 tracking-[0.2em] mb-0.5">Horas Apontadas (Total)</p>
-                        <p className="text-2xl font-black tabular-nums text-emerald-500 leading-none">{formatDecimalToTime(actualHoursSpent)}</p>
-                      </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-indigo-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
+                      <Clock size={12} /> Esforço
                     </div>
+                    <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform"><Activity size={12} /></div>
                   </div>
 
-                  {/* Weight and Forecast Boxes */}
-                  <div className="p-4 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] shadow-sm">
-                    <p className="text-[8px] font-black uppercase opacity-40 tracking-[0.2em] mb-1.5">Peso Projeto</p>
-                    <p className="text-base font-black text-indigo-500 tabular-nums leading-none">{taskWeight.weight.toFixed(1)}%</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                <div className="flex justify-between items-center text-[9px] font-black uppercase opacity-40 tracking-widest px-1">
-                  <span>Progresso ({formData.progress}%)</span>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
-                    {formData.progress === 100 ? 'Concluído' : 'Em Execução'}
-                  </div>
-                </div>
-                <div className="relative pt-0.5">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.progress || 0}
-                    onChange={e => {
-                      const newProgress = Number(e.target.value);
-                      let newStatus = formData.status;
-                      let newActualDelivery = formData.actualDelivery;
-                      if (formData.status === 'Done' && newProgress < 100) { newStatus = 'In Progress'; newActualDelivery = ''; }
-                      setFormData({ ...formData, progress: newProgress, status: newStatus, actualDelivery: newActualDelivery });
-                      markDirty();
-                    }}
-                    className="w-full h-1 rounded-full appearance-none cursor-pointer accent-indigo-600 shadow-inner border border-transparent"
-                    style={{ backgroundColor: 'var(--surface-3)' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4: TIMELINE */}
-            <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col justify-between min-h-[290px] group hover:shadow-md transition-all duration-300 ${hasError('timeline') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('timeline') ? undefined : 'var(--surface)', borderColor: hasError('timeline') ? undefined : 'var(--border)' }}>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
-                    <Calendar size={12} /> Timeline
-                  </div>
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><LayoutGrid size={12} /></div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                      <span className="text-[9px] font-black uppercase text-blue-500 tracking-widest">Planejado</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.scheduledStart ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
-                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.scheduledStart ? 'text-yellow-500' : 'opacity-40'}`}>Início *</label>
-                        <input
-                          type="date"
-                          value={formData.scheduledStart || ''}
-                          onChange={e => { setFormData({ ...formData, scheduledStart: e.target.value }); markDirty(); }}
-                          className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
-                        />
-                      </div>
-                      <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.estimatedDelivery ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
-                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.estimatedDelivery ? 'text-yellow-500' : 'opacity-40'}`}>Entrega *</label>
-                        <input
-                          type="date"
-                          value={formData.estimatedDelivery || ''}
-                          onChange={e => { setFormData({ ...formData, estimatedDelivery: e.target.value }); markDirty(); }}
-                          className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
-                        />
-                      </div>
-                    </div>
-
-                    <div className={`p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors mt-2 ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
-                      <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>
-                      <input
-                        type="text"
-                        value={editingMainHours !== null ? editingMainHours : formatDecimalToTime(formData.estimatedHours || 0)}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (!/^[0-9:.,]*$/.test(val)) return;
-                          setEditingMainHours(val);
-                          markDirty();
-                        }}
-                        onBlur={() => {
-                          if (editingMainHours !== null) {
-                            const dec = parseTimeToDecimal(editingMainHours);
-                            setFormData((prev: any) => ({ ...prev, estimatedHours: dec }));
-                            setEditingMainHours(null);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.currentTarget.blur();
-                        }}
-                        className="w-full bg-transparent text-[11px] font-black text-[var(--text)] outline-none tabular-nums p-0 border-none leading-none focus:text-blue-500 font-mono"
-                        placeholder="00:00"
-                      />
-                      {projectAvailableHours !== null && (
-                        <div className="mt-2.5 pt-2 border-t border-dashed border-blue-500/10 flex items-center justify-between">
-                          <span className="text-[7.5px] font-black text-blue-500/50 uppercase tracking-widest whitespace-nowrap">Saldo Disp.</span>
-                          <div className="flex items-baseline gap-1 whitespace-nowrap">
-                            <span className="text-[10px] font-black text-blue-500/80 tabular-nums">{formatDecimalToTime(projectAvailableHours)}</span>
-                            <span className="text-[7.5px] font-bold text-blue-500/50 uppercase">hs</span>
-                          </div>
+                  <div className="space-y-3">
+                    {/* Big Display for Hours Spent */}
+                    <div className="flex items-center justify-between p-4 rounded-2xl border border-emerald-500/20 shadow-inner group/effort relative overflow-hidden" style={{ backgroundColor: 'rgba(16,185,129,0.08)' }}>
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 group-hover/effort:scale-125 transition-transform duration-700" />
+                      <div className="flex items-center gap-2.5 relative z-10">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                          <Clock size={18} />
                         </div>
-                      )}
+                        <div className="flex flex-col">
+                          <p className="text-[8px] font-black uppercase text-emerald-500/60 tracking-[0.2em] mb-0.5">Horas Apontadas (Total)</p>
+                          <p className="text-2xl font-black tabular-nums text-emerald-500 leading-none">{formatDecimalToTime(actualHoursSpent)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Weight and Forecast Boxes */}
+                    <div className="p-4 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] shadow-sm">
+                      <p className="text-[8px] font-black uppercase opacity-40 tracking-[0.2em] mb-1.5">Peso Projeto</p>
+                      <p className="text-base font-black text-indigo-500 tabular-nums leading-none">{taskWeight.weight.toFixed(1)}%</p>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-2 border-t border-dashed border-[var(--border)] mt-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                  <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">Executado</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="px-2.5 py-1.5 rounded-xl bg-emerald-500/[0.03] border border-emerald-500/10 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Zap size={10} className="text-emerald-500" />
-                      <span className="text-[8px] font-bold text-emerald-600/60 uppercase">Início</span>
+                <div className="space-y-2 pt-1">
+                  <div className="flex justify-between items-center text-[9px] font-black uppercase opacity-40 tracking-widest px-1">
+                    <span>Progresso ({formData.progress}%)</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
+                      {formData.progress === 100 ? 'Concluído' : 'Em Execução'}
                     </div>
-                    <span className="text-[10px] font-black" style={{ color: 'var(--text)' }}>{actualStartDate ? actualStartDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '...'}</span>
                   </div>
-                  <div className="px-2.5 py-1.5 rounded-xl bg-slate-500/5 border border-[var(--border)] flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <CheckSquare size={10} className="opacity-30" style={{ color: 'var(--text)' }} />
-                      <span className="text-[8px] font-bold opacity-30 uppercase" style={{ color: 'var(--text)' }}>Entrega</span>
-                    </div>
-                    <span className="text-[10px] font-black ml-auto opacity-30" style={{ color: 'var(--text)' }}>{formData.actualDelivery ? new Date(formData.actualDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '...'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 p-6 rounded-[24px] border shadow-sm flex flex-col gap-6" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <LayoutGrid size={14} className="text-indigo-500" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Descrição da Atividade</h4>
-                </div>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={e => { setFormData({ ...formData, description: e.target.value }); markDirty(); }}
-                  className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-indigo-500/30 leading-relaxed"
-                  style={{ color: 'var(--text)' }}
-                  placeholder="Instruções e detalhamento..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <StickyNote size={14} className="text-amber-500" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500">Anotações Internas</h4>
-                  </div>
-                  <textarea
-                    value={formData.notes || ''}
-                    onChange={e => { setFormData({ ...formData, notes: e.target.value }); markDirty(); }}
-                    className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-amber-500/30 leading-relaxed"
-                    style={{ color: 'var(--text)' }}
-                    placeholder="Observações técnicas, credenciais..."
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet size={14} className="text-blue-500" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-500">Link de Documentação</h4>
-                    </div>
-                    {formData.link_ef && (
-                      <a
-                        href={formData.link_ef.startsWith('http') ? formData.link_ef : `https://${formData.link_ef}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-1"
-                      >
-                        ABRIR <ExternalLink size={10} />
-                      </a>
-                    )}
-                  </div>
-                  <div className="relative">
+                  <div className="relative pt-0.5">
                     <input
-                      type="url"
-                      value={formData.link_ef || ''}
-                      onChange={e => { setFormData({ ...formData, link_ef: e.target.value }); markDirty(); }}
-                      className="w-full px-4 py-1.5 pr-10 text-xs border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-blue-500/30 font-mono"
-                      style={{ color: 'var(--text)' }}
-                      placeholder="https://docs.google.com/..."
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={formData.progress || 0}
+                      onChange={e => {
+                        const newProgress = Number(e.target.value);
+                        let newStatus = formData.status;
+                        let newActualDelivery = formData.actualDelivery;
+                        if (formData.status === 'Done' && newProgress < 100) { newStatus = 'In Progress'; newActualDelivery = ''; }
+                        setFormData({ ...formData, progress: newProgress, status: newStatus, actualDelivery: newActualDelivery });
+                        markDirty();
+                      }}
+                      className="w-full h-1 rounded-full appearance-none cursor-pointer accent-indigo-600 shadow-inner border border-transparent"
+                      style={{ backgroundColor: 'var(--surface-3)' }}
                     />
-                    <Zap size={14} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 text-blue-500" />
                   </div>
-                  <p className="mt-2 text-[10px] opacity-40 italic">Cole aqui o link direto para o documento ou repositório.</p>
                 </div>
               </div>
-            </div>
 
-            <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col max-h-[290px] transition-all duration-300 ${hasError('team') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('team') ? undefined : 'var(--surface)', borderColor: hasError('team') ? undefined : 'var(--border)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Users size={14} className="text-indigo-500" />
-                  {/* Inclui o responsável principal no contador se ele existir */}
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 flex items-center gap-1">
-                    Equipe ({Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length})
-                    {(() => {
-                      const limit = formData.estimatedHours || 0;
-                      const hasAnyAllocation = Object.values(localTaskAllocations).some(val => val > 0);
-                      const teamCount = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length || 1;
+              {/* CARD 4: TIMELINE */}
+              <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col justify-between min-h-[290px] group hover:shadow-md transition-all duration-300 ${hasError('timeline') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('timeline') ? undefined : 'var(--surface)', borderColor: hasError('timeline') ? undefined : 'var(--border)' }}>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
+                      <Calendar size={12} /> Timeline
+                    </div>
+                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><LayoutGrid size={12} /></div>
+                  </div>
 
-                      let totalAllocated = 0;
-                      if (!hasAnyAllocation && limit > 0) {
-                        totalAllocated = limit; // Auto-distribuído
-                      } else {
-                        const teamIds = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean);
-                        totalAllocated = teamIds.reduce((sum, id) => sum + (localTaskAllocations[id] || 0), 0);
-                      }
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                        <span className="text-[9px] font-black uppercase text-blue-500 tracking-widest">Planejado</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.scheduledStart ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+                          <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.scheduledStart ? 'text-yellow-500' : 'opacity-40'}`}>Início *</label>
+                          <input
+                            type="date"
+                            value={formData.scheduledStart || ''}
+                            onChange={e => { setFormData({ ...formData, scheduledStart: e.target.value }); markDirty(); }}
+                            className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
+                          />
+                        </div>
+                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.estimatedDelivery ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+                          <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.estimatedDelivery ? 'text-yellow-500' : 'opacity-40'}`}>Entrega *</label>
+                          <input
+                            type="date"
+                            value={formData.estimatedDelivery || ''}
+                            onChange={e => { setFormData({ ...formData, estimatedDelivery: e.target.value }); markDirty(); }}
+                            className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
+                          />
+                        </div>
+                      </div>
 
-                      let statusClasses = 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500/80';
-                      if (limit > 0) {
-                        if (Math.abs(totalAllocated - limit) < 0.01) {
-                          statusClasses = 'bg-emerald-500 text-white border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]';
-                        } else if (totalAllocated > limit) {
-                          statusClasses = 'bg-red-500 text-white border-red-600 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse';
-                        } else {
-                          statusClasses = 'bg-yellow-400 text-black border-yellow-500 shadow-[0_0_10px_rgba(250,204,21,0.3)] font-black';
-                        }
-                      }
-
-                      return (
-                        <span className={`ml-2 px-2 py-0.5 rounded-lg border font-mono text-[9px] transition-all duration-300 ${statusClasses}`}>
-                          {formatDecimalToTime(totalAllocated)} / {formatDecimalToTime(limit)}
-                        </span>
-                      );
-                    })()}
-                  </h4>
-                </div>
-                <button type="button" onClick={() => setIsAddMemberOpen(true)} className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-colors"><Plus size={14} /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                {Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])]))
-                  .filter(Boolean)
-                  .map(id => {
-                    const u = users.find(usr => usr.id === id);
-                    if (!u) return null;
-
-
-                    // Lógica de Disponibilidade no Período (Novo: Alinhado com Quadro de Capacidade)
-                    const tStart = formData.scheduledStart || '';
-                    const tEnd = formData.estimatedDelivery || '';
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const effectiveStart = tStart && tStart > todayStr ? tStart : todayStr;
-
-                    // 1. Saldo no Período (Distribuído)
-                    let periodAvailability = 0;
-                    if (tEnd && effectiveStart <= tEnd) {
-                      const availData = CapacityUtils.getUserAvailabilityInRange(
-                        u, effectiveStart, tEnd, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences
-                      );
-                      periodAvailability = availData.balance;
-                    }
-
-                    // 2. Saldo Mensal (Referência absoluta do Quadro de Capacidade)
-                    const currentMonthStr = todayStr.substring(0, 7);
-                    const monthlyData = CapacityUtils.getUserMonthlyAvailability(
-                      u, currentMonthStr, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences
-                    );
-                    const monthlyBalance = monthlyData.balance;
-
-                    // REGRA DE ATRASO: Se a tarefa já passou da data de entrega, está atrasada e não concluída,
-                    // mostramos o Saldo Disponível do Mês inteiro como salva-guarda.
-                    if (tEnd && tEnd < todayStr && formData.status !== 'Done') {
-                      periodAvailability = monthlyBalance;
-                    }
-
-                    const teamCount = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length;
-
-                    // Baseado no Esforço Operacional (Horas da Tarefa)
-                    const totalTaskHours = Number(formData.estimatedHours) || 0;
-
-                    // Se o membro já tem uma alocação local salva, usamos ela. Caso contrário, se há horas de tarefa mas nenhum membro tem reserva, dividimos igualmente.
-                    const hasAnyAllocation = Object.values(localTaskAllocations).some(val => val > 0);
-                    let currentForecast = localTaskAllocations[id] || 0;
-                    if (!hasAnyAllocation && totalTaskHours > 0) {
-                      currentForecast = totalTaskHours / teamCount;
-                    }
-
-                    const memberRealHours = taskHours.filter((h: any) => h.userId === id).reduce((sum: number, h: any) => sum + (Number(h.totalHours) || 0), 0);
-                    const distributionPercent = totalTaskHours > 0 ? (currentForecast / totalTaskHours) * 100 : 0;
-                    return (
-                      <div key={id} className="flex flex-col gap-1.5 p-3 rounded-xl border bg-[var(--bg)] border-[var(--border)] group/member relative">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center text-[10px] font-bold overflow-hidden shadow-sm">
-                            {u.avatarUrl ? <img src={u.avatarUrl} className="w-full h-full object-cover" /> : u.name[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-extrabold truncate uppercase" style={{ color: 'var(--text)' }}>{u.name.split(' (')[0]}</p>
-                            <div className="flex items-center gap-2">
-                              {id === formData.developerId ? (
-                                <span className="text-[8px] font-black bg-yellow-400 text-black px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                                  <Crown size={8} /> RESPONSÁVEL
-                                </span>
-                              ) : (
-                                <span className="text-[8px] font-black bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded">MEMBRO</span>
-                              )}
+                      <div className={`p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors mt-2 ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>
+                        <input
+                          type="text"
+                          value={editingMainHours !== null ? editingMainHours : formatDecimalToTime(formData.estimatedHours || 0)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (!/^[0-9:.,]*$/.test(val)) return;
+                            setEditingMainHours(val);
+                            markDirty();
+                          }}
+                          onBlur={() => {
+                            if (editingMainHours !== null) {
+                              const dec = parseTimeToDecimal(editingMainHours);
+                              setFormData((prev: any) => ({ ...prev, estimatedHours: dec }));
+                              setEditingMainHours(null);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                          }}
+                          className="w-full bg-transparent text-[11px] font-black text-[var(--text)] outline-none tabular-nums p-0 border-none leading-none focus:text-blue-500 font-mono"
+                          placeholder="00:00"
+                        />
+                        {projectAvailableHours !== null && (
+                          <div className="mt-2.5 pt-2 border-t border-dashed border-blue-500/10 flex items-center justify-between">
+                            <span className="text-[7.5px] font-black text-blue-500/50 uppercase tracking-widest whitespace-nowrap">Saldo Disp.</span>
+                            <div className="flex items-baseline gap-1 whitespace-nowrap">
+                              <span className="text-[10px] font-black text-blue-500/80 tabular-nums">{formatDecimalToTime(projectAvailableHours)}</span>
+                              <span className="text-[7.5px] font-bold text-blue-500/50 uppercase">hs</span>
                             </div>
                           </div>
-                          {id !== formData.developerId && (
-                            <button type="button" onClick={() => setFormData({ ...formData, collaboratorIds: formData.collaboratorIds?.filter(cid => cid !== id) })} className="p-1.5 text-red-500/30 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><X size={12} /></button>
-                          )}
-                        </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2 border-t border-[var(--border)] pt-2 border-dashed">
-                          {/* SALDO DISP. */}
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase opacity-40">Saldo Disp.</span>
-                            {formData.status === 'Done' ? (
-                              <span className="text-[10px] font-black text-[var(--muted)] opacity-50 tabular-nums">--</span>
-                            ) : (
-                              <span className={`text-[10px] font-black tabular-nums ${periodAvailability < 0 ? 'text-red-500' : 'text-indigo-500'}`}>
-                                {formatDecimalToTime(periodAvailability)}
-                              </span>
+                <div className="pt-2 border-t border-dashed border-[var(--border)] mt-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">Executado</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="px-2.5 py-1.5 rounded-xl bg-emerald-500/[0.03] border border-emerald-500/10 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Zap size={10} className="text-emerald-500" />
+                        <span className="text-[8px] font-bold text-emerald-600/60 uppercase">Início</span>
+                      </div>
+                      <span className="text-[10px] font-black" style={{ color: 'var(--text)' }}>{actualStartDate ? actualStartDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '...'}</span>
+                    </div>
+                    <div className="px-2.5 py-1.5 rounded-xl bg-slate-500/5 border border-[var(--border)] flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <CheckSquare size={10} className="opacity-30" style={{ color: 'var(--text)' }} />
+                        <span className="text-[8px] font-bold opacity-30 uppercase" style={{ color: 'var(--text)' }}>Entrega</span>
+                      </div>
+                      <span className="text-[10px] font-black ml-auto opacity-30" style={{ color: 'var(--text)' }}>{formData.actualDelivery ? new Date(formData.actualDelivery + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '...'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 p-6 rounded-[24px] border shadow-sm flex flex-col gap-6" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <LayoutGrid size={14} className="text-indigo-500" />
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Descrição da Atividade</h4>
+                  </div>
+                  <textarea
+                    value={formData.description || ''}
+                    onChange={e => { setFormData({ ...formData, description: e.target.value }); markDirty(); }}
+                    className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-indigo-500/30 leading-relaxed"
+                    style={{ color: 'var(--text)' }}
+                    placeholder="Instruções e detalhamento..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <StickyNote size={14} className="text-amber-500" />
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500">Anotações Internas</h4>
+                    </div>
+                    <textarea
+                      value={formData.notes || ''}
+                      onChange={e => { setFormData({ ...formData, notes: e.target.value }); markDirty(); }}
+                      className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-amber-500/30 leading-relaxed"
+                      style={{ color: 'var(--text)' }}
+                      placeholder="Observações técnicas, credenciais..."
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet size={14} className="text-blue-500" />
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-500">Link de Documentação</h4>
+                      </div>
+                      {formData.link_ef && (
+                        <a
+                          href={formData.link_ef.startsWith('http') ? formData.link_ef : `https://${formData.link_ef}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] font-bold text-blue-500 hover:underline flex items-center gap-1"
+                        >
+                          ABRIR <ExternalLink size={10} />
+                        </a>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="url"
+                        value={formData.link_ef || ''}
+                        onChange={e => { setFormData({ ...formData, link_ef: e.target.value }); markDirty(); }}
+                        className="w-full px-4 py-1.5 pr-10 text-xs border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-blue-500/30 font-mono"
+                        style={{ color: 'var(--text)' }}
+                        placeholder="https://docs.google.com/..."
+                      />
+                      <Zap size={14} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 text-blue-500" />
+                    </div>
+                    <p className="mt-2 text-[10px] opacity-40 italic">Cole aqui o link direto para o documento ou repositório.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-[24px] border shadow-sm flex flex-col max-h-[290px] transition-all duration-300 ${hasError('team') ? 'bg-yellow-400/10 border-yellow-400/50 shadow-[0_0_15px_rgba(250,204,21,0.1)]' : ''}`} style={{ backgroundColor: hasError('team') ? undefined : 'var(--surface)', borderColor: hasError('team') ? undefined : 'var(--border)' }}>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                      <Users size={16} className="text-indigo-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 flex items-center gap-2">
+                        Equipe Alocada
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-[8px] font-black">
+                          {Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length} MEMBROS
+                        </span>
+                      </h4>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setIsAddMemberOpen(true)} disabled={loading} className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"><Plus size={16} /></button>
+                </div>
+
+                {/* Progress bar alocação vs estimado */}
+                {(() => {
+                  const limit = formData.estimatedHours || 0;
+                  const hasAnyAllocation = Object.values(localTaskAllocations).some(val => val > 0);
+                  const teamIds = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean);
+                  const totalAllocated = !hasAnyAllocation && limit > 0 ? limit : teamIds.reduce((sum, id) => sum + (localTaskAllocations[id] || 0), 0);
+
+                  if (limit === 0) return null;
+
+                  let barColor = 'bg-indigo-500';
+                  if (Math.abs(totalAllocated - limit) < 0.01) barColor = 'bg-emerald-500';
+                  else if (totalAllocated > limit) barColor = 'bg-red-500 animate-pulse';
+                  else barColor = 'bg-amber-500';
+
+                  return (
+                    <div className="mb-6 px-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[9px] font-black uppercase opacity-40">Reserva de Horas</span>
+                        <span className={`text-[10px] font-black ${totalAllocated > limit ? 'text-red-500' : 'text-[var(--text)]'}`}>
+                          {formatDecimalToTime(totalAllocated)} / {formatDecimalToTime(limit)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[var(--surface-2)] rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${Math.min(100, (totalAllocated / limit) * 100)}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex-1 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
+                  {Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])]))
+                    .filter(Boolean)
+                    .map(id => {
+                      const u = users.find(usr => usr.id === id);
+                      if (!u) return null;
+
+
+                      // Lógica de Disponibilidade no Período (Novo: Alinhado com Quadro de Capacidade)
+                      const tStart = formData.scheduledStart || '';
+                      const tEnd = formData.estimatedDelivery || '';
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      const effectiveStart = tStart && tStart > todayStr ? tStart : todayStr;
+
+                      // 1. Saldo no Período (Distribuído)
+                      let periodAvailability = 0;
+                      if (tEnd && effectiveStart <= tEnd) {
+                        const availData = CapacityUtils.getUserAvailabilityInRange(
+                          u, effectiveStart, tEnd, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences
+                        );
+                        periodAvailability = availData.balance;
+                      }
+
+                      // 2. Saldo Mensal (Referência absoluta do Quadro de Capacidade)
+                      const currentMonthStr = todayStr.substring(0, 7);
+                      const monthlyData = CapacityUtils.getUserMonthlyAvailability(
+                        u, currentMonthStr, projects, projectMembers, timesheetEntries, tasks, holidays, taskMemberAllocations, absences
+                      );
+                      const monthlyBalance = monthlyData.balance;
+
+                      // REGRA DE ATRASO: Se a tarefa já passou da data de entrega, está atrasada e não concluída,
+                      // mostramos o Saldo Disponível do Mês inteiro como salva-guarda.
+                      if (tEnd && tEnd < todayStr && formData.status !== 'Done') {
+                        periodAvailability = monthlyBalance;
+                      }
+
+                      const teamCount = Array.from(new Set([formData.developerId, ...(formData.collaboratorIds || [])])).filter(Boolean).length;
+
+                      // Baseado no Esforço Operacional (Horas da Tarefa)
+                      const totalTaskHours = Number(formData.estimatedHours) || 0;
+
+                      // Se o membro já tem uma alocação local salva, usamos ela. Caso contrário, se há horas de tarefa mas nenhum membro tem reserva, dividimos igualmente.
+                      const hasAnyAllocation = Object.values(localTaskAllocations).some(val => val > 0);
+                      let currentForecast = localTaskAllocations[id] || 0;
+                      if (!hasAnyAllocation && totalTaskHours > 0) {
+                        currentForecast = totalTaskHours / teamCount;
+                      }
+
+                      const memberRealHours = taskHours.filter((h: any) => h.userId === id).reduce((sum: number, h: any) => sum + (Number(h.totalHours) || 0), 0);
+                      const distributionPercent = totalTaskHours > 0 ? (currentForecast / totalTaskHours) * 100 : 0;
+                      return (
+                        <div key={id} className={`group/member relative flex flex-col p-3 rounded-2xl border transition-all ${id === formData.developerId ? 'bg-yellow-400/5 border-yellow-400/20' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg overflow-hidden border transition-all ${id === formData.developerId ? 'border-yellow-400' : 'border-[var(--border)]'}`}>
+                              {u.avatarUrl ? (
+                                <img src={u.avatarUrl} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-[var(--surface-2)] font-black text-[10px] text-[var(--text-secondary)] uppercase">
+                                  {u.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[11px] font-bold truncate uppercase ${id === formData.developerId ? 'text-yellow-500' : 'text-[var(--text)]'}`}>{u.name}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-black uppercase opacity-30 tracking-widest">{u.cargo || 'Membro'}</span>
+                                {id === formData.developerId && (
+                                  <span className="text-[7px] font-black bg-yellow-400 text-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                    <Crown size={8} /> RESPONSÁVEL
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {id !== formData.developerId && (
+                              <button type="button" onClick={() => setFormData({ ...formData, collaboratorIds: formData.collaboratorIds?.filter(cid => cid !== id) })} className="p-1.5 text-red-500/30 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover/member:opacity-100"><X size={14} /></button>
                             )}
                           </div>
 
-                          {/* DISTRIBUIÇÃO */}
-                          <div className="flex flex-col border-l border-[var(--border)] pl-3">
-                            <span className="text-[9px] font-black uppercase opacity-40">Distribuição</span>
-                            <span className="text-[10px] font-black text-amber-500 tabular-nums">
-                              {distributionPercent.toFixed(1)}%
-                            </span>
-                          </div>
+                          <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-[var(--border)] border-dashed">
+                            {/* SALDO DISP. */}
+                            <div className="flex flex-col">
+                              <span className="text-[7px] font-black uppercase opacity-30 tracking-tighter">SD. DISP</span>
+                              <span className={`text-[10px] font-bold tabular-nums ${periodAvailability < 0 ? 'text-red-500' : 'text-indigo-500'}`}>
+                                {formData.status === 'Done' ? '--' : formatDecimalToTime(periodAvailability)}
+                              </span>
+                            </div>
 
-                          {/* ALOCADO input */}
-                          <div className="flex flex-col group/alloc">
-                            <span className="text-[9px] font-black uppercase group-focus-within/alloc:text-blue-500 transition-colors">
-                              <span className="opacity-40">Alocado</span>
-                              <span className="opacity-20 ml-1">/ {formatDecimalToTime(totalTaskHours)}</span>
-                            </span>
-                            <div className="flex items-center">
+                            {/* DISTRIBUIÇÃO */}
+                            <div className="flex flex-col text-center">
+                              <span className="text-[7px] font-black uppercase opacity-30 tracking-tighter">DISTRIBUÍDO</span>
+                              <span className="text-[10px] font-bold text-amber-500 tabular-nums">
+                                {distributionPercent.toFixed(1)}%
+                              </span>
+                            </div>
+
+                            {/* ALOCADO input */}
+                            <div className="flex flex-col text-center relative">
+                              <span className="text-[7px] font-black uppercase opacity-30 tracking-tighter">ALOCADO</span>
                               <input
                                 type="text"
                                 value={editingMemberHours[id] !== undefined ? editingMemberHours[id] : formatDecimalToTime(currentForecast)}
@@ -1078,141 +1115,138 @@ const TaskDetail: React.FC = () => {
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') e.currentTarget.blur();
                                 }}
-                                className="text-[10px] font-black text-blue-500 bg-transparent border-none outline-none p-0 w-12 tabular-nums"
+                                className="text-[10px] font-black text-blue-500 bg-transparent border-none outline-none p-0 w-full text-center tabular-nums"
                               />
                             </div>
-                          </div>
 
-                          {/* APONTADO */}
-                          <div className="flex flex-col border-l border-[var(--border)] pl-3">
-                            <span className="text-[9px] font-black uppercase opacity-40">Apontado</span>
-                            <span className={`text-[10px] font-black tabular-nums ${memberRealHours > currentForecast && currentForecast > 0 ? 'text-red-500' : memberRealHours > 0 ? 'text-emerald-500' : 'opacity-30'}`}>
-                              {formatDecimalToTime(memberRealHours)}
-                            </span>
-                            {memberRealHours > currentForecast && currentForecast > 0 && (
-                              <p className="text-[7px] font-black text-red-500 uppercase mt-0.5 animate-pulse">Excedeu!</p>
-                            )}
+                            {/* APONTADO */}
+                            <div className="flex flex-col text-right">
+                              <span className="text-[7px] font-black uppercase opacity-30 tracking-tighter">APONTADO</span>
+                              <span className={`text-[10px] font-black tabular-nums ${memberRealHours > currentForecast && currentForecast > 0 ? 'text-red-500' : memberRealHours > 0 ? 'text-emerald-500' : 'opacity-30'}`}>
+                                {formatDecimalToTime(memberRealHours)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-6 mt-6">
+            <div className="space-y-6 mt-6">
 
-            {/* Timesheet Detail Section */}
-            {
-              !isNew && taskHours.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-8 rounded-[32px] border shadow-sm overflow-hidden"
-                  style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-                >
-                  <div className="flex items-center justify-between mb-8 overflow-hidden">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shadow-inner">
-                        <Clock size={24} className="text-emerald-500" />
+              {/* Timesheet Detail Section */}
+              {
+                !isNew && taskHours.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-8 rounded-[32px] border shadow-sm overflow-hidden"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
+                  >
+                    <div className="flex items-center justify-between mb-8 overflow-hidden">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shadow-inner">
+                          <Clock size={24} className="text-emerald-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black uppercase tracking-widest text-emerald-500">Histórico de Apontamentos</h4>
+                          <p className="text-[10px] font-bold opacity-40 uppercase tracking-tighter" style={{ color: 'var(--muted)' }}>Detalhamento das horas registradas nesta tarefa</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-black uppercase tracking-widest text-emerald-500">Histórico de Apontamentos</h4>
-                        <p className="text-[10px] font-bold opacity-40 uppercase tracking-tighter" style={{ color: 'var(--muted)' }}>Detalhamento das horas registradas nesta tarefa</p>
+                      <div className="text-right bg-[var(--bg)] px-6 py-3 rounded-2xl border border-[var(--border)]">
+                        <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1" style={{ color: 'var(--muted)' }}>Total Acumulado</p>
+                        <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text)' }}>
+                          {formatDecimalToTime(actualHoursSpent)}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right bg-[var(--bg)] px-6 py-3 rounded-2xl border border-[var(--border)]">
-                      <p className="text-[9px] font-black uppercase opacity-40 tracking-widest mb-1" style={{ color: 'var(--muted)' }}>Total Acumulado</p>
-                      <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text)' }}>
-                        {formatDecimalToTime(actualHoursSpent)}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="overflow-x-auto custom-scrollbar-thin">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-[var(--border)]">
-                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Data</th>
-                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Colaborador</th>
-                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Horas</th>
-                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Descrição</th>
-                          <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40 text-right" style={{ color: 'var(--muted)' }}>Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--border)]">
-                        {[...taskHours].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(entry => (
-                          <tr key={entry.id} className="group hover:bg-[var(--surface-2)] transition-all">
-                            <td className="py-5 px-4 whitespace-nowrap">
-                              <span className="text-[11px] font-black" style={{ color: 'var(--border-strong)' }}>
-                                {new Date(entry.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                              </span>
-                            </td>
-                            <td className="py-5 px-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-[var(--bg)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-[11px] font-black shadow-sm">
-                                  {users.find((u: any) => u.id === entry.userId)?.avatarUrl ? (
-                                    <img src={users.find((u: any) => u.id === entry.userId)?.avatarUrl} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span style={{ color: 'var(--muted)' }}>{entry.userName?.substring(0, 2).toUpperCase()}</span>
+                    <div className="overflow-x-auto custom-scrollbar-thin">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="border-b border-[var(--border)]">
+                            <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Data</th>
+                            <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Colaborador</th>
+                            <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Horas</th>
+                            <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40" style={{ color: 'var(--muted)' }}>Descrição</th>
+                            <th className="pb-4 px-4 text-[9px] font-black uppercase tracking-widest opacity-40 text-right" style={{ color: 'var(--muted)' }}>Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)]">
+                          {[...taskHours].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(entry => (
+                            <tr key={entry.id} className="group hover:bg-[var(--surface-2)] transition-all">
+                              <td className="py-5 px-4 whitespace-nowrap">
+                                <span className="text-[11px] font-black" style={{ color: 'var(--border-strong)' }}>
+                                  {new Date(entry.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                </span>
+                              </td>
+                              <td className="py-5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-[var(--bg)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-[11px] font-black shadow-sm">
+                                    {users.find((u: any) => u.id === entry.userId)?.avatarUrl ? (
+                                      <img src={users.find((u: any) => u.id === entry.userId)?.avatarUrl} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span style={{ color: 'var(--muted)' }}>{entry.userName?.substring(0, 2).toUpperCase()}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] font-bold m-0" style={{ color: 'var(--text)' }}>{entry.userName}</p>
+                                    <p className="text-[8px] font-black uppercase tracking-widest opacity-30" style={{ color: 'var(--muted)' }}>Colaborador</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-5 px-4">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-black text-emerald-500 tabular-nums">{formatDecimalToTime(entry.totalHours)}</span>
+                                  <div className="flex items-center gap-1 opacity-40 text-[9px] font-bold" style={{ color: 'var(--muted)' }}>
+                                    <Clock size={8} />
+                                    <span>{entry.startTime} - {entry.endTime}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-5 px-4 min-w-[300px]">
+                                <div className="p-3 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] group-hover:border-[var(--primary-soft)] transition-colors">
+                                  <p className="text-[11px] leading-relaxed opacity-80" style={{ color: 'var(--text)' }}>
+                                    {entry.description || <span className="italic opacity-30">Sem descrição detalhada...</span>}
+                                  </p>
+                                </div>
+                              </td>
+                              <td className="py-5 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  {(isAdmin || entry.userId === currentUser?.id) && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditTimesheet(entry.id)}
+                                        className="p-2 rounded-lg hover:bg-emerald-500/10 text-emerald-500 transition-colors"
+                                        title="Editar Apontamento"
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteTimesheet(entry.id)}
+                                        className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                                        title="Excluir Apontamento"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
                                   )}
                                 </div>
-                                <div>
-                                  <p className="text-[11px] font-bold m-0" style={{ color: 'var(--text)' }}>{entry.userName}</p>
-                                  <p className="text-[8px] font-black uppercase tracking-widest opacity-30" style={{ color: 'var(--muted)' }}>Colaborador</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-black text-emerald-500 tabular-nums">{formatDecimalToTime(entry.totalHours)}</span>
-                                <div className="flex items-center gap-1 opacity-40 text-[9px] font-bold" style={{ color: 'var(--muted)' }}>
-                                  <Clock size={8} />
-                                  <span>{entry.startTime} - {entry.endTime}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4 min-w-[300px]">
-                              <div className="p-3 rounded-xl bg-[var(--bg)] border border-dashed border-[var(--border)] group-hover:border-[var(--primary-soft)] transition-colors">
-                                <p className="text-[11px] leading-relaxed opacity-80" style={{ color: 'var(--text)' }}>
-                                  {entry.description || <span className="italic opacity-30">Sem descrição detalhada...</span>}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="py-5 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {(isAdmin || entry.userId === currentUser?.id) && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleEditTimesheet(entry.id)}
-                                      className="p-2 rounded-lg hover:bg-emerald-500/10 text-emerald-500 transition-colors"
-                                      title="Editar Apontamento"
-                                    >
-                                      <Pencil size={14} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteTimesheet(entry.id)}
-                                      className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
-                                      title="Excluir Apontamento"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </motion.div>
-              )
-            }
-          </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </motion.div>
+                )
+              }
+            </div>
+          </fieldset>
         </form>
       </div >
 
@@ -1277,7 +1311,7 @@ const TaskDetail: React.FC = () => {
         confirmColor="red"
         onConfirm={performDelete}
         onCancel={() => { setDeleteConfirmation(null); setDeleteConfirmText(''); setShouldDeleteHours(false); }}
-        disabled={!!(deleteConfirmation?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== task?.title))}
+        disabled={loading || !!(deleteConfirmation?.force && (!ALL_ADMIN_ROLES.includes(String(currentUser?.role || '').trim().toLowerCase()) || deleteConfirmText !== task?.title))}
       />
 
       {
@@ -1296,19 +1330,96 @@ const TaskDetail: React.FC = () => {
 
       {
         isAddMemberOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md bg-black/50" onClick={() => setIsAddMemberOpen(false)}>
-            <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-3xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-xs font-black uppercase">Adicionar Colaborador</h4>
-                <button onClick={() => setIsAddMemberOpen(false)}><X size={18} /></button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md bg-black/50" onClick={() => { setIsAddMemberOpen(false); setMemberSearch(''); }}>
+            <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-3xl shadow-2xl w-full max-w-md p-6 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-indigo-500 tracking-widest">
+                  <Users size={14} /> Adicionar Colaborador
+                </div>
+                <div className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 text-[8px] font-black">
+                  SELEÇÃO MÚLTIPLA
+                </div>
               </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {users.filter((u: any) => u.active !== false && projectMembers.some((pm: any) => String(pm.id_projeto) === formData.projectId && String(pm.id_colaborador) === u.id) && u.id !== formData.developerId && !formData.collaboratorIds?.includes(u.id)).map((u: any) => (
-                  <button key={u.id} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-hover)]" onClick={() => { setFormData((prev: any) => ({ ...prev, collaboratorIds: [...(prev.collaboratorIds || []), u.id] })); setIsAddMemberOpen(false); markDirty(); }}>
-                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] flex items-center justify-center font-bold text-xs">{u.name[0]}</div>
-                    <div className="text-left font-bold text-xs uppercase">{u.name}</div>
-                  </button>
-                ))}
+
+              <div className="relative mb-4">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
+                <input
+                  type="text"
+                  placeholder="Buscar colaborador..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none text-white focus:border-purple-500/50 transition-colors"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 p-1 pr-2">
+                {(() => {
+                  const filtered = (users || [])
+                    .filter((u: any) => {
+                      const status = getUserStatus(u, tasks, projects, clients, absences);
+                      const isForaDoFluxo = status.label === 'Fora do Fluxo';
+                      const isAlreadySelected = formData.collaboratorIds?.includes(u.id) || u.id === formData.developerId;
+
+                      return u.active !== false &&
+                        (!isForaDoFluxo || isAlreadySelected) &&
+                        (u.name.toLowerCase().includes(memberSearch.toLowerCase()) || (u.cargo || '').toLowerCase().includes(memberSearch.toLowerCase()));
+                    })
+                    .sort((a, b) => {
+                      const aSelected = formData.collaboratorIds?.includes(a.id) || a.id === formData.developerId;
+                      const bSelected = formData.collaboratorIds?.includes(b.id) || b.id === formData.developerId;
+
+                      if (aSelected && !bSelected) return -1;
+                      if (!aSelected && bSelected) return 1;
+                      return a.name.localeCompare(b.name);
+                    });
+
+                  return filtered.map((u: any) => {
+                    const isSelected = formData.collaboratorIds?.includes(u.id) || u.id === formData.developerId;
+                    const isDeveloper = u.id === formData.developerId;
+
+                    return (
+                      <button
+                        key={u.id}
+                        disabled={isDeveloper}
+                        className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition-all group ${isSelected ? 'border-purple-500/30 bg-purple-500/5 shadow-sm shadow-purple-500/10' : 'border-transparent hover:bg-[var(--surface-hover)]'} ${isDeveloper ? 'opacity-80 cursor-default' : ''}`}
+                        onClick={() => {
+                          if (isDeveloper) return;
+                          if (isSelected) {
+                            setFormData((prev: any) => ({ ...prev, collaboratorIds: prev.collaboratorIds.filter((id: string) => id !== u.id) }));
+                          } else {
+                            setFormData((prev: any) => ({ ...prev, collaboratorIds: [...(prev.collaboratorIds || []), u.id] }));
+                          }
+                          markDirty();
+                        }}
+                      >
+                        {/* Selection Indicator Square with Check Mark */}
+                        <div className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-all ${isSelected ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.4)]' : 'bg-white/10 border border-white/10 shadow-inner'}`}>
+                          {isSelected && <Check size={12} className="text-white" strokeWidth={4} />}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-lg overflow-hidden border transition-all ${isSelected ? 'border-purple-500 scale-105 shadow-sm shadow-purple-500/20' : 'border-[var(--border)]'}`}>
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-[var(--surface-2)] font-black text-[10px] text-[var(--text-secondary)] uppercase">
+                              {u.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Texto */}
+                        <div className="flex-1 text-left min-w-0">
+                          <div className={`text-[11px] font-bold truncate uppercase transition-colors ${isSelected ? 'text-purple-500' : 'text-[var(--text)]'}`}>
+                            {u.name}
+                            {isDeveloper && <span className="ml-2 text-[7px] bg-yellow-400 text-black px-1 rounded">RESPONSÁVEL</span>}
+                          </div>
+                          <div className="text-[8px] font-black uppercase opacity-30 tracking-widest truncate">{u.cargo || 'Membro'}</div>
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>

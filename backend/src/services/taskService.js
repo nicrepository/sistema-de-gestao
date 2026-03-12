@@ -4,6 +4,7 @@ import { auditContext } from '../audit/auditMiddleware.js';
 import { isAdmUser } from '../utils/security.js';
 import { projectService, checkTaskHasHours } from './projectService.js';
 import { notifyUpdates } from '../utils/realtime.js';
+import { dbFindAll } from '../database/index.js';
 
 const safeNum = (val) => {
     if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
@@ -68,7 +69,33 @@ async function mapInputToPayload(data) {
     return payload;
 }
 
+async function _cleanupProjectMembers(projectId, potentialUserIds) {
+    if (!projectId || !potentialUserIds || potentialUserIds.length === 0) return;
+
+    // Get all users who still have ANY task in this project
+    const activeTasksMembers = await taskRepository.getAllProjectTaskMembers(projectId);
+
+    // Get project info to avoid removing the manager
+    const project = await projectService.getProjectById({ role: 'admin' }, projectId);
+    const managerId = project?.colaborador_central_id ? String(project.colaborador_central_id) : null;
+
+    for (const userId of potentialUserIds) {
+        const sUserId = String(userId);
+        if (sUserId === 'null' || sUserId === 'undefined') continue;
+
+        if (!activeTasksMembers.has(sUserId) && sUserId !== managerId) {
+            console.log(`[TaskService] Auto-removing user ${sUserId} from project ${projectId} (no tasks left)`);
+            try {
+                await projectService.removeProjectMember(null, projectId, sUserId);
+            } catch (err) {
+                console.error(`[TaskService] Error auto-removing user ${sUserId}:`, err);
+            }
+        }
+    }
+}
+
 export const taskService = {
+    // ... (getTasks, getTaskById)
     async getTasks(user, filters) {
         if (!isAdmUser(user)) {
             const userProjectIds = await projectService._getUserLinkedProjectIds(user);
@@ -158,6 +185,11 @@ export const taskService = {
     async updateTask(user, id, data) {
         // Verifica se a tarefa existe e se o usuário tem permissão
         const oldTask = await this.getTaskById(user, id);
+        const oldCollabs = await dbFindAll('tarefa_colaboradores', { filters: { id_tarefa: id } });
+        const oldTeam = new Set([
+            String(oldTask.colaborador_id),
+            ...oldCollabs.map(c => String(c.id_colaborador))
+        ]);
 
         const payload = await mapInputToPayload(data);
 
@@ -193,6 +225,11 @@ export const taskService = {
         }
 
         const updatedTask = await this.getTaskById(user, id);
+        const newCollabs = await dbFindAll('tarefa_colaboradores', { filters: { id_tarefa: id } });
+        const newTeam = new Set([
+            String(updatedTask.colaborador_id),
+            ...newCollabs.map(c => String(c.id_colaborador))
+        ]);
 
         const context = auditContext.getStore() || {};
         await auditService.logAction({
@@ -206,12 +243,24 @@ export const taskService = {
         });
 
         await notifyUpdates('tasks', { type: 'updated', data: updatedTask });
+
+        // Cleanup: remove users that lost their last task in this project
+        const removedCandidates = Array.from(oldTeam).filter(uid => !newTeam.has(uid));
+        if (removedCandidates.length > 0) {
+            await _cleanupProjectMembers(updatedTask.projeto_id, removedCandidates);
+        }
+
         return updatedTask;
     },
 
     async deleteTask(user, id, deleteHours = false, force = false) {
         // Verifica existência e permissão básica (assigned ou vinculado)
         const task = await this.getTaskById(user, id);
+        const taskCollabs = await dbFindAll('tarefa_colaboradores', { filters: { id_tarefa: id } });
+        const teamIds = [
+            String(task.colaborador_id),
+            ...taskCollabs.map(c => String(c.id_colaborador))
+        ].filter(id => id !== 'null' && id !== 'undefined');
 
         const hasHours = await checkTaskHasHours(id);
 
@@ -246,6 +295,10 @@ export const taskService = {
         });
 
         await notifyUpdates('tasks', { id, deleted: true });
+
+        // Cleanup
+        await _cleanupProjectMembers(task.projeto_id, teamIds);
+
         return true;
     }
 };

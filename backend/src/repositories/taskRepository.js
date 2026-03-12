@@ -114,5 +114,26 @@ export const taskRepository = {
             }));
             await dbInsert('tarefa_colaboradores', inserts, { select: false });
         }
+    },
+
+    async getAllProjectTaskMembers(projectId) {
+        // Main developers from view (v_tarefas handles soft delete etc)
+        const tasks = await this.findAll({ projectId });
+        const members = new Set();
+
+        tasks.forEach(t => {
+            if (t.colaborador_id) members.add(String(t.colaborador_id));
+        });
+
+        // Collaborators from junction table
+        const taskIds = tasks.map(t => t.id);
+        if (taskIds.length > 0) {
+            const collabs = await dbFindAll('tarefa_colaboradores', {
+                select: 'id_colaborador',
+                in: { id_tarefa: taskIds }
+            });
+            collabs.forEach(c => members.add(String(c.id_colaborador)));
+        }
+        return members;
     }
 };

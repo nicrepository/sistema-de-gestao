@@ -44,25 +44,25 @@ const ProjectColumn: React.FC<{
 
   const getStatusColor = (s: string) => {
     switch (s) {
-      case 'Em andamento': return 'bg-blue-50 border-blue-100';
-      case 'Concluído': return 'bg-green-50 border-green-100';
-      default: return 'bg-slate-100 border-slate-200';
+      case 'Em andamento': return 'var(--status-progress)';
+      case 'Concluído': return 'var(--status-done)';
+      default: return 'var(--surface-2)';
     }
   };
 
   const getHeaderColor = (s: string) => {
     switch (s) {
-      case 'Em andamento': return 'text-blue-600';
-      case 'Concluído': return 'text-green-600';
-      default: return 'text-slate-600';
+      case 'Em andamento': return 'var(--primary)';
+      case 'Concluído': return 'var(--success)';
+      default: return 'var(--muted)';
     }
   };
 
   return (
-    <div className={`flex-1 min-w-[320px] flex flex-col h-full rounded-2xl ${getStatusColor(status)} p-4`}>
-      <div className={`flex justify-between items-center mb-4 ${getHeaderColor(status)}`}>
+    <div className="flex-1 min-w-[320px] flex flex-col h-full rounded-2xl p-4 border" style={{ backgroundColor: getStatusColor(status), borderColor: 'var(--border)' }}>
+      <div className="flex justify-between items-center mb-4" style={{ color: getHeaderColor(status) }}>
         <h3 className="font-bold text-sm uppercase tracking-wider">{title}</h3>
-        <span className="bg-white/60 px-2 py-1 rounded-md text-xs font-bold shadow-sm">{filteredProjects.length}</span>
+        <span className="px-2 py-1 rounded-md text-xs font-bold shadow-sm" style={{ backgroundColor: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>{filteredProjects.length}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -73,7 +73,8 @@ const ProjectColumn: React.FC<{
             <div
               key={project.id}
               onClick={() => onProjectClick(project.id)}
-              className={`p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all group relative overflow-hidden bg-white border-slate-100 hover:border-purple-200`}
+              className={`p-4 rounded-xl shadow-sm border cursor-pointer hover:shadow-md transition-all group relative overflow-hidden`}
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
             >
               {/* DELETE → Apenas Admin */}
               {isAdmin && onDeleteClick && (
@@ -95,20 +96,19 @@ const ProjectColumn: React.FC<{
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
-                <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">
+                <span className="text-xs font-bold truncate max-w-[200px]" style={{ color: 'var(--text)' }}>
                   {client?.name || "Sem Cliente"}
                 </span>
               </div>
 
               {/* Nome do Projeto */}
-              <h4 className="font-bold text-slate-800 mb-2 text-base leading-snug pr-4">
+              <h4 className="font-bold mb-2 text-base leading-snug pr-4" style={{ color: 'var(--text)' }}>
                 {project.name}
-
               </h4>
 
               {/* Descrição */}
               {project.description && (
-                <p className="text-xs text-slate-600 mb-3 line-clamp-2 leading-relaxed">
+                <p className="text-xs mb-3 line-clamp-2 leading-relaxed" style={{ color: 'var(--muted)' }}>
                   {project.description}
                 </p>
               )}
@@ -116,41 +116,42 @@ const ProjectColumn: React.FC<{
               {/* Informações */}
               <div className="space-y-2 mb-3">
                 {project.managerClient && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
                     <UserIcon className="w-3.5 h-3.5" />
                     <span>Gestor: {project.managerClient}</span>
                   </div>
                 )}
                 {project.budget && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
                     <span className="font-semibold">Orçamento:</span>
                     <span>R$ {project.budget.toLocaleString('pt-BR')}</span>
                   </div>
                 )}
               </div>
 
-              {/* Rodapé */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+              <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <div className="flex flex-col">
+                  <div className="flex flex-col" style={{ color: 'var(--muted)' }}>
                     {project.startDate && (
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px]">
                         Início: {new Date(project.startDate).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                     {project.estimatedDelivery && (
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px]">
                         Entrega: {new Date(project.estimatedDelivery).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${status === 'Em andamento'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-                  }`}>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full`}
+                  style={{
+                    backgroundColor: status === 'Em andamento' ? 'var(--status-progress)' : 'var(--status-done)',
+                    color: status === 'Em andamento' ? 'var(--primary)' : 'var(--success)',
+                    border: '1px solid var(--border)'
+                  }}>
                   {status}
                 </span>
               </div>
@@ -166,13 +167,14 @@ const ProjectColumn: React.FC<{
                       return (
                         <div
                           key={member.id}
-                          className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 flex items-center justify-center overflow-hidden"
+                          className="inline-block h-7 w-7 rounded-full flex items-center justify-center overflow-hidden border-2"
+                          style={{ borderColor: 'var(--surface)', backgroundColor: 'var(--surface-2)', color: 'var(--text)' }}
                           title={member.name}
                         >
                           {member.avatarUrl ? (
                             <img src={member.avatarUrl} alt={member.name} className="h-full w-full object-cover" />
                           ) : (
-                            <span className="text-[10px] font-bold text-slate-500">
+                            <span className="text-[10px] font-bold">
                               {member.name.substring(0, 2).toUpperCase()}
                             </span>
                           )}
@@ -242,10 +244,10 @@ const KanbanProjects: React.FC<KanbanProjectsProps> = ({
   const statuses = ['Em andamento', 'Concluído'];
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-50 to-white">
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
 
       {/* HEADER */}
-      <div className="shrink-0 bg-white border-b border-slate-100 shadow-sm px-6 py-4">
+      <div className="shrink-0 border-b shadow-sm px-6 py-4" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
             {onBackToAdmin && (
@@ -257,7 +259,7 @@ const KanbanProjects: React.FC<KanbanProjectsProps> = ({
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+            <h1 className="text-xl font-bold flex items-center gap-3" style={{ color: 'var(--text)' }}>
               {currentClient ? (
                 <>
                   {currentClient.logoUrl && (
@@ -271,7 +273,7 @@ const KanbanProjects: React.FC<KanbanProjectsProps> = ({
                 </>
               ) : 'Board de Projetos'}
             </h1>
-            <p className="text-slate-500 text-sm">
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>
               {currentClient
                 ? 'Gerencie todos os projetos desta empresa'
                 : `${filteredProjects.length} projetos no total`
@@ -283,13 +285,14 @@ const KanbanProjects: React.FC<KanbanProjectsProps> = ({
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-4">
           {/* Search */}
           <div className="relative flex-1 md:w-56">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 w-4 h-4" style={{ color: 'var(--muted)' }} />
             <input
               type="text"
               placeholder="Filtrar projetos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#4c1d95] outline-none text-sm shadow-sm"
+              className="w-full pl-9 pr-4 py-2 border rounded-xl outline-none text-sm shadow-sm"
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
             />
           </div>
 

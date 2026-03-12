@@ -419,6 +419,7 @@ const HolidayManager: React.FC = () => {
                 message="Tem certeza que deseja remover este feriado do calendário?"
                 onConfirm={handleDelete}
                 onCancel={() => setItemToDelete(null)}
+                disabled={actionLoading}
             />
         </div>
     );

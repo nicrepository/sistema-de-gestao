@@ -762,6 +762,7 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
         message="Tem certeza que deseja excluir este registro?"
         onConfirm={handleDelete}
         onCancel={() => setDeleteModalOpen(false)}
+        disabled={loading}
       />
     </div>
   );

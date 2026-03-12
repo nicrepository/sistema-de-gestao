@@ -849,6 +849,7 @@ const ClientDetailsView: React.FC = () => {
           }
         }}
         onCancel={() => setItemToDelete(null)}
+        disabled={loading}
       />
     </div >
   );

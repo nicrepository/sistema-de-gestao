@@ -48,11 +48,11 @@ import ConfirmationModal from './ConfirmationModal';
 import { TaskCreationModal } from './TaskCreationModal';
 
 const STATUS_COLUMNS: { id: Status; title: string; color: string; bg: string; badgeColor: string }[] = [
-  { id: 'Todo', title: 'Pré-Projeto', color: '#64748b', bg: '#f8fafc', badgeColor: '#64748b' },
-  { id: 'Review', title: 'Análise', color: '#f59e0b', bg: '#fffbeb', badgeColor: '#f59e0b' },
-  { id: 'In Progress', title: 'Andamento', color: '#3b82f6', bg: '#eff6ff', badgeColor: '#3b82f6' },
-  { id: 'Testing', title: 'Teste', color: '#8b5cf6', bg: '#f5f3ff', badgeColor: '#8b5cf6' },
-  { id: 'Done', title: 'Concluído', color: '#10b981', bg: '#ecfdf5', badgeColor: '#10b981' },
+  { id: 'Todo', title: 'Pré-Projeto', color: '#64748b', bg: 'var(--status-todo)', badgeColor: '#64748b' },
+  { id: 'Review', title: 'Análise', color: '#f59e0b', bg: 'var(--status-review)', badgeColor: '#f59e0b' },
+  { id: 'In Progress', title: 'Andamento', color: '#3b82f6', bg: 'var(--status-progress)', badgeColor: '#3b82f6' },
+  { id: 'Testing', title: 'Teste', color: '#8b5cf6', bg: 'var(--status-testing)', badgeColor: '#8b5cf6' },
+  { id: 'Done', title: 'Concluído', color: '#10b981', bg: 'var(--status-done)', badgeColor: '#10b981' },
 ];
 
 const STATUS_ORDER: Status[] = ['Todo', 'Review', 'In Progress', 'Testing', 'Done'];
@@ -136,10 +136,10 @@ const KanbanCard = ({
   }, [project]);
 
   const getCardTheme = () => {
-    if (task.is_impediment) return { color: '#ea580c', pulseClass: 'pulse-impediment', colored: true };
-    if (isDelayed) return { color: '#dc2626', pulseClass: 'pulse-delayed', colored: true };
-    if (isStudy) return { color: '#0ea5e9', colored: true };
-    return { color: 'var(--border)', colored: false };
+    if (task.is_impediment) return { color: '#ea580c', pulseClass: 'pulse-impediment', colored: true, bg: 'var(--card-impediment-bg)' };
+    if (isDelayed) return { color: '#dc2626', pulseClass: 'pulse-delayed', colored: true, bg: 'var(--card-delayed-bg)' };
+    if (isStudy) return { color: '#0ea5e9', colored: true, bg: 'var(--card-study-bg)' };
+    return { color: 'var(--border)', colored: false, bg: 'var(--surface)' };
   };
 
   const theme = getCardTheme();
@@ -172,15 +172,7 @@ const KanbanCard = ({
           ${theme.pulseClass || ''}
         `}
         style={{
-          backgroundColor: task.is_impediment
-            ? 'rgba(234, 88, 12, 0.06)'
-            : isDelayed
-              ? 'rgba(220, 38, 38, 0.06)'
-              : isStudy
-                ? 'rgba(14, 165, 233, 0.06)'
-                : isHighlighted
-                  ? 'var(--surface-hover)'
-                  : 'var(--surface)',
+          backgroundColor: isHighlighted ? 'var(--surface-hover)' : theme.bg,
           borderColor: isHighlighted ? 'var(--primary)' : theme.color,
           boxShadow: task.is_impediment || isDelayed
             ? undefined
@@ -279,8 +271,8 @@ const KanbanCard = ({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); navigate(`/admin/team/${dev?.id || task.developerId}`); }}
-                  className="w-6 h-6 rounded-full flex items-center justify-center border hover:z-10 transition-all cursor-pointer bg-white overflow-hidden active:scale-95"
-                  style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center border hover:z-10 transition-all cursor-pointer overflow-hidden active:scale-95"
+                  style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--primary)', color: 'var(--primary)' }}
                   title={`Responsável: ${dev?.name || task.developer || 'N/A'}`}
                 >
                   {dev?.avatarUrl ? (
@@ -311,8 +303,8 @@ const KanbanCard = ({
                     key={uid}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); navigate(`/admin/team/${uid}`); }}
-                    className="w-6 h-6 rounded-full flex items-center justify-center border hover:z-10 transition-all cursor-pointer bg-slate-50 overflow-hidden active:scale-95"
-                    style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center border hover:z-10 transition-all cursor-pointer overflow-hidden active:scale-95"
+                    style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--muted)' }}
                     title={`Colaborador: ${u?.name || uid}`}
                   >
                     {u?.avatarUrl ? (
@@ -335,8 +327,8 @@ const KanbanCard = ({
 
             {(task.collaboratorIds?.length || 0) > 3 && (
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center border bg-slate-100 text-[8px] font-bold"
-                style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}
+                className="w-6 h-6 rounded-full flex items-center justify-center border text-[8px] font-bold"
+                style={{ backgroundColor: 'var(--surface-3)', borderColor: 'var(--border)', color: 'var(--muted)' }}
               >
                 +{task.collaboratorIds!.length - 3}
               </div>
@@ -785,21 +777,10 @@ export const KanbanBoard = () => {
         if (!activeTask.actualDelivery) {
           updatePayload.actualDelivery = new Date().toISOString().split('T')[0];
         }
-      } else if (newStatus === 'Review') {
-        newProgress = Math.max(newProgress, 90);
-        updatePayload.progress = newProgress;
-      } else if (newStatus === 'Testing') {
-        newProgress = Math.max(newProgress, 75);
-        updatePayload.progress = newProgress;
       } else if (newStatus === 'In Progress') {
-        newProgress = Math.max(newProgress, 10);
-        updatePayload.progress = newProgress;
         if (!activeTask.actualStart) {
           updatePayload.actualStart = new Date().toISOString().split('T')[0];
         }
-      } else if (newStatus === 'Todo') {
-        newProgress = 0;
-        updatePayload.progress = 0;
       }
 
       try {
@@ -917,7 +898,7 @@ export const KanbanBoard = () => {
               placeholder="Buscar tarefa, cliente, projeto ou dev..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 outline-none text-sm shadow-lg transition-all"
+              className="w-full pl-9 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500/20 outline-none text-sm shadow-lg transition-all"
               style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
             />
           </div>
@@ -1370,7 +1351,7 @@ export const KanbanBoard = () => {
         confirmText={isForceDelete ? "EXCLUIR TUDO" : "Excluir"}
         onConfirm={confirmDelete}
         onCancel={() => { setDeleteModalOpen(false); setTaskToDelete(null); setIsForceDelete(false); }}
-        disabled={isForceDelete && (deleteConfirmText !== taskToDelete?.title || !isAdmin)}
+        disabled={loading || (isForceDelete && (deleteConfirmText !== taskToDelete?.title || !isAdmin))}
       />
 
       {/* Modal de exclusão removido daqui e unificado acima */}
