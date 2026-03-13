@@ -181,6 +181,7 @@ const UserForm: React.FC = () => {
                 initialCargo={formData.cargo}
                 initialLevel={formData.nivel}
                 initialTorre={formData.torre}
+                existingCargos={Array.from(new Set(users.map(u => u.cargo).filter(Boolean)))}
                 onChange={({ cargo, nivel, torre }) => setFormData(prev => ({ ...prev, cargo, nivel, torre }))}
               />
             </div>

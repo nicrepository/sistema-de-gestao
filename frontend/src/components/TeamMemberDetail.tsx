@@ -721,6 +721,7 @@ const TeamMemberDetail: React.FC = () => {
                                        initialCargo={formData.cargo}
                                        initialLevel={formData.nivel}
                                        initialTorre={formData.torre}
+                                       existingCargos={Array.from(new Set(users.map(u => u.cargo).filter(Boolean)))}
                                        isEditing={isEditing}
                                        onChange={({ cargo, nivel, torre }) => setFormData(prev => ({ ...prev, cargo, nivel, torre }))}
                                     />
@@ -761,14 +762,14 @@ const TeamMemberDetail: React.FC = () => {
                                     </div>
                                     <div className="space-y-1.5">
                                        <label className="block text-[10px] font-black text-[var(--muted)] uppercase">Hrs Meta Dia</label>
-                                       <input 
-                                           type="text" 
-                                           value={formData.dailyAvailableHours || ''} 
-                                           onChange={(e) => handleNumberChange('dailyAvailableHours', e.target.value)} 
-                                           placeholder="0" 
-                                           className={`w-full px-4 py-3 border border-[var(--border)] rounded-xl text-sm text-[var(--text)] font-bold outline-none transition-all ${isEditing ? 'bg-[var(--surface-2)] focus:ring-2 focus:ring-[var(--primary)]/20 shadow-inner' : 'bg-transparent border-transparent px-0 disabled:text-[var(--text)]'}`}
-                                           disabled={!isEditing} 
-                                        />
+                                       <input
+                                          type="text"
+                                          value={formData.dailyAvailableHours || ''}
+                                          onChange={(e) => handleNumberChange('dailyAvailableHours', e.target.value)}
+                                          placeholder="0"
+                                          className={`w-full px-4 py-3 border border-[var(--border)] rounded-xl text-sm text-[var(--text)] font-bold outline-none transition-all ${isEditing ? 'bg-[var(--surface-2)] focus:ring-2 focus:ring-[var(--primary)]/20 shadow-inner' : 'bg-transparent border-transparent px-0 disabled:text-[var(--text)]'}`}
+                                          disabled={!isEditing}
+                                       />
                                     </div>
                                     <div className="space-y-1.5">
                                        <div className="flex items-center justify-between">

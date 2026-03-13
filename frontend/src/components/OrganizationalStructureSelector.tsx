@@ -1,12 +1,13 @@
 // components/OrganizationalStructureSelector.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Briefcase, BarChart, Zap, ChevronRight, CheckCircle2, AlertCircle, Info, LayoutGrid, Edit3, Check, X, Plus } from 'lucide-react';
-import { CARGOS, LEVELS, TOWER_GROUPS, getLevelsForCargo, getTowerGroupsForCargo } from '@/utils/towerConfig';
+import { ChevronRight, CheckCircle2, Info, LayoutGrid, Edit3, Check, Plus } from 'lucide-react';
+import { CARGOS, LEVELS, TOWER_GROUPS, getLevelsForCargo, getTowerGroupsForCargo, Level, TowerGroup, Tower, Specialization } from '@/utils/towerConfig';
 
 interface OrganizationalStructureSelectorProps {
     initialCargo?: string;
     initialLevel?: string;
     initialTorre?: string;
+    existingCargos?: string[];
     onChange: (data: { cargo: string; nivel: string; torre: string }) => void;
     isEditing?: boolean;
 }
@@ -15,6 +16,7 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
     initialCargo = '',
     initialLevel = '',
     initialTorre = '',
+    existingCargos = [],
     onChange,
     isEditing = true
 }) => {
@@ -23,28 +25,39 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
     const [torre, setTorre] = useState(initialTorre);
     const [isManualMode, setIsManualMode] = useState(false);
 
+    // Identificar cargos que não estão no config padrão
+    const otherCargos = useMemo(() => {
+        const standardNames = CARGOS.map(c => c.name);
+        return Array.from(new Set(existingCargos))
+            .filter(c => c && !standardNames.includes(c))
+            .sort((a, b) => a.localeCompare(b));
+    }, [existingCargos]);
+
     useEffect(() => {
         if (initialCargo !== undefined && initialCargo !== cargo) setCargo(initialCargo);
         if (initialLevel !== undefined && initialLevel !== nivel) setNivel(initialLevel);
         if (initialTorre !== undefined && initialTorre !== torre) setTorre(initialTorre);
     }, [initialCargo, initialLevel, initialTorre]);
 
-    // Se já tinha dados que não batem com o config, entra em modo manual
+    // Se já tinha dados que não batem com o config, entra em modo manual por segurança
     useEffect(() => {
         const isStandardCargo = CARGOS.some(c => c.id === initialCargo);
-        if (initialCargo && !isStandardCargo) {
+        if (initialCargo && !isStandardCargo && !otherCargos.includes(initialCargo)) {
             setIsManualMode(true);
         }
-    }, [initialCargo]);
+    }, [initialCargo, otherCargos]);
 
     const availableLevels = useMemo(() => getLevelsForCargo(cargo), [cargo]);
     const availableTowerGroups = useMemo(() => getTowerGroupsForCargo(cargo), [cargo]);
 
-    const handleCargoChange = (newCargo: string) => {
+    const handleCargoChange = (newCargo: string, isOther: boolean = false) => {
         setCargo(newCargo);
         setNivel('');
         setTorre('');
         onChange({ cargo: newCargo, nivel: '', torre: '' });
+        if (isOther) {
+            setIsManualMode(true);
+        }
     };
 
     const handleLevelChange = (newLevel: string) => {
@@ -53,9 +66,7 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
         onChange({ cargo, nivel: newLevel, torre: '' });
     };
 
-
-
-    const StepIndicator = ({ title, active, completed, stepNumber, onClick }: any) => (
+    const StepIndicator = ({ title, active, completed, stepNumber, onClick }: { title: string; active: boolean; completed: boolean; stepNumber: number; onClick: () => void }) => (
         <button
             type="button"
             onClick={onClick}
@@ -126,37 +137,44 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
         <div className="space-y-6">
             <div className="flex border-b border-[var(--border)]">
                 <StepIndicator stepNumber={1} title="Função" active={!cargo} completed={!!cargo} onClick={() => { setCargo(''); setNivel(''); setTorre(''); onChange({ cargo: '', nivel: '', torre: '' }); }} />
-                <StepIndicator stepNumber={2} title="Sênior" active={!!cargo && !nivel} completed={!!nivel} onClick={() => { if(cargo){ setNivel(''); setTorre(''); onChange({ cargo, nivel: '', torre: '' }); } }} />
-                <StepIndicator stepNumber={3} title="Área" active={!!nivel && !torre} completed={!!torre} onClick={() => { if(nivel){ setTorre(''); onChange({ cargo, nivel, torre: '' }); } }} />
+                <StepIndicator stepNumber={2} title="Sênior" active={!!cargo && !nivel} completed={!!nivel} onClick={() => { if (cargo) { setNivel(''); setTorre(''); onChange({ cargo, nivel: '', torre: '' }); } }} />
+                <StepIndicator stepNumber={3} title="Área" active={!!nivel && !torre} completed={!!torre} onClick={() => { if (nivel) { setTorre(''); onChange({ cargo, nivel, torre: '' }); } }} />
             </div>
 
             <div className="min-h-[220px] bg-[var(--surface-2)]/30 rounded-2xl p-6 border border-[var(--border)] relative">
                 {!cargo && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {CARGOS.map((c) => (
-                            <button
-                                type="button"
-                                key={c.id}
-                                onClick={() => handleCargoChange(c.id)}
-                                className="px-5 py-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:shadow-md transition-all text-left group"
-                            >
-                                <span className="block text-sm font-black text-[var(--text-2)] group-hover:text-[var(--primary)]">{c.name}</span>
-                            </button>
-                        ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {/* Todos os Cargos (Padrão + Customizados) em um único lugar */}
+                        {[...CARGOS.map(c => ({ id: c.id, name: c.name, type: 'standard' })),
+                        ...otherCargos.map(c => ({ id: c, name: c, type: 'custom' }))]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((c) => (
+                                <button
+                                    type="button"
+                                    key={c.id}
+                                    onClick={() => handleCargoChange(c.name, c.type === 'custom')}
+                                    className={`px-5 py-4 rounded-xl border-2 transition-all text-left group flex flex-col justify-between h-full ${c.type === 'standard' ? 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:shadow-md' : 'border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500 hover:shadow-md'}`}
+                                >
+                                    <span className={`block text-sm font-black uppercase tracking-tight ${c.type === 'standard' ? 'text-[var(--text-2)] group-hover:text-[var(--primary)]' : 'text-indigo-600'}`}>{c.name}</span>
+                                    {c.type === 'custom' && <span className="text-[8px] font-black text-indigo-400 mt-2 uppercase tracking-widest">Cargo Customizado</span>}
+                                </button>
+                            ))}
+
+                        {/* Botão para Novo Cargo - Bem visível */}
                         <button
                             type="button"
                             onClick={() => setIsManualMode(true)}
-                            className="px-5 py-4 rounded-xl border-2 border-dashed border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--primary)] transition-all flex items-center justify-center gap-2"
+                            className="px-5 py-4 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-500/5 text-amber-600 hover:bg-amber-500/10 hover:border-amber-500 transition-all flex flex-col items-center justify-center gap-2 text-center"
                         >
-                            <Plus className="w-4 h-4" />
-                            <span className="text-xs font-black uppercase tracking-widest">Outro Cargo</span>
+                            <Plus className="w-5 h-5 mb-1" />
+                            <span className="text-[10px] font-black uppercase tracking-widest leading-tight">Criar Novo<br />Cargo/Função</span>
                         </button>
                     </div>
                 )}
 
                 {cargo && !nivel && (
                     <div className="flex flex-wrap gap-3">
-                        {availableLevels.map((l) => (
+                        {availableLevels.map((l: Level) => (
                             <button
                                 type="button"
                                 key={l.id}
@@ -172,18 +190,18 @@ const OrganizationalStructureSelector: React.FC<OrganizationalStructureSelectorP
                 {nivel && !torre && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {availableTowerGroups.map((group) => (
+                            {availableTowerGroups.map((group: TowerGroup) => (
                                 <div key={group.id} className="space-y-3">
                                     <h5 className="text-[10px] font-black uppercase tracking-widest text-[var(--muted)] bg-[var(--surface)] border border-[var(--border)] px-3 py-1 rounded-full w-fit">{group.name}</h5>
                                     <div className="space-y-3">
-                                        {group.towers.map((t) => (
+                                        {group.towers.map((t: Tower) => (
                                             <div key={t.id} className="p-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
                                                 <h6 className="text-xs font-black text-[var(--text)] mb-3 flex items-center gap-2">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]"></div>
                                                     {t.name}
                                                 </h6>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {t.specializations.map((spec) => (
+                                                    {t.specializations.map((spec: Specialization) => (
                                                         <button
                                                             type="button"
                                                             key={spec.id}

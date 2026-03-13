@@ -191,38 +191,20 @@ export const CARGOS: CargoConfig[] = [
         availableTowerGroups: ['dev_sap', 'dev_web']
     },
     {
-        id: 'Consultor',
-        name: 'Consultor Funcional',
-        availableLevels: ['junior', 'pleno', 'senior', 'especialista'],
-        availableTowerGroups: ['funcional_sap']
-    },
-    {
-        id: 'Tech Lead',
-        name: 'Tech Lead / Arquiteto',
-        availableLevels: ['senior', 'especialista'],
-        availableTowerGroups: ['dev_sap', 'dev_web', 'infra_basis']
-    },
-    {
         id: 'Gestor',
-        name: 'Gestor / Gerente',
+        name: 'Gestor',
         availableLevels: ['gerente', 'head'],
         availableTowerGroups: ['gestao_projetos', 'corporativo']
     },
     {
-        id: 'PMO',
-        name: 'PMO',
-        availableLevels: ['junior', 'pleno', 'senior'],
-        availableTowerGroups: ['gestao_projetos']
-    },
-    {
-        id: 'Diretoria',
-        name: 'Diretor / Executivo',
+        id: 'Diretor',
+        name: 'Diretor',
         availableLevels: ['diretor', 'ceo'],
         availableTowerGroups: ['gestao_projetos', 'corporativo']
     },
     {
-        id: 'Analista Administrativo',
-        name: 'Analista Administrativo',
+        id: 'Administrativo',
+        name: 'Administrativo',
         availableLevels: ['junior', 'pleno', 'senior'],
         availableTowerGroups: ['corporativo']
     }

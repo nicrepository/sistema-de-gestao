@@ -1,15 +1,16 @@
 // components/TimesheetForm.tsx - Adaptado para Router
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { TimesheetEntry } from '@/types';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
-import { ArrowLeft, Save, Clock, Trash2, User as UserIcon, Briefcase, CheckSquare, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Trash2, User as UserIcon, Briefcase, CheckSquare, Calendar, AlertCircle, CalendarRange } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import TimePicker from './TimePicker';
+import TaskWorkloadCalendar from './TaskWorkloadCalendar';
 
 const TimesheetForm: React.FC = () => {
   const { entryId } = useParams<{ entryId: string }>();
@@ -53,7 +54,21 @@ const TimesheetForm: React.FC = () => {
   const [pendingSave, setPendingSave] = useState<TimesheetEntry | null>(null);
   const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
   const [availabilityWarning, setAvailabilityWarning] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const { isDirty, showPrompt, markDirty, requestBack, discardChanges, continueEditing } = useUnsavedChangesPrompt();
+  const isInitialized = useRef(false);
+
+  // Close calendar on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setShowCalendar(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Validate time - now accepts full 24h range
   const validateAndSetTime = (field: 'startTime' | 'endTime', val: string) => {
@@ -61,13 +76,19 @@ const TimesheetForm: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: val }));
   };
 
-  // Init form
+  // Init form - Run only once or when entryId changes
   useEffect(() => {
+    if (isInitialized.current && !isNew) {
+      // If we are editing and the entry was already loaded, don't overwrite user's work
+      return;
+    }
+
     if (initialEntry) {
       setFormData(initialEntry);
       if (initialEntry.lunchDeduction !== undefined) {
         setDeductLunch(initialEntry.lunchDeduction);
       }
+      isInitialized.current = true;
     } else if (isAdmin && preSelectedUserId) {
       const targetUser = users.find(u => u.id === preSelectedUserId);
       if (targetUser) {
@@ -78,7 +99,8 @@ const TimesheetForm: React.FC = () => {
           lunchDeduction: true
         }));
       }
-    } else if (user) {
+      isInitialized.current = true;
+    } else if (user && !isInitialized.current) {
       // SMART DEFAULT: Find existing entries for this user on this day to suggest a start time
       const targetDate = preSelectedDate || new Date().toISOString().split('T')[0];
       const targetUserId = preSelectedUserId || user.id;
@@ -102,8 +124,9 @@ const TimesheetForm: React.FC = () => {
         endTime: suggestedEnd,
         lunchDeduction: dayEntries.length === 0 // Default to true only for the first entry of the day
       }));
+      isInitialized.current = true;
     }
-  }, [initialEntry, user, isAdmin, preSelectedUserId, users, preSelectedClientId, preSelectedProjectId, preSelectedTaskId, preSelectedDate, timesheetEntries]);
+  }, [initialEntry, user, isAdmin, preSelectedUserId, users, preSelectedClientId, preSelectedProjectId, preSelectedTaskId, preSelectedDate, timesheetEntries, isNew]);
 
   // Update progress when task changes
   useEffect(() => {
@@ -393,9 +416,9 @@ const TimesheetForm: React.FC = () => {
     // Se a tarefa for a que já está salva neste lançamento, permite que ela apareça mesmo se concluída
     if (formData.taskId && t.id === formData.taskId) return true;
 
-    // Permite que todas as tarefas, inclusive concluídas (Done), apareçam na lista para apontamentos/edições atrasadas 
-    // ou seja, se for Done, o validStatus seria falso, mas vamos permitir caso seja o desejado pelo cliente
-    if (!validStatus && t.status !== 'Done') return false;
+    // Oculta tarefas concluídas (Done) — apenas tarefas ativas são listadas
+    // Exceto se for a tarefa já salva neste apontamento (modo edição)
+    if (!validStatus) return false;
     if (!validTitle) return false;
 
     // Se for admin, mostra todas as tarefas do projeto que passaram no filtro de status
@@ -425,39 +448,47 @@ const TimesheetForm: React.FC = () => {
   return (
     <div className="h-full flex flex-col rounded-2xl shadow-md border overflow-hidden" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
       {/* Compact Header */}
-      <div className="px-6 py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] border-b flex items-center justify-between sticky top-0 z-20 shadow-sm shrink-0"
-        style={{ borderColor: 'white/10' }}>
-        <div className="flex items-center gap-3">
+      <div className="px-6 py-3 border-b flex items-center justify-between sticky top-0 z-20 shadow-sm shrink-0"
+        style={{ background: 'var(--header-bg)' }}
+      >
+        <div className="flex items-center gap-4">
           <button
-            onClick={handleBack}
-            disabled={loading}
-            className="p-1.5 rounded-full transition-colors hover:bg-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-xl transition-all border flex items-center justify-center shrink-0"
+            style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
+            title="Voltar"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
-          <div className="leading-tight">
+          <div className="flex flex-col">
             {isTaskLogMode ? (
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Apontando em</span>
-                <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4" />
-                  {currentTaskTitle || 'Tarefa Selecionada'}
+              <>
+                <h1 className="text-lg font-black leading-none tracking-tight flex items-center gap-2" style={{ color: 'var(--textTitle)' }}>
+                  <CheckSquare className="w-4 h-4" /> {currentTaskTitle || 'Tarefa'}
                 </h1>
-              </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--textMuted)' }}>
+                  Apontando em Tarefa Específica
+                </span>
+              </>
             ) : (
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                {isEditing ? '✏️ Editar' : '➕ Novo'} Apontamento
-              </h1>
+              <>
+                <h1 className="text-lg font-black leading-none tracking-tight" style={{ color: 'var(--textTitle)' }}>
+                  {isEditing ? '✏️ Editar' : '➕ Novo'} Apontamento
+                </h1>
+                <span className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: 'var(--textMuted)' }}>
+                  ROV - Registro de Atividade
+                </span>
+              </>
             )}
           </div>
         </div>
         <div className="flex items-center gap-3">
           {entriesForDay.length > 0 && (
-            <div className="hidden md:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
-              <Clock className="w-3.5 h-3.5 text-white/80" />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-sm" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+              <Clock className="w-3.5 h-3.5" style={{ color: 'var(--textMuted)' }} />
               <div className="flex flex-col leading-tight">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/60">Já apontado hoje</span>
-                <span className="text-sm font-black text-white">
+                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--textMuted)' }}>Já apontado hoje</span>
+                <span className="text-sm font-black" style={{ color: 'var(--text)' }}>
                   {formatDecimalToTime(entriesForDay.reduce((sum, e) => sum + (e.totalHours || 0), 0))}
                   <span className="ml-1 opacity-50 font-normal">/ {(users.find(u => u.id === (formData.userId || user?.id))?.dailyAvailableHours || 8)}h</span>
                 </span>
@@ -514,7 +545,7 @@ const TimesheetForm: React.FC = () => {
                           onChange={(e) => {
                             const u = users.find(user => user.id === e.target.value);
                             markDirty();
-                            setFormData({ ...formData, userId: u?.id || '', userName: u?.name || '' });
+                            setFormData(prev => ({ ...prev, userId: u?.id || '', userName: u?.name || '' }));
                           }}
                           disabled={isEditing}
                           className="w-full p-2.5 border rounded-lg outline-none font-medium text-sm focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
@@ -539,7 +570,7 @@ const TimesheetForm: React.FC = () => {
                         <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Cliente *</label>
                         <select
                           value={formData.clientId}
-                          onChange={(e) => { markDirty(); setFormData({ ...formData, clientId: e.target.value, projectId: '', taskId: '' }); }}
+                          onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, clientId: e.target.value, projectId: '', taskId: '' })); }}
                           disabled={isEditing}
                           className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-70 disabled:cursor-not-allowed"
                           style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
@@ -552,7 +583,7 @@ const TimesheetForm: React.FC = () => {
                         <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Projeto *</label>
                         <select
                           value={formData.projectId}
-                          onChange={(e) => { markDirty(); setFormData({ ...formData, projectId: e.target.value, taskId: '' }); }}
+                          onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, projectId: e.target.value, taskId: '' })); }}
                           disabled={!formData.clientId || isEditing}
                           className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
@@ -568,7 +599,7 @@ const TimesheetForm: React.FC = () => {
                       <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Tarefa *</label>
                       <select
                         value={formData.taskId}
-                        onChange={(e) => { markDirty(); setFormData({ ...formData, taskId: e.target.value }); }}
+                        onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, taskId: e.target.value })); }}
                         disabled={!formData.projectId || isEditing}
                         className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm transition-all focus:ring-1 focus:ring-[var(--ring)] disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: isEditing ? 'var(--surface-2)' : 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
@@ -590,10 +621,14 @@ const TimesheetForm: React.FC = () => {
                       </div>
                       <textarea
                         value={formData.description || ''}
-                        onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          markDirty();
+                          setFormData(prev => ({ ...prev, description: val }));
+                        }}
                         className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all flex-1 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
                         style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
-                        placeholder="Descreva a atividade realizada (opcional)..."
+                        placeholder="Descreva o que foi realizado nesta atividade..."
                       />
                     </div>
 
@@ -633,15 +668,21 @@ const TimesheetForm: React.FC = () => {
                 </div>
 
                 <div className="space-y-4 flex-1">
-                  <div>
-                    <label className="block text-[10px] font-bold mb-1 uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Data *</label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => { markDirty(); setFormData({ ...formData, date: e.target.value }); }}
-                      className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm shadow-sm focus:ring-1 focus:ring-[var(--ring)]"
-                      style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                    />
+                  <div className="relative" ref={calendarRef}>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider opacity-70" style={{ color: 'var(--muted)' }}>Data *</label>
+                    </div>
+                    <div className="relative group">
+                      <input
+                        type="date"
+                        value={formData.date}
+                        min={tasks.find(t => t.id === formData.taskId)?.scheduledStart?.split('T')[0]}
+                        max={tasks.find(t => t.id === formData.taskId)?.estimatedDelivery?.split('T')[0]}
+                        onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, date: e.target.value })); }}
+                        className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm shadow-sm focus:ring-1 focus:ring-[var(--ring)]"
+                        style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -793,7 +834,7 @@ const TimesheetForm: React.FC = () => {
                       </div>
                       <textarea
                         value={formData.description || ''}
-                        onChange={(e) => { markDirty(); setFormData({ ...formData, description: e.target.value }); }}
+                        onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, description: e.target.value })); }}
                         className="w-full p-3 border rounded-xl outline-none resize-none font-medium text-sm transition-all h-32 focus:ring-1 focus:ring-[var(--primary)] border-[var(--border)]"
                         style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
                         placeholder="Descreva a atividade realizada (opcional)..."
@@ -857,18 +898,20 @@ const TimesheetForm: React.FC = () => {
         }}
         onCancel={() => { setAvailabilityModalOpen(false); setPendingSave(null); }}
       />
-      {showPrompt && (
-        <ConfirmationModal
-          isOpen={true}
-          title="Descartar alterações?"
-          message="Você tem alterações não salvas. Deseja continuar editando ou descartar?"
-          confirmText="Continuar editando"
-          cancelText="Descartar alterações"
-          onConfirm={continueEditing}
-          onCancel={() => { discardChanges(); handleBack(); }}
-        />
-      )}
-    </div>
+      {
+        showPrompt && (
+          <ConfirmationModal
+            isOpen={true}
+            title="Descartar alterações?"
+            message="Você tem alterações não salvas. Deseja continuar editando ou descartar?"
+            confirmText="Continuar editando"
+            cancelText="Descartar alterações"
+            onConfirm={continueEditing}
+            onCancel={() => { discardChanges(); handleBack(); }}
+          />
+        )
+      }
+    </div >
   );
 };
 

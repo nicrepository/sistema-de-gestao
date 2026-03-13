@@ -16,6 +16,7 @@ import {
   Activity,
   AlertTriangle
 } from 'lucide-react';
+import * as CapacityUtils from '@/utils/capacity';
 
 const AdminDashboardBento: React.FC = () => {
   const navigate = useNavigate();
@@ -335,19 +336,7 @@ const AdminDashboardBento: React.FC = () => {
           {projects.filter(p => p.active !== false).slice(0, 8).map(project => {
             const client = clients.find(c => c.id === project.clientId);
             const pTasks = tasks.filter(t => t.projectId === project.id);
-            const progress = (() => {
-              if (pTasks.length === 0) return 0;
-              let totalDuration = 0;
-              let weightedSum = 0;
-              pTasks.forEach(t => {
-                const tStart = t.scheduledStart ? new Date(t.scheduledStart) : new Date();
-                const tEnd = t.estimatedDelivery ? new Date(t.estimatedDelivery) : tStart;
-                const duration = Math.max(1, Math.ceil((tEnd.getTime() - tStart.getTime()) / (1000 * 60 * 60 * 24)));
-                totalDuration += duration;
-                weightedSum += (t.progress || 0) * duration;
-              });
-              return totalDuration > 0 ? weightedSum / totalDuration : 0;
-            })();
+            const progress = CapacityUtils.calculateProjectWeightedProgress(project.id, tasks as any);
 
             const pTimesheets = timesheetEntries.filter(e => e.projectId === project.id);
             const cost = pTimesheets.reduce((acc, e) => {

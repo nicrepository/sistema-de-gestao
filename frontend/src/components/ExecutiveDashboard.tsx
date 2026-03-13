@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Project } from '@/types';
 import { formatDecimalToTime } from '@/utils/normalizers';
+import * as CapacityUtils from '@/utils/capacity';
 
 type SortConfig = {
   key: string;
@@ -59,7 +60,7 @@ const ExecutiveDashboard: React.FC = () => {
 
         const totalTasks = pTasks.length;
         const completedTasks = pTasks.filter(t => t.status === 'Done').length;
-        const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        const progress = totalTasks > 0 ? CapacityUtils.calculateProjectWeightedProgress(p.id, tasks as any) : 0;
 
         const overdueTasks = pTasks.filter(t => {
           if (t.status === 'Done' || !t.estimatedDelivery) return false;

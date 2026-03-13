@@ -289,20 +289,7 @@ const ProjectDetailView: React.FC = () => {
       ? getBusinessDays(project.startDate.split('T')[0], project.estimatedDelivery.split('T')[0])
       : 1;
 
-    const projectFactors = projectTasks.map((t: Task) => {
-      const start = t.scheduledStart || t.actualStart;
-      const end = t.estimatedDelivery;
-      const taskDays = (start && end)
-        ? getBusinessDays(start.split('T')[0], end.split('T')[0])
-        : 1;
-      const factor = taskDays / projectDays;
-      return { id: t.id, factor, progress: t.progress || 0 };
-    });
-    const totalFactor = projectFactors.reduce((acc: number, f: any) => acc + f.factor, 0);
-
-    const weightedProgress = totalFactor > 0
-      ? (projectFactors.reduce((acc: number, f: any) => acc + (f.factor * f.progress), 0) / totalFactor)
-      : 0;
+    const weightedProgress = CapacityUtils.calculateProjectWeightedProgress(projectId, projectTasks);
 
     let plannedProgress = 0;
     if (project.startDate && project.estimatedDelivery) {
@@ -418,8 +405,6 @@ const ProjectDetailView: React.FC = () => {
       projection,
       realStartDate,
       realEndDate,
-      projectFactors,
-      totalFactor,
       continuousPlannedValue,
       hasCriticalTask,
       hasTodayTask,

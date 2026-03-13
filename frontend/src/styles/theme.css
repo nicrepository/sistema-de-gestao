@@ -57,16 +57,16 @@
   /* Indigo 100 */
 
   /* Text Hierarchy - Enterprise Readability */
-  --text: #1E1E2D;
-  /* Deep navy - Almost black but softer */
-  --text-2: #4B5563;
-  /* Gray 600 - Body text */
-  --text-3: #6B7280;
-  /* Gray 500 - Secondary text */
-  --text-muted: #9CA3AF;
-  /* Gray 400 - Muted text */
-  --text-placeholder: #D1D5DB;
-  /* Gray 300 - Placeholders */
+  --text: #020617;
+  /* Slate 950 - Almost black for maximum contrast */
+  --text-2: #1E293B;
+  /* Slate 800 - Contrast body */
+  --text-3: #334155;
+  /* Slate 700 - Sub-headings - DARKENED */
+  --text-muted: #475569;
+  /* Slate 600 - Muted text - DARKENED significantly for contrast */
+  --text-placeholder: #94A3B8;
+  /* Slate 400 - Placeholders */
 
   /* Borders & Dividers */
   --border: #E5E7EB;
@@ -170,6 +170,11 @@
   --brand: var(--primary);
   --brandHover: var(--primary-hover);
   --ring: var(--focus-ring);
+
+  /* New: Header Backgrounds that always work with white text */
+  --header-bg: linear-gradient(135deg, #3730A3 0%, #5B21B6 100%);
+  /* Indigo 800 to Purple 800 - DARKER for max contrast with white text */
+  --header-bg-alt: linear-gradient(to right, #1e1b4b, #312e81);
 }
 
 html.dark {
@@ -225,16 +230,20 @@ html.dark {
   --primary-muted: rgba(139, 92, 246, 0.2);
 
   /* Text Hierarchy - Adjusted for dark backgrounds */
-  --text: #F1F5F9;
-  /* Slate 100 - Very light */
-  --text-2: #CBD5E1;
-  /* Slate 300 - Secondary */
-  --text-3: #94A3B8;
-  /* Slate 400 - Tertiary */
-  --text-muted: #64748B;
-  /* Slate 500 - Muted */
-  --text-placeholder: #475569;
-  /* Slate 600 - Placeholders */
+  --text: #F8FAFC;
+  /* Slate 50 - Brighter */
+  --text-2: #E2E8F0;
+  /* Slate 200 */
+  --text-3: #CBD5E1;
+  /* Slate 300 */
+  --text-muted: #94A3B8;
+  /* Slate 400 */
+  --text-placeholder: #64748B;
+  /* Slate 500 */
+
+  /* Header Backgrounds for Dark Mode */
+  --header-bg: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%);
+  --header-bg-alt: linear-gradient(to right, #0f172a, #1e1b4b);
 
   /* Borders & Dividers */
   --border: #2D2839;
@@ -538,6 +547,12 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+
+/* Hide native calendar picker indicator */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
 }
 
 /* ================================================

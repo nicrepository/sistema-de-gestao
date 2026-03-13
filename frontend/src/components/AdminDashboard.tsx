@@ -1763,8 +1763,8 @@ const AdminDashboard: React.FC = () => {
                     <div key={client.id} className="space-y-4">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-2xl border group transition-all shadow-lg relative overflow-hidden"
                         style={{
-                          background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', // Gradiente Roxo
-                          borderColor: '#7C3AED',
+                          background: 'var(--header-bg)',
+                          borderColor: 'rgba(255,255,255,0.1)',
                           borderWidth: '1px'
                         }}
                       >
@@ -1820,7 +1820,7 @@ const AdminDashboard: React.FC = () => {
                             clientProjects.map(project => {
                               const projectTasks = safeTasks.filter(t => t.projectId === project.id);
                               const doneTasks = projectTasks.filter(t => t.status === 'Done').length;
-                              const progress = projectTasks.length > 0 ? Math.round((doneTasks / projectTasks.length) * 100) : 0;
+                              const progress = projectTasks.length > 0 ? Math.round(CapacityUtils.calculateProjectWeightedProgress(project.id, safeTasks)) : 0;
 
                               const startP = project.startDate ? new Date(project.startDate) : null;
                               const endP = project.estimatedDelivery ? new Date(project.estimatedDelivery) : null;

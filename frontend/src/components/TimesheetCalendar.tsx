@@ -434,7 +434,7 @@ const TimesheetCalendar: React.FC<TimesheetCalendarProps> = ({ userId, embedded 
               )}
               {/* Header do Calendário Agora dentro do Scroll para não ficar fixo */}
               <div className="px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4 text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))' }}>
+                style={{ background: 'var(--header-bg)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-inner">
                     <Calendar className="w-5 h-5 text-white" />

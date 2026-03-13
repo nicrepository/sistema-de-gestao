@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { motion } from 'framer-motion';
+import * as CapacityUtils from '@/utils/capacity';
 
 type ViewTab = 'details' | 'projects' | 'tasks';
 
@@ -209,11 +210,11 @@ const ClientDetailsView: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--bgApp)', color: 'var(--text)' }}>
-      <div className="px-8 py-4 shadow-lg flex items-center justify-between text-white z-20 sticky top-0" style={{ background: 'linear-gradient(to right, var(--sidebar-bg), var(--sidebar-bg-2))' }}>
+      <div className="px-8 py-4 shadow-lg flex items-center justify-between text-white z-20 sticky top-0" style={{ background: 'var(--header-bg-alt)' }}>
         <div className="flex items-center gap-6">
           <button
             onClick={() => navigate('/admin/clients')}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-all text-white"
           >
             <ArrowLeft />
           </button>
@@ -551,7 +552,7 @@ const ClientDetailsView: React.FC = () => {
                   {filteredProjects.map(project => {
                     const projectTasks = tasks.filter(t => t.projectId === project.id);
                     const doneTasks = projectTasks.filter(t => t.status === 'Done').length;
-                    const progress = projectTasks.length > 0 ? Math.round((doneTasks / projectTasks.length) * 100) : 0;
+                    const progress = projectTasks.length > 0 ? Math.round(CapacityUtils.calculateProjectWeightedProgress(project.id, tasks as any)) : 0;
                     const isIncomplete = isProjectIncomplete(project);
 
                     return (

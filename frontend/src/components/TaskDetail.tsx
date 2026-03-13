@@ -566,7 +566,7 @@ const TaskDetail: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg)] overflow-hidden">
-      <div className="px-8 py-5 shadow-lg flex items-center justify-between text-white z-20" style={{ background: 'linear-gradient(to right, var(--sidebar-bg), var(--primary))' }}>
+      <div className="px-8 py-5 shadow-lg flex items-center justify-between text-white z-20 sticky top-0" style={{ background: 'var(--header-bg)' }}>
         <div className="flex items-center gap-4">
           {/* Botão Voltar com estilo explícito para garantir visibilidade */}
           <button
@@ -576,7 +576,7 @@ const TaskDetail: React.FC = () => {
             className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all border border-white/20 text-white flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Voltar"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={18} strokeWidth={2.5} />
           </button>
           <div className="min-w-0">
             <h1 className="text-base font-bold flex items-center gap-3 leading-tight">
@@ -587,7 +587,7 @@ const TaskDetail: React.FC = () => {
                 </span>
               )}
             </h1>
-            <div className="flex items-center gap-1.5 mt-1 opacity-60">
+            <div className="flex items-center gap-1.5 mt-1 opacity-80">
               {taskProject && (
                 <>
                   <span className="text-[10px] font-bold uppercase tracking-tight truncate max-w-[180px]">{taskProject.name}</span>
@@ -1151,11 +1151,11 @@ const TaskDetail: React.FC = () => {
                                   const val = e.target.value;
                                   if (!/^[0-9:]*$/.test(val)) return;
 
-                                  // Calcula o máximo de dígitos baseado no tempo total da tarefa
+                                  // Sincroniza casas decimais com o tempo total da tarefa
                                   const mainTimeStr = formatDecimalToTime(Number(formData.estimatedHours) || 0);
-                                  const maxDigits = mainTimeStr.replace(/\D/g, '').length;
+                                  const maxDigits = Math.max(4, mainTimeStr.replace(/\D/g, '').length + 2); // Permite um pouco mais de precisão se necessário
 
-                                  setEditingMemberHours(prev => ({ ...prev, [id]: handleTimeMask(val, Math.max(4, maxDigits)) }));
+                                  setEditingMemberHours(prev => ({ ...prev, [id]: handleTimeMask(val, maxDigits) }));
                                   markDirty();
                                 }}
                                 onBlur={() => {
@@ -1168,10 +1168,9 @@ const TaskDetail: React.FC = () => {
                                       .filter(mid => mid !== id)
                                       .reduce((sum, mid) => sum + (localTaskAllocations[mid] || 0), 0);
 
-                                    // Se o novo valor ultrapassar o limite total, trava no máximo disponível
-                                    if (otherAllocated + dec > limit + 0.01) {
+                                    // Se o novo valor ultrapassar o limite total, trava no máximo disponível (Sincronizado)
+                                    if (otherAllocated + dec > limit + 0.001) {
                                       dec = Math.max(0, limit - otherAllocated);
-                                      // Opcional: Se quiser avisar o usuário que foi travado
                                       console.log(`Allocation capped at ${dec} for user ${id}`);
                                     }
 
@@ -1186,7 +1185,7 @@ const TaskDetail: React.FC = () => {
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') e.currentTarget.blur();
                                 }}
-                                className={`text-[10px] font-black bg-yellow-400/5 border border-dashed rounded-lg py-0.5 outline-none w-full text-center tabular-nums transition-all hover:bg-yellow-400/10 focus:bg-yellow-400/10 focus:border-yellow-400/50 ${currentForecast > 0 ? (currentTotalAllocated > (Number(formData.estimatedHours) || 0) + 0.01 ? 'border-red-500/50 text-red-500' : 'border-yellow-400/20 text-yellow-500 hover:border-yellow-400/40') : 'border-yellow-400/10 text-yellow-500/40 hover:border-yellow-400/30'}`}
+                                className={`text-[10px] font-black bg-yellow-400/20 border-2 border-dashed rounded-lg py-1 outline-none w-full text-center tabular-nums transition-all hover:bg-yellow-400/30 focus:bg-yellow-400/40 focus:border-yellow-400/60 shadow-inner ${currentForecast > 0 ? (currentTotalAllocated > (Number(formData.estimatedHours) || 0) + 0.01 ? 'border-red-500/50 text-red-600' : 'border-yellow-400/40 text-yellow-600') : 'border-yellow-400/20 text-yellow-600/40 hover:border-yellow-400/40'}`}
                                 placeholder="00:00"
                               />
                             </div>

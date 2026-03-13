@@ -3,6 +3,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { Plus, Briefcase, CheckSquare, LayoutGrid, List, Building2, AlertTriangle } from 'lucide-react';
+import * as CapacityUtils from '@/utils/capacity';
+import { Project } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 
@@ -148,7 +150,7 @@ const AllProjectsView: React.FC = () => {
                       {clientProjects.map(project => {
                         const projectTasks = tasks.filter(t => t.projectId === project.id);
                         const doneTasks = projectTasks.filter(t => t.status === 'Done').length;
-                        const progress = projectTasks.length > 0 ? (doneTasks / projectTasks.length) * 100 : 0;
+                        const progress = projectTasks.length > 0 ? CapacityUtils.calculateProjectWeightedProgress(project.id, tasks as any) : 0;
 
                         const startP = project.startDate ? new Date(project.startDate) : null;
                         const endP = project.estimatedDelivery ? new Date(project.estimatedDelivery) : null;
@@ -243,7 +245,7 @@ const AllProjectsView: React.FC = () => {
               const client = clients.find(c => c.id === project.clientId);
               const projectTasks = tasks.filter(t => t.projectId === project.id);
               const doneTasks = projectTasks.filter(t => t.status === 'Done').length;
-              const progress = projectTasks.length > 0 ? (doneTasks / projectTasks.length) * 100 : 0;
+              const progress = projectTasks.length > 0 ? CapacityUtils.calculateProjectWeightedProgress(project.id, tasks as any) : 0;
 
               const startP = project.startDate ? new Date(project.startDate) : null;
               const endP = project.estimatedDelivery ? new Date(project.estimatedDelivery) : null;
