@@ -689,8 +689,8 @@ const ProjectDetailView: React.FC = () => {
     if (!showArchived) {
       t = t.filter((task: Task) => !task.fora_do_fluxo);
 
-      // Se não houver filtro de status específico para 'Done', oculta os concluídos
-      if (selectedStatus !== 'Done') {
+      // Se não houver filtro de status específico para 'Done' e NÃO for 'Todos', oculta os concluídos
+      if (selectedStatus !== 'Done' && selectedStatus !== 'Todos') {
         t = t.filter((task: Task) => task.status !== 'Done');
       }
     }
@@ -985,10 +985,7 @@ const ProjectDetailView: React.FC = () => {
                           const taskSoldHours = effectiveHours;
                           const collaboratorCount = (task.collaboratorIds?.length || 0);
                           const isHourOverrun = taskSoldHours > 0 && taskReported > taskSoldHours;
-                          const isDelayed = task.status !== 'Done' && (
-                            (task.estimatedDelivery && new Date(task.estimatedDelivery + 'T23:59:59') < new Date()) ||
-                            (task.actualDelivery && new Date(task.actualDelivery + 'T23:59:59') < new Date())
-                          );
+                          const isDelayed = task.status !== 'Done' && task.estimatedDelivery && new Date(task.estimatedDelivery + 'T23:59:59') < new Date();
 
 
                           return (
