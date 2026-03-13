@@ -51,10 +51,7 @@ export const clientService = {
         // Formata os dados conforme a tabela dim_clientes
         const payload = {
             NomeCliente: data.NomeCliente?.trim() || "(Sem nome)",
-            email: data.email || data["E-mail"] || null,
             ativo: data.ativo ?? true,
-            Responsavel: data.Responsavel || data.responsavel_externo || null,
-            Telefone: data.Telefone || data.telefone || null,
             NewLogo: data.NewLogo || data.logoUrl || null,
             Pais: data.Pais || data.pais || null,
             tipo_cliente: data.tipo_cliente || 'cliente_final',
@@ -62,6 +59,8 @@ export const clientService = {
             responsavel_interno_id: data.responsavel_interno_id || null,
             responsavel_externo: data.responsavel_externo || data.Responsavel || null,
             email_contato: data.email_contato || data.email || data["E-mail"] || null,
+            contato_principal: data.contato_principal || data.responsavel_externo || data.Responsavel || null,
+            telefone: data.telefone || data.Telefone || null,
             cnpj: data.cnpj || null,
             Criado: data.Criado || new Date().toISOString().split('T')[0]
         };
@@ -93,9 +92,9 @@ export const clientService = {
 
         const payload = { ...data };
 
-        // Remover campos que não existem no banco ou causam conflito
-        delete payload["E-mail"];
-        delete payload["logoUrl"];  // coluna correta é NewLogo
+        // Remover TODOS os campos que não existem na tabela dim_clientes
+        const INVALID_COLUMNS = ["E-mail", "email", "logoUrl", "Responsavel", "Telefone", "nome", "id"];
+        INVALID_COLUMNS.forEach(col => delete payload[col]);
 
         // Garantir que campos vazios sejam nulos para o banco
         Object.keys(payload).forEach(key => {
