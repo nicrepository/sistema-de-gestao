@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
-import { Save, Upload, Trash2, Handshake, Building2, User, Mail, Phone, Calendar, DollarSign, FileText } from 'lucide-react';
+import { Save, Upload, Trash2, Handshake, Building2, User, Mail, Phone, Calendar, DollarSign, FileText, CalendarDays } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import BackButton from './shared/BackButton';
+import CalendarPicker from './CalendarPicker';
 
 const ClientForm: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -42,6 +43,8 @@ const ClientForm: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -222,13 +225,49 @@ const ClientForm: React.FC = () => {
                   <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados Contratuais</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Início Vigência</label>
-                    <input type="date" value={contractStart} onChange={e => setContractStart(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none" />
+                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
+                      <input
+                        type="date"
+                        value={contractStart}
+                        onChange={e => setContractStart(e.target.value)}
+                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
+                        onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
+                      />
+                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
+                    </div>
+                    {showStartCalendar && (
+                      <CalendarPicker
+                        selectedDate={contractStart}
+                        onSelectDate={(date) => {
+                          setContractStart(date);
+                        }}
+                        onClose={() => setShowStartCalendar(false)}
+                      />
+                    )}
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Fim Vigência (Opcional)</label>
-                    <input type="date" value={contractEnd} onChange={e => setContractEnd(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none" />
+                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
+                      <input
+                        type="date"
+                        value={contractEnd}
+                        onChange={e => setContractEnd(e.target.value)}
+                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
+                        onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
+                      />
+                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
+                    </div>
+                    {showEndCalendar && (
+                      <CalendarPicker
+                        selectedDate={contractEnd}
+                        onSelectDate={(date) => {
+                          setContractEnd(date);
+                        }}
+                        onClose={() => setShowEndCalendar(false)}
+                      />
+                    )}
                   </div>
                 </div>
               </section>
@@ -308,13 +347,49 @@ const ClientForm: React.FC = () => {
                   <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados Contratuais (Opcional)</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Início Vigência (Projeto Único)</label>
-                    <input type="date" value={contractStart} onChange={e => setContractStart(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none" />
+                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
+                      <input
+                        type="date"
+                        value={contractStart}
+                        onChange={e => setContractStart(e.target.value)}
+                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
+                        onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
+                      />
+                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
+                    </div>
+                    {showStartCalendar && (
+                      <CalendarPicker
+                        selectedDate={contractStart}
+                        onSelectDate={(date) => {
+                          setContractStart(date);
+                        }}
+                        onClose={() => setShowStartCalendar(false)}
+                      />
+                    )}
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Fim Vigência (Previsão)</label>
-                    <input type="date" value={contractEnd} onChange={e => setContractEnd(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none" />
+                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
+                      <input
+                        type="date"
+                        value={contractEnd}
+                        onChange={e => setContractEnd(e.target.value)}
+                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
+                        onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
+                      />
+                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
+                    </div>
+                    {showEndCalendar && (
+                      <CalendarPicker
+                        selectedDate={contractEnd}
+                        onSelectDate={(date) => {
+                          setContractEnd(date);
+                        }}
+                        onClose={() => setShowEndCalendar(false)}
+                      />
+                    )}
                   </div>
                 </div>
               </section>

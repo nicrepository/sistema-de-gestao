@@ -5,12 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { TimesheetEntry } from '@/types';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
-import { ArrowLeft, Save, Clock, Trash2, User as UserIcon, Briefcase, CheckSquare, Calendar, AlertCircle, CalendarRange } from 'lucide-react';
+import { ArrowLeft, Save, Clock, Trash2, User as UserIcon, Briefcase, CheckSquare, Calendar, AlertCircle, CalendarRange, CalendarDays } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import TimePicker from './TimePicker';
 import TaskWorkloadCalendar from './TaskWorkloadCalendar';
+import CalendarPicker from './CalendarPicker';
 
 const TimesheetForm: React.FC = () => {
   const { entryId } = useParams<{ entryId: string }>();
@@ -55,6 +56,7 @@ const TimesheetForm: React.FC = () => {
   const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
   const [availabilityWarning, setAvailabilityWarning] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
   const { isDirty, showPrompt, markDirty, requestBack, discardChanges, continueEditing } = useUnsavedChangesPrompt();
   const isInitialized = useRef(false);
@@ -681,28 +683,45 @@ const TimesheetForm: React.FC = () => {
                       </button>
                     </div>
                     <div className="relative group">
-                      <input
-                        type="date"
-                        value={formData.date}
-                        min={tasks.find(t => t.id === formData.taskId)?.scheduledStart?.split('T')[0]}
-                        max={tasks.find(t => t.id === formData.taskId)?.estimatedDelivery?.split('T')[0]}
-                        onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, date: e.target.value })); }}
-                        className="w-full p-2.5 border rounded-lg outline-none font-bold text-sm shadow-sm focus:ring-1 focus:ring-[var(--ring)]"
-                        style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                      />
+                      <div className="flex items-center justify-between p-2.5 border rounded-lg shadow-sm focus-within:ring-1 focus-within:ring-[var(--ring)]" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
+                        <input
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => { markDirty(); setFormData(prev => ({ ...prev, date: e.target.value })); }}
+                          className="bg-transparent outline-none font-bold text-sm w-full cursor-pointer"
+                          style={{ color: 'var(--text)' }}
+                          onClick={(e) => { e.preventDefault(); setShowDatePicker(!showDatePicker); setShowCalendar(false); }}
+                        />
+                        <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowDatePicker(!showDatePicker); setShowCalendar(false); }} />
+                      </div>
+
+                      {showDatePicker && (
+                        <CalendarPicker
+                          selectedDate={formData.date || ''}
+                          minDate={projects.find(p => p.id === formData.projectId)?.startDate}
+                          maxDate={projects.find(p => p.id === formData.projectId)?.estimatedDelivery}
+                          onSelectDate={(date) => {
+                            markDirty();
+                            setFormData(prev => ({ ...prev, date }));
+                          }}
+                          onClose={() => setShowDatePicker(false)}
+                        />
+                      )}
                     </div>
 
                     {showCalendar && formData.taskId && (
-                      <TaskWorkloadCalendar
-                        taskId={formData.taskId}
-                        userId={formData.userId || user?.id || ''}
-                        selectedDate={formData.date || ''}
-                        onSelectDate={(date) => {
-                          markDirty();
-                          setFormData(prev => ({ ...prev, date }));
-                        }}
-                        onClose={() => setShowCalendar(false)}
-                      />
+                      <div className="absolute top-0 left-0 w-full z-10">
+                        <TaskWorkloadCalendar
+                          taskId={formData.taskId}
+                          userId={formData.userId || user?.id || ''}
+                          selectedDate={formData.date || ''}
+                          onSelectDate={(date) => {
+                            markDirty();
+                            setFormData(prev => ({ ...prev, date }));
+                          }}
+                          onClose={() => setShowCalendar(false)}
+                        />
+                      </div>
                     )}
                   </div>
 

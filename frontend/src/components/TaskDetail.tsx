@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { Task, Status, Priority, Impact } from '@/types';
 import {
-  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check, CalendarRange
+  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check, CalendarDays
 } from 'lucide-react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import ConfirmationModal from './ConfirmationModal';
@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
-import TaskWorkloadCalendar from './TaskWorkloadCalendar';
+import CalendarPicker from './CalendarPicker';
 import * as allocationService from '@/services/allocationService';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
@@ -29,7 +29,8 @@ const TaskDetail: React.FC = () => {
   } = useDataController();
   const [memberSearch, setMemberSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const CARGO_RANK: Record<string, number> = {
@@ -166,6 +167,8 @@ const TaskDetail: React.FC = () => {
     markDirty();
   };
 
+  const currentProject = projects.find(p => p.id === formData.projectId);
+
   // Validação Reativa
   const isFieldMissing = (field: string) => {
     if (field === 'team') {
@@ -298,18 +301,30 @@ const TaskDetail: React.FC = () => {
     const otherTasks = tasks.filter((t: any) => t.projectId === project.id && t.id !== taskId);
 
     const usedByOthers = otherTasks.reduce((sum: number, t: any) => {
-      let taskReported = 0;
-      if (t.status === 'Done') {
-        taskReported = timesheetEntries
-          .filter((e: any) => e.taskId === t.id)
-          .reduce((s: number, e: any) => s + (Number(e.totalHours) || 0), 0);
-      }
-      const effective = t.status === 'Done' ? taskReported : (Number(t.estimatedHours) || 0);
+      // Ignora tarefas deletadas
+      if (t.deleted_at) return sum;
+
+      const taskReported = timesheetEntries
+        .filter((e: any) => e.taskId === t.id)
+        .reduce((s: number, e: any) => s + (Number(e.totalHours) || 0), 0);
+
+      const estimated = Number(t.estimatedHours) || 0;
+      // Se a tarefa está pronta, ela só ocupa o que realmente custou.
+      // Se não, ela reserva o planejado (ou o que já estourou).
+      const effective = t.status === 'Done' ? taskReported : Math.max(estimated, taskReported);
       return sum + effective;
     }, 0);
 
-    return project.horas_vendidas - usedByOthers;
-  }, [formData.projectId, projects, tasks, taskId, timesheetEntries]);
+    const isCurrentDone = formData.status === 'Done';
+    const currentTaskHours = Number(formData.estimatedHours) || 0;
+    const currentTaskReported = taskId === 'new' ? 0 : timesheetEntries
+      .filter((e: any) => e.taskId === taskId)
+      .reduce((s: number, e: any) => s + (Number(e.totalHours) || 0), 0);
+
+    const currentTaskEffective = isCurrentDone ? currentTaskReported : Math.max(currentTaskHours, currentTaskReported);
+
+    return project.horas_vendidas - usedByOthers - currentTaskEffective;
+  }, [formData.projectId, formData.estimatedHours, projects, tasks, taskId, timesheetEntries]);
 
   const isOwner = task && task.developerId === currentUser?.id;
   const isCollaborator = !isNew && task && task.collaboratorIds?.includes(currentUser?.id || '');
@@ -844,14 +859,6 @@ const TaskDetail: React.FC = () => {
                     <div className="flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
                       <Calendar size={12} /> Timeline
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCalendar(!showCalendar)}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${showCalendar ? 'bg-blue-600 text-white shadow-lg' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'}`}
-                      title="Ver Período/Carga Horária"
-                    >
-                      <CalendarRange size={12} />
-                    </button>
                   </div>
 
                   <div className="space-y-3 relative" ref={calendarRef}>
@@ -860,44 +867,61 @@ const TaskDetail: React.FC = () => {
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                         <span className="text-[9px] font-black uppercase text-blue-500 tracking-widest">Planejado</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.scheduledStart ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+                      <div className="grid grid-cols-2 gap-2.5 relative">
+                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors relative ${!formData.scheduledStart ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
                           <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.scheduledStart ? 'text-yellow-500' : 'opacity-40'}`}>Início *</label>
-                          <input
-                            type="date"
-                            value={formData.scheduledStart || ''}
-                            onChange={e => { setFormData({ ...formData, scheduledStart: e.target.value }); markDirty(); }}
-                            className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
-                          />
+                          <div className="flex items-center justify-between">
+                            <input
+                              type="date"
+                              value={formData.scheduledStart || ''}
+                              onChange={e => { setFormData({ ...formData, scheduledStart: e.target.value }); markDirty(); }}
+                              className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0 cursor-pointer"
+                              onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
+                            />
+                            <CalendarDays size={12} className="opacity-30 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
+                          </div>
+
+                          {showStartCalendar && (
+                            <CalendarPicker
+                              selectedDate={formData.scheduledStart || ''}
+                              minDate={currentProject?.startDate}
+                              maxDate={currentProject?.estimatedDelivery}
+                              onSelectDate={(date) => {
+                                setFormData({ ...formData, scheduledStart: date });
+                                markDirty();
+                              }}
+                              onClose={() => setShowStartCalendar(false)}
+                            />
+                          )}
                         </div>
-                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors ${!formData.estimatedDelivery ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+
+                        <div className={`p-2.5 rounded-2xl border group/date focus-within:border-blue-500/50 transition-colors relative ${!formData.estimatedDelivery ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
                           <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/date:text-blue-500 transition-colors ${!formData.estimatedDelivery ? 'text-yellow-500' : 'opacity-40'}`}>Entrega *</label>
-                          <input
-                            type="date"
-                            value={formData.estimatedDelivery || ''}
-                            onChange={e => { setFormData({ ...formData, estimatedDelivery: e.target.value }); markDirty(); }}
-                            className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0"
-                          />
+                          <div className="flex items-center justify-between">
+                            <input
+                              type="date"
+                              value={formData.estimatedDelivery || ''}
+                              onChange={e => { setFormData({ ...formData, estimatedDelivery: e.target.value }); markDirty(); }}
+                              className="w-full bg-transparent text-xs font-black text-[var(--text)] outline-none border-none p-0 cursor-pointer"
+                              onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
+                            />
+                            <CalendarDays size={12} className="opacity-30 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
+                          </div>
+
+                          {showEndCalendar && (
+                            <CalendarPicker
+                              selectedDate={formData.estimatedDelivery || ''}
+                              minDate={currentProject?.startDate}
+                              maxDate={currentProject?.estimatedDelivery}
+                              onSelectDate={(date) => {
+                                setFormData({ ...formData, estimatedDelivery: date });
+                                markDirty();
+                              }}
+                              onClose={() => setShowEndCalendar(false)}
+                            />
+                          )}
                         </div>
                       </div>
-
-                      {showCalendar && taskId && (
-                        <div className="absolute top-0 left-0 w-full z-10">
-                          <TaskWorkloadCalendar
-                            taskId={taskId}
-                            userId={formData.developerId || currentUser?.id || ''}
-                            selectedDate={formData.scheduledStart || ''}
-                            onSelectDate={(date) => {
-                              // Aqui podemos decidir o que fazer ao selecionar uma data no TaskDetail
-                              // Por padrão, talvez o usuário só queira ver. 
-                              // Se clicarem, vamos assumir que querem mudar o início (ou nada)
-                              // markDirty();
-                              // setFormData(prev => ({ ...prev, scheduledStart: date }));
-                            }}
-                            onClose={() => setShowCalendar(false)}
-                          />
-                        </div>
-                      )}
 
                       <div className={`p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors mt-2 ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
                         <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>

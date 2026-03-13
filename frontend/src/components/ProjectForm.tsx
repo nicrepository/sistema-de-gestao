@@ -3,11 +3,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDataController } from '@/controllers/useDataController';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, Users, Briefcase, Calendar, Info, Zap, DollarSign, Target, Shield, Layout, Clock, ChevronDown, LayoutGrid, AlertCircle, FileSpreadsheet, ExternalLink, CheckSquare, User, ArrowLeft, Check } from 'lucide-react';
+import { Save, Users, Briefcase, Calendar, Info, Zap, DollarSign, Target, Shield, Layout, Clock, ChevronDown, LayoutGrid, AlertCircle, FileSpreadsheet, ExternalLink, CheckSquare, User, ArrowLeft, Check, CalendarDays } from 'lucide-react';
 import BackButton from './shared/BackButton';
 import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
 import { getProjectStatusByTimeline } from '@/utils/projectStatus';
+import CalendarPicker from './CalendarPicker';
 
 const ProjectForm: React.FC = () => {
   const { projectId, clientId: routeClientId } = useParams<{ projectId?: string; clientId?: string }>();
@@ -64,6 +65,8 @@ const ProjectForm: React.FC = () => {
   const [memberAllocations, setMemberAllocations] = useState<Record<string, number>>({});
 
   const [loading, setLoading] = useState(false);
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
 
   // balanceAllocations removido conforme nova regra (cálculos nas tarefas)
 
@@ -433,23 +436,56 @@ const ProjectForm: React.FC = () => {
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl border border-dashed" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>
                   <label className="text-[9px] font-black uppercase mb-2 block text-blue-500">Planejado (Ini / Fim) *</label>
-                  <div className="space-y-3">
-                    <input
-                      type="date"
-                      required
-                      value={startDate}
-                      onChange={e => setStartDate(e.target.value)}
-                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none transition-all ${!startDate ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-transparent border-[var(--border)]'}`}
-                      style={{ color: !startDate ? undefined : 'var(--text)' }}
-                    />
-                    <input
-                      type="date"
-                      required
-                      value={estimatedDelivery}
-                      onChange={e => setEstimatedDelivery(e.target.value)}
-                      className={`w-full text-xs font-bold p-2 rounded-lg border outline-none transition-all ${!estimatedDelivery ? 'bg-amber-200 border-amber-400 text-amber-900' : 'bg-transparent border-[var(--border)]'}`}
-                      style={{ color: !estimatedDelivery ? undefined : 'var(--text)' }}
-                    />
+                  <div className="space-y-3 relative">
+                    <div className="relative">
+                      <div className="flex items-center justify-between p-2 rounded-lg border transition-all" style={{ backgroundColor: !startDate ? 'rgba(251, 191, 36, 0.2)' : 'transparent', borderColor: !startDate ? 'rgba(251, 191, 36, 0.5)' : 'var(--border)' }}>
+                        <input
+                          type="date"
+                          required
+                          value={startDate}
+                          onChange={e => setStartDate(e.target.value)}
+                          className="bg-transparent outline-none font-bold text-xs w-full cursor-pointer"
+                          style={{ color: !startDate ? undefined : 'var(--text)' }}
+                          onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
+                        />
+                        <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
+                      </div>
+
+                      {showStartCalendar && (
+                        <CalendarPicker
+                          selectedDate={startDate}
+                          onSelectDate={(date) => {
+                            setStartDate(date);
+                          }}
+                          onClose={() => setShowStartCalendar(false)}
+                        />
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <div className="flex items-center justify-between p-2 rounded-lg border transition-all" style={{ backgroundColor: !estimatedDelivery ? 'rgba(251, 191, 36, 0.2)' : 'transparent', borderColor: !estimatedDelivery ? 'rgba(251, 191, 36, 0.5)' : 'var(--border)' }}>
+                        <input
+                          type="date"
+                          required
+                          value={estimatedDelivery}
+                          onChange={e => setEstimatedDelivery(e.target.value)}
+                          className="bg-transparent outline-none font-bold text-xs w-full cursor-pointer"
+                          style={{ color: !estimatedDelivery ? undefined : 'var(--text)' }}
+                          onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
+                        />
+                        <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
+                      </div>
+
+                      {showEndCalendar && (
+                        <CalendarPicker
+                          selectedDate={estimatedDelivery}
+                          onSelectDate={(date) => {
+                            setEstimatedDelivery(date);
+                          }}
+                          onClose={() => setShowEndCalendar(false)}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="p-4 rounded-2xl border border-dotted" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg)' }}>

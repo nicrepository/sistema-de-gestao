@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, Edit, CheckSquare, Clock, Filter, ChevronDown, Check,
   Trash2, LayoutGrid, Target, ShieldAlert, Link as LinkIcon, Users,
   Calendar, Info, Zap, RefreshCw, AlertTriangle, StickyNote, DollarSign,
-  TrendingUp, BarChart2, Save, FileText, Settings, Shield, AlertCircle, Archive, X
+  TrendingUp, BarChart2, Save, FileText, Settings, Shield, AlertCircle, Archive, X, CalendarDays
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,7 @@ import { formatDecimalToTime } from '@/utils/normalizers';
 import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Absence } from '@/types';
 import { getProjectStatusByTimeline } from '@/utils/projectStatus';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
+import CalendarPicker from './CalendarPicker';
 
 // --- UTILS ---
 const parseSafeDate = (d: string | null | undefined) => {
@@ -36,7 +37,7 @@ const ProjectDetailView: React.FC = () => {
   const isEditingRoute = location.pathname.endsWith('/edit');
   const {
     tasks, clients, projects, users, projectMembers, timesheetEntries,
-    absences, holidays,
+    absences, holidays, taskMemberAllocations,
     deleteProject, deleteTask, updateProject, createProject, getProjectMembers,
     addProjectMember, removeProjectMember
   } = useDataController();
@@ -64,7 +65,12 @@ const ProjectDetailView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showArchivedOverview, setShowArchivedOverview] = useState(false);
-  const [hideDoneInOverview, setHideDoneInOverview] = useState(() => localStorage.getItem('hideDoneInOverview') === 'true');
+  const [hideDoneInOverview, setHideDoneInOverview] = useState(() => {
+    const saved = localStorage.getItem('hideDoneInOverview');
+    return saved === null ? true : saved === 'true';
+  });
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [showEndCalendar, setShowEndCalendar] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('hideDoneInOverview', hideDoneInOverview.toString());
@@ -237,7 +243,7 @@ const ProjectDetailView: React.FC = () => {
   }, [formData.startDate, formData.estimatedDelivery, isEditing]);
 
   const projectTasks = useMemo(() => {
-    const pTasks = tasks.filter((t: Task) => t.projectId === projectId);
+    const pTasks = tasks.filter((t: Task) => t.projectId === projectId && !t.deleted_at);
     if (currentUser && !isAdmin) {
       return pTasks.filter((t: Task) => t.developerId === currentUser.id || (t.collaboratorIds && t.collaboratorIds.includes(currentUser.id)));
     }
@@ -433,11 +439,37 @@ const ProjectDetailView: React.FC = () => {
       const allocatedHours = projectTasks
         .filter((t: Task) => String(t.developerId) === userId || (t.collaboratorIds && t.collaboratorIds.map(String).includes(userId)))
         .reduce((sum: number, t: Task) => {
-          const estimated = (Number(t.estimatedHours) || 0);
+          // --- NOVA LÓGICA: Busca alocação específica para o colaborador ---
+          const specificAllocation = taskMemberAllocations.find((a: any) => String(a.taskId) === String(t.id) && String(a.userId) === userId);
+          const hasAnyAllocationInTask = taskMemberAllocations.some((a: any) => String(a.taskId) === String(t.id) && (Number(a.reservedHours) || 0) > 0);
+
+          let taskEffort = 0;
+          if (specificAllocation && (Number(specificAllocation.reservedHours) || 0) > 0) {
+            taskEffort = Number(specificAllocation.reservedHours) || 0;
+          } else if (!hasAnyAllocationInTask) {
+            // Se não houver distribuição específica, divide o total da tarefa igualmente entre o time
+            const teamIds = Array.from(new Set([t.developerId, ...(t.collaboratorIds || [])])).filter(Boolean);
+            taskEffort = (Number(t.estimatedHours) || 0) / (teamIds.length || 1);
+          } else {
+            // Se houver alocações específicas na tarefa, mas não para o usuário atual:
+            // Regra: O Responsável (developerId) fica com o "resto" das horas. 
+            // Outros colaboradores sem alocação explícita ficam com 0.
+            const isMainDev = String(t.developerId) === userId;
+            if (isMainDev) {
+              const totalAllocatedToOthers = taskMemberAllocations
+                .filter((a: any) => String(a.taskId) === String(t.id) && String(a.userId) !== userId)
+                .reduce((s: number, a: any) => s + (Number(a.reservedHours) || 0), 0);
+              taskEffort = Math.max(0, (Number(t.estimatedHours) || 0) - totalAllocatedToOthers);
+            } else {
+              taskEffort = 0;
+            }
+          }
+
+          const estimated = taskEffort;
 
           if (t.status === 'Done') {
             // Se a tarefa acabou, ela não "reserva" mais horas futuras.
-            // A alocação real consumida é o que foi apontado (no máximo o estimado)
+            // A alocação real consumida é o que foi apontado (no máximo o esforço alocado)
             const actualOnTask = timesheetEntries
               .filter((e: TimesheetEntry) => String(e.taskId) === String(t.id) && String(e.userId) === userId)
               .reduce((s: number, e: TimesheetEntry) => s + (Number(e.totalHours) || 0), 0);
@@ -463,7 +495,7 @@ const ProjectDetailView: React.FC = () => {
     });
 
     return { memberMetrics, todayActiveCount: activeProjectMembers.length };
-  }, [project, projectMembers, projectTasks, timesheetEntries, projectId]);
+  }, [project, projectMembers, projectTasks, timesheetEntries, projectId, taskMemberAllocations]);
 
 
   const projectHolidays = useMemo(() => {
@@ -675,28 +707,6 @@ const ProjectDetailView: React.FC = () => {
   }, [projectTasks, selectedStatus, showArchived]);
 
   const canCreateTask = !isProjectIncomplete;
-
-  const teamMetrics = useMemo(() => {
-    if (!project || !projectId) return {};
-    const metrics: Record<string, { reported: number; remaining: number }> = {};
-
-    const projectMems = projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === projectId);
-
-    projectMems.forEach((pm: ProjectMember) => {
-      const userId = String(pm.id_colaborador);
-      const reported = timesheetEntries
-        .filter((e: TimesheetEntry) => e.projectId === projectId && e.userId === userId)
-        .reduce((sum: number, e: TimesheetEntry) => sum + (Number(e.totalHours) || 0), 0);
-
-      const userTasks = tasks.filter((t: Task) => t.projectId === projectId && (t.developerId === userId || t.collaboratorIds?.includes(userId)));
-      const estimated = userTasks.reduce((sum: number, t: Task) => sum + (Number(t.estimatedHours) || 0), 0);
-      const remaining = Math.max(0, estimated - reported);
-
-      metrics[userId] = { reported, remaining };
-    });
-
-    return metrics;
-  }, [projectId, projectMembers, timesheetEntries, tasks, project]);
 
   if (!project && !isNew) return <div className="p-20 text-center font-bold" style={{ color: 'var(--muted)' }}>Projeto não encontrado</div>;
 
@@ -1057,9 +1067,11 @@ const ProjectDetailView: React.FC = () => {
                             {(() => {
                               // Soma de pesos de TODAS as tarefas do projeto
                               const rawSum = projectTasks.reduce((acc: number, t: Task) => {
+                                if (t.deleted_at) return acc;
                                 const tr = timesheetEntries.filter((e: TimesheetEntry) => e.taskId === t.id).reduce((s: number, e: TimesheetEntry) => s + (Number(e.totalHours) || 0), 0);
                                 const est = Number(t.estimatedHours) || 0;
-                                const eff = t.status === 'Done' ? tr : est;
+                                // Se Done, usa real. Se não, usa o maior entre estimado/real.
+                                const eff = t.status === 'Done' ? tr : Math.max(est, tr);
                                 return acc + ((project?.horas_vendidas || 0) > 0 ? (eff / project!.horas_vendidas) * 100 : 0);
                               }, 0);
                               const sum = Math.min(100, Math.max(0, rawSum));
@@ -1073,9 +1085,11 @@ const ProjectDetailView: React.FC = () => {
                             <span className="text-[14px] font-black text-amber-500">
                               {(() => {
                                 const totalUsed = projectTasks.reduce((acc: number, t: Task) => {
+                                  if (t.deleted_at) return acc;
                                   const tr = timesheetEntries.filter((e: TimesheetEntry) => e.taskId === t.id).reduce((s: number, e: TimesheetEntry) => s + (Number(e.totalHours) || 0), 0);
                                   const est = Number(t.estimatedHours) || 0;
-                                  const eff = t.status === 'Done' ? tr : est;
+                                  // Se Done, usa real. Se não, usa o maior entre estimado/real.
+                                  const eff = t.status === 'Done' ? tr : Math.max(est, tr);
                                   return acc + eff;
                                 }, 0);
                                 const saldo = (project?.horas_vendidas || 0) - totalUsed;
@@ -1263,29 +1277,58 @@ const ProjectDetailView: React.FC = () => {
                     </div>
 
                     {isEditing ? (
-                      <div className="space-y-3">
+                      <div className="space-y-3 relative">
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
+                          <div className="relative">
                             <label className="text-[9px] font-black uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Data de Início</label>
-                            <input
-                              type="date"
-                              value={formData.startDate}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, startDate: e.target.value })}
-                              onKeyDown={handleKeyDown}
-                              className={`text-xs p-2 rounded w-full border outline-none font-bold transition-colors ${!formData.startDate ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                              style={{ color: 'var(--text)' }}
-                            />
+                            <div className="flex items-center justify-between p-2 rounded w-full border transition-all" style={{ backgroundColor: !formData.startDate ? 'rgba(251, 191, 36, 0.2)' : 'var(--bg)', borderColor: !formData.startDate ? 'rgba(251, 191, 36, 0.5)' : 'var(--border)' }}>
+                              <input
+                                type="date"
+                                value={formData.startDate}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, startDate: e.target.value })}
+                                onKeyDown={handleKeyDown}
+                                className="bg-transparent outline-none font-bold text-xs w-full cursor-pointer"
+                                style={{ color: 'var(--text)' }}
+                                onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
+                              />
+                              <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
+                            </div>
+
+                            {showStartCalendar && (
+                              <CalendarPicker
+                                selectedDate={formData.startDate}
+                                onSelectDate={(date) => {
+                                  setFormData({ ...formData, startDate: date });
+                                }}
+                                onClose={() => setShowStartCalendar(false)}
+                              />
+                            )}
                           </div>
-                          <div>
+
+                          <div className="relative">
                             <label className="text-[9px] font-black uppercase mb-1 block" style={{ color: 'var(--muted)' }}>Data de Entrega</label>
-                            <input
-                              type="date"
-                              value={formData.estimatedDelivery}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, estimatedDelivery: e.target.value })}
-                              onKeyDown={handleKeyDown}
-                              className={`text-xs p-2 rounded w-full border outline-none font-bold transition-colors ${!formData.estimatedDelivery ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-[var(--bg)] border-[var(--border)]'}`}
-                              style={{ color: 'var(--text)' }}
-                            />
+                            <div className="flex items-center justify-between p-2 rounded w-full border transition-all" style={{ backgroundColor: !formData.estimatedDelivery ? 'rgba(251, 191, 36, 0.2)' : 'var(--bg)', borderColor: !formData.estimatedDelivery ? 'rgba(251, 191, 36, 0.5)' : 'var(--border)' }}>
+                              <input
+                                type="date"
+                                value={formData.estimatedDelivery}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, estimatedDelivery: e.target.value })}
+                                onKeyDown={handleKeyDown}
+                                className="bg-transparent outline-none font-bold text-xs w-full cursor-pointer"
+                                style={{ color: 'var(--text)' }}
+                                onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
+                              />
+                              <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
+                            </div>
+
+                            {showEndCalendar && (
+                              <CalendarPicker
+                                selectedDate={formData.estimatedDelivery}
+                                onSelectDate={(date) => {
+                                  setFormData({ ...formData, estimatedDelivery: date });
+                                }}
+                                onClose={() => setShowEndCalendar(false)}
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
