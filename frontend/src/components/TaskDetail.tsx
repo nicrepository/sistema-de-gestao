@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
 import { Task, Status, Priority, Impact } from '@/types';
 import {
-  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check
+  ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check, CalendarRange
 } from 'lucide-react';
 import { useUnsavedChangesPrompt } from '@/hooks/useUnsavedChangesPrompt';
 import ConfirmationModal from './ConfirmationModal';
@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDecimalToTime } from '@/utils/normalizers';
 import { getUserStatus } from '@/utils/userStatus';
 import * as CapacityUtils from '@/utils/capacity';
+import TaskWorkloadCalendar from './TaskWorkloadCalendar';
 import * as allocationService from '@/services/allocationService';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
@@ -28,6 +29,8 @@ const TaskDetail: React.FC = () => {
   } = useDataController();
   const [memberSearch, setMemberSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [showCalendar, setShowCalendar] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const CARGO_RANK: Record<string, number> = {
     'ESTAGIARIO': 1, 'ESTAGIÁRIO': 1, 'ESTAGIARIA': 1, 'ESTAGIÁRIA': 1,
@@ -841,10 +844,17 @@ const TaskDetail: React.FC = () => {
                     <div className="flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
                       <Calendar size={12} /> Timeline
                     </div>
-                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><LayoutGrid size={12} /></div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${showCalendar ? 'bg-blue-600 text-white shadow-lg' : 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20'}`}
+                      title="Ver Período/Carga Horária"
+                    >
+                      <CalendarRange size={12} />
+                    </button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 relative" ref={calendarRef}>
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
@@ -870,6 +880,24 @@ const TaskDetail: React.FC = () => {
                           />
                         </div>
                       </div>
+
+                      {showCalendar && taskId && (
+                        <div className="absolute top-0 left-0 w-full z-10">
+                          <TaskWorkloadCalendar
+                            taskId={taskId}
+                            userId={formData.developerId || currentUser?.id || ''}
+                            selectedDate={formData.scheduledStart || ''}
+                            onSelectDate={(date) => {
+                              // Aqui podemos decidir o que fazer ao selecionar uma data no TaskDetail
+                              // Por padrão, talvez o usuário só queira ver. 
+                              // Se clicarem, vamos assumir que querem mudar o início (ou nada)
+                              // markDirty();
+                              // setFormData(prev => ({ ...prev, scheduledStart: date }));
+                            }}
+                            onClose={() => setShowCalendar(false)}
+                          />
+                        </div>
+                      )}
 
                       <div className={`p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors mt-2 ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
                         <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>
