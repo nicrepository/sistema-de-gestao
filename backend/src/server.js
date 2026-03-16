@@ -42,12 +42,12 @@ const defaultOrigins = [
     "https://api-gestao.nic-labs.com"
 ];
 const envOrigins = process.env.ALLOWED_ORIGINS?.split(",").map(o => o.trim()) || [];
-const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins]);
 
 app.use(cors({
     origin: (origin, callback) => {
         const isAllowed = !origin ||
-            allowedOrigins.includes(origin) ||
+            allowedOrigins.has(origin) ||
             (process.env.CORS_ORIGIN?.trim() === "*");
 
         if (isAllowed) {
@@ -132,10 +132,15 @@ app.use("/api/v1", apiV1);
 // Fallbacks de Compatibilidade (Legacy /api URLs)
 app.use("/api/auth", authRoutes);
 app.use("/api/clientes", clientsRoutes);
+app.use("/api/clients", clientsRoutes);
 app.use("/api/projetos", projectRoutes);
+app.use("/api/projects", projectRoutes);
 app.use("/api/tarefas", tasksRoutes);
+app.use("/api/tasks", tasksRoutes);
 app.use("/api/colaboradores", collaboratorRoutes);
 app.use("/api/timesheets", timesheetsRoutes);
+app.use("/api/support", supportRoutes);
+app.use("/api/notes", notesRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/audit-logs", authMiddleware, auditLogsRoutes);
 
