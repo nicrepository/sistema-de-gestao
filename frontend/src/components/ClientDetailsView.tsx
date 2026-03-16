@@ -1,8 +1,8 @@
 // components/ClientDetailsView.tsx - Unificado: Resumo + Detalhes/Edição + Projetos + Tarefas
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDataController } from '@/controllers/useDataController';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDataController } from '../controllers/useDataController';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft, Plus, Briefcase, CheckSquare, Clock, Edit,
   LayoutGrid, ListTodo, Filter, Trash2, Save, Upload,
@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { motion } from 'framer-motion';
-import * as CapacityUtils from '@/utils/capacity';
-import type { Client, User, Project, Task } from '@/types';
+import * as CapacityUtils from '../utils/capacity';
+import type { Client, User, Project, Task, ProjectMember, TimesheetEntry } from '../types';
 
 type ViewTab = 'details' | 'projects' | 'tasks';
 
@@ -20,7 +20,7 @@ const ClientDetailsView: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const navigate = useNavigate();
   const {
-    clients, projects, tasks, users, getClientById, projectMembers,
+    clients, projects, tasks, users, timesheetEntries, getClientById, projectMembers,
     updateClient, deleteClient, deleteProject, deleteTask
   } = useDataController();
   const { isAdmin } = useAuth();
@@ -112,9 +112,9 @@ const ClientDetailsView: React.FC = () => {
 
   const totalHoursSold = clientProjects.reduce((sum: number, p: Project) => sum + (Number(p.horas_vendidas) || 0), 0);
   const totalHoursReported = clientTasks.reduce((sum: number, t: Task) => {
-    const hours = (tasks as Task[])
-      .filter((task: Task) => String(task.id) === String(t.id))
-      .reduce((s: number, entry: Task) => s + (Number(entry.totalHours) || 0), 0);
+    const hours = timesheetEntries
+      .filter((entry: TimesheetEntry) => String(entry.taskId) === String(t.id))
+      .reduce((s: number, entry: TimesheetEntry) => s + (Number(entry.totalHours) || 0), 0);
     return sum + hours;
   }, 0);
 
@@ -201,7 +201,7 @@ const ClientDetailsView: React.FC = () => {
       !p.startDate ||
       !p.estimatedDelivery ||
       !p.responsibleNicLabsId ||
-      projectMembers.filter((pm: any) => String(pm.id_projeto) === p.id).length === 0
+      projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === p.id).length === 0
     );
   };
 
@@ -683,8 +683,8 @@ const ClientDetailsView: React.FC = () => {
                       </h4>
                       <div className="flex flex-wrap gap-3">
                         {Array.from(new Set([
-                          ...clientProjects.flatMap((p: Project) => projectMembers.filter((pm: any) => String(pm.id_projeto) === String(p.id)).map((pm: any) => String(pm.id_colaborador))),
-                          ...clientTasks.map((t: Task) => t.developerId).filter((id?: string) => id)
+                          ...clientProjects.flatMap((p: Project) => projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === String(p.id)).map((pm: ProjectMember) => String(pm.id_colaborador))),
+                          ...clientTasks.map((t: Task) => t.developerId).filter((id?: string): id is string => !!id)
                         ])).map((uId: string) => {
                           const user = users.find((u: User) => u.id === uId);
                           if (!user) return null;
@@ -693,11 +693,11 @@ const ClientDetailsView: React.FC = () => {
                               {user.avatarUrl ? (
                                 <img src={user.avatarUrl} className="w-8 h-8 rounded-xl object-cover" />
                               ) : (
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px] uppercase border" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>{user.name.substring(0, 2)}</div>
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-[10px] uppercase border" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>{(user?.name || '??').substring(0, 2)}</div>
                               )}
                               <div className="flex flex-col">
-                                <span className="text-xs font-black" style={{ color: 'var(--text)' }}>{user.name}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-tighter" style={{ color: 'var(--text-muted)' }}>{user.cargo || 'Membro'}</span>
+                                <span className="text-xs font-black" style={{ color: 'var(--text)' }}>{user!.name}</span>
+                                <span className="text-[10px] font-bold uppercase tracking-tighter" style={{ color: 'var(--text-muted)' }}>{user!.cargo || 'Membro'}</span>
                               </div>
                             </div>
                           );
@@ -851,8 +851,8 @@ const ClientDetailsView: React.FC = () => {
 
                           <div className="flex -space-x-3 mt-4">
                             {projectMembers
-                              .filter((pm: any) => String(pm.id_projeto) === String(project.id))
-                              .map((pm: any) => {
+                              .filter((pm: ProjectMember) => String(pm.id_projeto) === String(project.id))
+                              .map((pm: ProjectMember) => {
                                 const member = users.find((u: User) => u.id === String(pm.id_colaborador));
                                 if (!member) return null;
                                 return (
@@ -860,7 +860,7 @@ const ClientDetailsView: React.FC = () => {
                                     {member.avatarUrl ? (
                                       <img src={member.avatarUrl} className="w-full h-full object-cover" />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center font-bold text-[10px]" style={{ color: 'var(--muted)' }}>{member.name.substring(0, 2).toUpperCase()}</div>
+                                      <div className="w-full h-full flex items-center justify-center font-bold text-[10px]" style={{ color: 'var(--muted)' }}>{member.name ? member.name.substring(0, 2).toUpperCase() : '??'}</div>
                                     )}
                                   </div>
                                 );
@@ -893,7 +893,7 @@ const ClientDetailsView: React.FC = () => {
                   </button>
                 </div>
 
-                {clientProjects.filter(p => clientTasks.some(t => t.projectId === p.id)).length === 0 ? (
+                {clientProjects.filter((p: Project) => clientTasks.some((t: Task) => t.projectId === p.id)).length === 0 ? (
                   <div className="py-20 rounded-[32px] border-2 border-dashed text-center" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
                     <CheckSquare className="w-12 h-12 mx-auto mb-4 opacity-20" style={{ color: 'var(--text)' }} />
                     <p className="font-bold uppercase tracking-widest text-sm" style={{ color: 'var(--muted)' }}>Nenhuma tarefa ativa para este cliente</p>
@@ -952,7 +952,7 @@ const ClientDetailsView: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   <CheckSquare className="w-3.5 h-3.5" style={{ color: 'var(--brand)' }} />
                                   <span className="text-sm font-black" style={{ color: 'var(--text)' }}>
-                                    {projectTasks.filter(t => t.status === 'Done').length}/{projectTasks.length}
+                                    {projectTasks.filter((t: Task) => t.status === 'Done').length}/{projectTasks.length}
                                   </span>
                                 </div>
                               </div>
@@ -967,7 +967,7 @@ const ClientDetailsView: React.FC = () => {
                           </div>
 
                           <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar-thin pl-1">
-                            {projectTasks.map(task => (
+                            {projectTasks.map((task: Task) => (
                               <motion.div
                                 whileHover={{ y: -4 }}
                                 key={task.id}

@@ -37,7 +37,11 @@ export const reportService = {
             horas_projeto_total: Number(r.horas_projeto_total || 0),
             valor_hora_projeto: Number(r.valor_hora_projeto || 0),
             valor_rateado: Number(r.valor_rateado || 0),
-            progresso_p: Number(r.progresso_p || 0)
+            progresso_p: Number(r.progresso_p || 0),
+            inicio_real: r.inicio_real,
+            fim_real: r.fim_real,
+            horas_vendidas: Number(r.horas_vendidas || 0),
+            valor_total_rs: Number(r.valor_total_rs || 0)
         }));
 
         const projectTotals = this.calculateProjectTotals(mapped);
@@ -317,21 +321,30 @@ export const reportService = {
 
         const wsExecutivo = wb.addWorksheet('Executivo');
         wsExecutivo.columns = [
-            { header: 'PARCEIRO', key: 'parceiro', width: 20 },
-            { header: 'CLIENTE', key: 'cliente', width: 30 },
-            { header: 'PROJETO', key: 'projeto', width: 40 },
-            { header: 'FIM PLANEJADO', key: 'fim_p', width: 20 },
-            { header: 'PROG. ESTIMADO (%)', key: 'progresso_p', width: 22 },
-            { header: 'STATUS REAL', key: 'status_r', width: 18 },
-            { header: 'INÍCIO REAL', key: 'inicio_r', width: 18 },
-            { header: 'FIM REAL', key: 'fim_r', width: 18 },
-            { header: 'PROG. REAL (%)', key: 'progresso_r', width: 22 },
-            { header: 'HORAS ORÇADAS', key: 'horas_p', width: 20 },
-            { header: 'HORAS CONSUMIDAS', key: 'horas_r', width: 20 },
-            { header: 'RECEITA LÍQUIDA', key: 'vendido', width: 22 },
-            { header: 'CUSTO TOTAL', key: 'custo_real', width: 20 },
-            { header: 'RESULTADO (L. / PREJ.)', key: 'resultado', width: 28 },
-            { header: 'MARGEM DE LUCRO', key: 'margem', width: 22 }
+            // 1
+            { header: 'Parceiro', key: 'parceiro', width: 20 },
+            { header: 'Cliente', key: 'cliente', width: 30 },
+            { header: 'Projeto', key: 'projeto', width: 40 },
+            // 2
+            { header: 'Responsável', key: 'responsavel', width: 25 },
+            { header: 'Equipe / Nº de membros', key: 'equipe', width: 25 },
+            // 3
+            { header: 'Status Real', key: 'status_r', width: 18 },
+            { header: 'Progresso Estimado (%)', key: 'progresso_p', width: 22 },
+            { header: 'Progresso Real (%)', key: 'progresso_r', width: 22 },
+            // 4
+            { header: 'Início Planejado', key: 'inicio_p', width: 20 },
+            { header: 'Entrega Planejada', key: 'fim_p', width: 20 },
+            { header: 'Início Real', key: 'inicio_r', width: 18 },
+            { header: 'Entrega Real', key: 'fim_r', width: 18 },
+            // 5
+            { header: 'Horas Planejadas', key: 'horas_p', width: 20 },
+            { header: 'Horas Consumidas', key: 'horas_r', width: 20 },
+            // 6
+            { header: 'Receita Líquida', key: 'vendido', width: 22 },
+            { header: 'Custo Total', key: 'custo_real', width: 20 },
+            { header: 'Resultado (Lucro / Prejuízo)', key: 'resultado', width: 30 },
+            { header: 'Margem de Lucro (%)', key: 'margem', width: 24 }
         ];
 
         wsExecutivo.getRow(1).height = 25; // row height for headers
@@ -353,65 +366,120 @@ export const reportService = {
 
             if (!execMap.has(pKey)) {
                 execMap.set(pKey, {
-                    parceiro: 'N/A', // Não disponivel via query genérica
+                    parceiro: r.parceiro || 'N/A',
                     cliente: r.nome_cliente || r.cliente || 'Sem cliente',
                     projeto: r.nome_projeto || r.projeto || '(Sem nome)',
+                    responsavel: r.responsavel || 'N/A',
+                    equipeRaw: new Set(),
+                    inicio_p: r.data_inicio_p,
                     fim_p: r.data_fim_p,
                     progresso_p: r.progresso_p || 0,
-                    status_r: 'INICIADO', // Padrão
-                    inicio_r: r.data_registro,
-                    fim_r: r.data_registro,
-                    horas_p: Number(r.horas_projeto_total || 0),
+                    status_db: r.status_p || 'Ativo',
+                    inicio_r_db: r.inicio_real,
+                    fim_r_db: r.fim_real,
+                    inicio_calc: null,
+                    fim_calc: null,
+                    horas_p: Number(r.horas_vendidas || 0),
                     horas_r: 0,
-                    vendido: Number(r.valor_projeto || 0),
+                    vendido: Number(r.valor_total_rs || 0),
                     custo_real: 0
                 });
             }
 
             const pt = execMap.get(pKey);
-            pt.horas_r += Number(r.horas || 0);
-            pt.custo_real += Number(r.valor_rateado || 0);
+            const entryHours = Number(r.horas || 0);
+            const entryCost = entryHours * Number(r.custo_hora_colab || 0);
 
-            if (r.data_registro && (!pt.inicio_r || r.data_registro < pt.inicio_r)) {
-                pt.inicio_r = r.data_registro;
-            }
-            if (r.data_registro && (!pt.fim_r || r.data_registro > pt.fim_r)) {
-                pt.fim_r = r.data_registro;
+            pt.horas_r += entryHours;
+            pt.custo_real += entryCost;
+
+            if (r.colaborador) {
+                pt.equipeRaw.add(r.colaborador);
             }
 
-            // update status se necessario
-            if (r.status_p) {
-                const st = r.status_p.toUpperCase();
-                if (st === 'CONCLUÍDO' || st === 'CONCLUIDO') pt.status_r = 'CONCLUÍDO';
+            if (r.data_registro) {
+                if (!pt.inicio_calc || r.data_registro < pt.inicio_calc) pt.inicio_calc = r.data_registro;
+                if (!pt.fim_calc || r.data_registro > pt.fim_calc) pt.fim_calc = r.data_registro;
             }
         });
 
         Array.from(execMap.values()).forEach((pt, idx) => {
+            let plannedP = 0;
+            if (pt.inicio_p && pt.fim_p) {
+                const start = new Date(pt.inicio_p + 'T12:00:00').getTime();
+                const end = new Date(pt.fim_p + 'T12:00:00').getTime();
+                const now = Date.now();
+                if (now > end) {
+                    plannedP = 1;
+                } else if (now >= start && end > start) {
+                    plannedP = (now - start) / (end - start);
+                }
+            }
+
+            let realP = 0;
+            if (pt.horas_p > 0) {
+                realP = Math.min(pt.horas_r / pt.horas_p, 1);
+            } else if (pt.horas_r > 0) {
+                realP = 1;
+            }
+
+            // Cálculo do Status Real (aproximado do frontend)
+            let statusReal = (pt.status_db || 'Ativo').toUpperCase();
+            const now = new Date();
+            now.setHours(12, 0, 0, 0);
+            const startP = pt.inicio_p ? new Date(pt.inicio_p + 'T12:00:00') : null;
+            const endP = pt.fim_p ? new Date(pt.fim_p + 'T12:00:00') : null;
+
+            let actualStart = null;
+            if (pt.inicio_r_db) {
+                actualStart = new Date(pt.inicio_r_db + 'T12:00:00');
+            } else if (pt.inicio_calc) {
+                actualStart = new Date(pt.inicio_calc + 'T12:00:00');
+            }
+
+            const actualEnd = pt.fim_r_db ? new Date(pt.fim_r_db + 'T12:00:00') : null;
+
+            if (statusReal === 'CONCLUÍDO' || actualEnd) {
+                statusReal = 'CONCLUÍDO';
+            } else if (endP && now > endP && realP < 1) {
+                statusReal = 'ATRASADO';
+            } else if (actualStart) {
+                statusReal = 'EM ANDAMENTO';
+            } else if (startP && now >= startP) {
+                statusReal = 'INICIADO';
+            } else {
+                statusReal = 'NÃO INICIADO';
+            }
+
             const rowData = wsExecutivo.addRow({
                 parceiro: pt.parceiro,
                 cliente: pt.cliente,
                 projeto: pt.projeto,
+                responsavel: pt.responsavel,
+                equipe: `${pt.equipeRaw.size} membro(s) (${Array.from(pt.equipeRaw).join(', ')})`,
+                inicio_p: pt.inicio_p ? new Date(pt.inicio_p + 'T12:00:00') : null,
                 fim_p: pt.fim_p ? new Date(pt.fim_p + 'T12:00:00') : null,
-                progresso_p: Number(pt.progresso_p) / 100,
-                status_r: pt.status_r,
-                inicio_r: pt.inicio_r ? new Date(pt.inicio_r + 'T12:00:00') : null,
-                fim_r: pt.fim_r ? new Date(pt.fim_r + 'T12:00:00') : null,
-                progresso_r: pt.horas_p > 0 ? Math.min(pt.horas_r / pt.horas_p, 1) : 0,
-                horas_p: pt.horas_p / 24,
-                horas_r: pt.horas_r / 24,
+                progresso_p: plannedP,
+                status_r: statusReal,
+                inicio_r: actualStart,
+                fim_r: actualEnd,
+                progresso_r: realP,
+                horas_p: pt.horas_p,
+                horas_r: pt.horas_r,
                 vendido: pt.vendido,
                 custo_real: pt.custo_real,
                 resultado: pt.vendido - pt.custo_real,
                 margem: pt.vendido > 0 ? ((pt.vendido - pt.custo_real) / pt.vendido) : 0
             });
 
+            rowData.getCell('inicio_p').numFmt = formats.date;
             rowData.getCell('fim_p').numFmt = formats.date;
             rowData.getCell('inicio_r').numFmt = formats.date;
             rowData.getCell('fim_r').numFmt = formats.date;
             rowData.getCell('progresso_p').numFmt = '0%';
             rowData.getCell('progresso_r').numFmt = '0%';
-            rowData.getCell('horas_p').numFmt = formats.hours;
-            rowData.getCell('horas_r').numFmt = formats.hours;
+            rowData.getCell('horas_p').numFmt = '#,##0.00';
+            rowData.getCell('horas_r').numFmt = '#,##0.00';
             rowData.getCell('vendido').numFmt = '"R$" #,##0.00';
             rowData.getCell('custo_real').numFmt = '"R$" #,##0.00';
             rowData.getCell('resultado').numFmt = '"R$" #,##0.00';

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDataController } from '@/controllers/useDataController';
-import { Task, Status, Priority, Impact } from '@/types';
+import { Task, Status, Priority, Impact, TaskMemberAllocation } from '@/types';
 import {
   ArrowLeft, Save, Calendar, Clock, Users, StickyNote, CheckSquare, Plus, Trash2, X, CheckCircle, Activity, Zap, AlertTriangle, Briefcase, Info, Target, LayoutGrid, Shield, FileSpreadsheet, Crown, ExternalLink, Flag, Lock, Pencil, Search, ChevronDown, Check, CalendarDays
 } from 'lucide-react';
@@ -493,7 +493,19 @@ const TaskDetail: React.FC = () => {
         }
         // const savedAllocs = await allocationService.saveTaskAllocations(finalTaskId, allocationsToSave);
         await allocationService.saveTaskAllocations(finalTaskId, allocationsToSave);
-        // Removido manual update: Realtime cuida disso
+
+        // Manual update to ensure immediate consistency before Realtime refresh
+        const newAllocationsMapped = allocationsToSave.map(a => ({
+          id: `temp-${Date.now()}-${a.userId}`,
+          taskId: finalTaskId!,
+          userId: a.userId,
+          reservedHours: a.reservedHours
+        }));
+
+        setTaskMemberAllocations((prev: TaskMemberAllocation[]) => [
+          ...prev.filter((a: TaskMemberAllocation) => a.taskId !== finalTaskId),
+          ...newAllocationsMapped
+        ]);
       }
 
       discardChanges();
@@ -923,39 +935,51 @@ const TaskDetail: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className={`p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors mt-2 ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
-                        <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>
-                        <input
-                          type="text"
-                          value={editingMainHours !== null ? editingMainHours : (formData.estimatedHours ? formatDecimalToTime(formData.estimatedHours) : '')}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (!/^[0-9:]*$/.test(val)) return;
-                            setEditingMainHours(handleTimeMask(val));
-                            markDirty();
-                          }}
-                          onBlur={() => {
-                            if (editingMainHours !== null) {
-                              const dec = parseTimeToDecimal(editingMainHours);
-                              setFormData((prev: any) => ({ ...prev, estimatedHours: dec }));
-                              setEditingMainHours(null);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                          }}
-                          className="w-full bg-transparent text-[11px] font-black text-[var(--text)] outline-none tabular-nums p-0 border-none leading-none focus:text-blue-500 font-mono"
-                          placeholder="00:00"
-                        />
-                        {projectAvailableHours !== null && (
-                          <div className="mt-2.5 pt-2 border-t border-dashed border-blue-500/10 flex items-center justify-between">
-                            <span className="text-[7.5px] font-black text-blue-500/50 uppercase tracking-widest whitespace-nowrap">Saldo Disp.</span>
-                            <div className="flex items-baseline gap-1 whitespace-nowrap">
-                              <span className="text-[10px] font-black text-blue-500/80 tabular-nums">{formatDecimalToTime(projectAvailableHours)}</span>
-                              <span className="text-[7.5px] font-bold text-blue-500/50 uppercase">hs</span>
+                      <div className="grid grid-cols-3 gap-2.5 mt-2">
+                        <div className={`col-span-2 p-3 rounded-2xl border group/fc focus-within:border-blue-500/50 transition-colors ${!formData.estimatedHours ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--surface-hover)] border-[var(--border)]'}`}>
+                          <label className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 block group-focus-within/fc:text-blue-500 transition-colors ${!formData.estimatedHours ? 'text-yellow-500' : 'opacity-40'}`}>Horas da Tarefa *</label>
+                          <input
+                            type="text"
+                            value={editingMainHours !== null ? editingMainHours : (formData.estimatedHours ? formatDecimalToTime(formData.estimatedHours) : '')}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (!/^[0-9:]*$/.test(val)) return;
+                              setEditingMainHours(handleTimeMask(val));
+                              markDirty();
+                            }}
+                            onBlur={() => {
+                              if (editingMainHours !== null) {
+                                const dec = parseTimeToDecimal(editingMainHours);
+                                setFormData((prev: any) => ({ ...prev, estimatedHours: dec }));
+                                setEditingMainHours(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') e.currentTarget.blur();
+                            }}
+                            className="w-full bg-transparent text-[11px] font-black text-[var(--text)] outline-none tabular-nums p-0 border-none leading-none focus:text-blue-500 font-mono"
+                            placeholder="00:00"
+                          />
+                          {projectAvailableHours !== null && (
+                            <div className="mt-2.5 pt-2 border-t border-dashed border-blue-500/10 flex items-center justify-between">
+                              <span className="text-[7.5px] font-black text-blue-500/50 uppercase tracking-widest whitespace-nowrap">Saldo Disp.</span>
+                              <div className="flex items-baseline gap-1 whitespace-nowrap">
+                                <span className="text-[10px] font-black text-blue-500/80 tabular-nums">{formatDecimalToTime(projectAvailableHours)}</span>
+                                <span className="text-[7.5px] font-bold text-blue-500/50 uppercase">hs</span>
+                              </div>
                             </div>
+                          )}
+                        </div>
+
+                        <div className="col-span-1 p-3 rounded-2xl border transition-colors bg-[var(--surface-hover)] border-[var(--border)] flex flex-col justify-between">
+                          <label className="text-[8px] font-black uppercase tracking-[0.2em] mb-1 block opacity-40">Dias Úteis</label>
+                          <div className="flex items-center gap-2 mt-auto">
+                            <CalendarDays size={14} className="text-blue-500/40" />
+                            <span className="text-lg font-black tabular-nums text-blue-500 leading-none">
+                              {CapacityUtils.getWorkingDaysInRange(formData.scheduledStart || '', formData.estimatedDelivery || '', holidays, absences.filter((a: any) => String(a.userId) === String(formData.developerId)))}
+                            </span>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -137,8 +137,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         });
                     }
                 } else {
-                    // Outros tipos ou atualizações genéricas
-                    refreshData();
+                    // Outros tipos ou atualizações genéricas (ex: alocações, feriados)
+                    // Forçamos o refresh para ignorar o throttle do useAppData
+                    refreshData(true);
                 }
             })
             .subscribe((status) => {

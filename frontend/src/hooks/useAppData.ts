@@ -44,7 +44,7 @@ interface AppData {
   taskMemberAllocations: TaskMemberAllocation[];
   absences: Absence[];
   holidays: Holiday[];
-  refreshData: () => Promise<void>;
+  refreshData: (force?: boolean) => Promise<void>;
   loading: boolean;
   error: string | null;
 }

@@ -4,6 +4,7 @@ import { sendSuccess, handleRouteError } from '../utils/responseHelper.js';
 import { isAdmUser } from '../utils/security.js';
 import { projectService } from '../services/projectService.js';
 import { taskRepository } from '../repositories/taskRepository.js';
+import { notifyUpdates } from '../utils/realtime.js';
 
 export const allocationController = {
     async list(req, res) {
@@ -49,9 +50,11 @@ export const allocationController = {
                     user_id,
                     reserved_hours
                 });
+                await notifyUpdates('allocations', { id: task_id, type: 'allocations_updated' });
                 return sendSuccess(res, result);
             }
 
+            await notifyUpdates('allocations', { id: task_id, type: 'allocations_updated' });
             return sendSuccess(res, { message: 'Allocation removed' });
         } catch (e) {
             return handleRouteError(res, e, 'AllocationController.upsert');
@@ -62,6 +65,7 @@ export const allocationController = {
         try {
             const { taskId } = req.params;
             await dbDelete('task_member_allocations', { task_id: taskId });
+            await notifyUpdates('allocations', { id: taskId, type: 'allocations_deleted' });
             return sendSuccess(res, { message: 'Allocations deleted' });
         } catch (e) {
             return handleRouteError(res, e, 'AllocationController.deleteByTask');

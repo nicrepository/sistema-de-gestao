@@ -1,7 +1,7 @@
 // ProjectDetailView.tsx - Dashboard Unificado do Projeto
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { useDataController } from '@/controllers/useDataController';
+import { useDataController } from '../controllers/useDataController';
 import {
   ArrowLeft, Plus, Edit, CheckSquare, Clock, Filter, ChevronDown, Check,
   Trash2, LayoutGrid, Target, ShieldAlert, Link as LinkIcon, Users,
@@ -9,14 +9,14 @@ import {
   TrendingUp, BarChart2, Save, FileText, Settings, Shield, AlertCircle, Archive, X, CalendarDays
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getUserStatus } from '@/utils/userStatus';
-import * as CapacityUtils from '@/utils/capacity';
-import { formatDecimalToTime } from '@/utils/normalizers';
-import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Absence } from '@/types';
-import { getProjectStatusByTimeline } from '@/utils/projectStatus';
-import { ALL_ADMIN_ROLES } from '@/constants/roles';
+import { getUserStatus } from '../utils/userStatus';
+import * as CapacityUtils from '../utils/capacity';
+import { formatDecimalToTime } from '../utils/normalizers';
+import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Absence } from '../types';
+import { getProjectStatusByTimeline } from '../utils/projectStatus';
+import { ALL_ADMIN_ROLES } from '../constants/roles';
 import CalendarPicker from './CalendarPicker';
 
 // --- UTILS ---
@@ -295,7 +295,7 @@ const ProjectDetailView: React.FC = () => {
       ? getBusinessDays(project.startDate.split('T')[0], project.estimatedDelivery.split('T')[0])
       : 1;
 
-    const weightedProgress = CapacityUtils.calculateProjectWeightedProgress(projectId, projectTasks);
+    const weightedProgress = CapacityUtils.calculateProjectWeightedProgress(projectId!, projectTasks);
 
     let plannedProgress = 0;
     if (project.startDate && project.estimatedDelivery) {
@@ -598,7 +598,7 @@ const ProjectDetailView: React.FC = () => {
       const projStart = new Date(formData.startDate + 'T00:00:00');
       const projEnd = new Date(formData.estimatedDelivery + 'T23:59:59');
 
-      const outOfRangeTasks = projectTasks.filter(task => {
+      const outOfRangeTasks = projectTasks.filter((task: Task) => {
         if ((task as any).deleted_at) return false;
         const tStart = task.scheduledStart ? new Date(task.scheduledStart + 'T00:00:00') : null;
         const tEnd = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T23:59:59') : null;
@@ -609,7 +609,7 @@ const ProjectDetailView: React.FC = () => {
       });
 
       if (outOfRangeTasks.length > 0) {
-        const taskList = outOfRangeTasks.slice(0, 3).map(t => t.title).join(', ');
+        const taskList = outOfRangeTasks.slice(0, 3).map((t: Task) => t.title).join(', ');
         const more = outOfRangeTasks.length > 3 ? ` e mais ${outOfRangeTasks.length - 3}` : '';
         alert(`Não é possível alterar o período do projeto pois existem ${outOfRangeTasks.length} tarefas fora do novo intervalo (${formData.startDate} a ${formData.estimatedDelivery}).\n\nExemplos: ${taskList}${more}.\n\nPor favor, ajuste as datas das tarefas antes de salvar.`);
         setLoading(false);
@@ -627,6 +627,7 @@ const ProjectDetailView: React.FC = () => {
           gapsIssues: formData.gapsIssues,
           importantConsiderations: formData.importantConsiderations,
         };
+        if (!projectId) throw new Error("ID do projeto não encontrado.");
         await updateProject(projectId, collaboratorData as any);
         setIsEditing(false);
         alert('Alterações salvas!');
@@ -650,7 +651,8 @@ const ProjectDetailView: React.FC = () => {
         throw new Error("ID do projeto não encontrado.");
       }
 
-      const initialMembers = isNew ? [] : getProjectMembers(targetProjectId);
+      const targetId = targetProjectId as string;
+      const initialMembers = isNew ? [] : getProjectMembers(targetId);
 
       // Para cada usuário selecionado, calculamos a alocação proporcional para projetos contínuos (8h / N)
       const isContinuous = formData.project_type === 'continuous';
@@ -658,13 +660,13 @@ const ProjectDetailView: React.FC = () => {
       const allocationPercentage = isContinuous ? (numMembers > 0 ? 100 / numMembers : 100) : 100;
 
       for (const userId of selectedUsers) {
-        await addProjectMember(targetProjectId, userId, allocationPercentage);
+        await addProjectMember(targetId, userId, allocationPercentage);
       }
 
       // Remover membros que não estão mais na lista
       if (!isNew) {
         const toRemove = initialMembers.filter((uid: string) => !selectedUsers.includes(uid));
-        for (const userId of toRemove) await removeProjectMember(targetProjectId, userId);
+        for (const userId of toRemove) await removeProjectMember(targetId, userId);
       }
 
       setIsEditing(false);
@@ -1627,7 +1629,7 @@ const ProjectDetailView: React.FC = () => {
                                       (!isForaDoFluxo || isAlreadySelected) &&
                                       (u.name.toLowerCase().includes(memberSearch.toLowerCase()) || (u.cargo || '').toLowerCase().includes(memberSearch.toLowerCase()));
                                   })
-                                  .sort((a, b) => {
+                                  .sort((a: User, b: User) => {
                                     // Ordem estável: manager primeiro, depois selecionados, depois alfabético
                                     // Mas NÃO muda a ordem durante interação — computa por status inicial
                                     const aManager = a.id === formData.responsibleNicLabsId;
@@ -1690,9 +1692,9 @@ const ProjectDetailView: React.FC = () => {
                             {projectMembers
                               .filter((pm: ProjectMember) => String(pm.id_projeto) === projectId)
                               .map((pm: ProjectMember) => ({ pm, u: users.find((user: User) => user.id === String(pm.id_colaborador)) }))
-                              .filter(item => !!item.u)
-                              .sort((a, b) => (a.u?.name || "").localeCompare(b.u?.name || ""))
-                              .map(({ pm, u }) => {
+                              .filter((item: { pm: ProjectMember, u: User | undefined }) => !!item.u)
+                              .sort((a: { pm: ProjectMember, u: User | undefined }, b: { pm: ProjectMember, u: User | undefined }) => (a.u?.name || "").localeCompare(b.u?.name || ""))
+                              .map(({ pm, u }: { pm: ProjectMember, u: User | undefined }) => {
                                 if (!u) return null;
                                 return (
                                   <div key={u.id} className="px-3 py-2.5 rounded-xl border transition-all" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)' }}>
@@ -2040,6 +2042,24 @@ const ProjectTaskCard: React.FC<{
   // Formatação de datas
   const deliveryDateFormatted = task.estimatedDelivery ? new Date(task.estimatedDelivery + 'T12:00:00').toLocaleDateString('pt-BR') : '--/--/----';
 
+  // Cálculo de dias úteis da tarefa
+  const getBusinessDays = (dStart: string, dEnd: string) => {
+    let count = 0;
+    let curr = new Date(dStart + 'T12:00:00');
+    const stop = new Date(dEnd + 'T12:00:00');
+    if (isNaN(curr.getTime()) || isNaN(stop.getTime())) return 0;
+    while (curr <= stop) {
+      const day = curr.getDay();
+      if (day !== 0 && day !== 6) {
+        const ds = curr.toISOString().split('T')[0];
+        const isH = holidays.some((h: Holiday) => ds >= h.date && ds <= (h.endDate || h.date));
+        if (!isH) count++;
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
+    return Math.max(1, count);
+  };
+
   return (
     <motion.div
       whileHover={{ y: -8, scale: 1.02 }}
@@ -2083,21 +2103,32 @@ const ProjectTaskCard: React.FC<{
       </h3>
 
       {/* INFO ROW GRID */}
-      <div className="grid grid-cols-2 gap-4 p-5 rounded-3xl border bg-[var(--surface-hover)] border-[var(--border)]">
+      <div className="grid grid-cols-3 gap-2 p-5 rounded-3xl border bg-[var(--surface-hover)] border-[var(--border)]">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 opacity-50" style={{ color: 'var(--text)' }}>
-            <Calendar size={12} /> Prazo Final
+          <p className="text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 opacity-50" style={{ color: 'var(--text)' }}>
+            <Calendar size={10} /> Prazo
           </p>
-          <p className={`text-sm font-black ${isLate ? 'text-rose-500' : ''}`} style={{ color: isLate ? undefined : 'var(--text)' }}>
+          <p className={`text-[11px] font-black ${isLate ? 'text-rose-500' : ''}`} style={{ color: isLate ? undefined : 'var(--text)' }}>
             {deliveryDateFormatted}
           </p>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 opacity-50" style={{ color: 'var(--text)' }}>
-            <Clock size={12} /> Alocado vs Real
+        <div className="flex flex-col gap-1.5 border-x px-2" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <p className="text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 opacity-50" style={{ color: 'var(--text)' }}>
+            <CalendarDays size={10} /> Dias Úteis
           </p>
-          <p className="text-sm font-black" style={{ color: 'var(--text)' }}>
-            {formatDecimalToTime(totalAllocatedHours)} <span className="opacity-20 mx-1">/</span> {formatDecimalToTime(totalActualHours)}
+          <p className="text-[11px] font-black" style={{ color: 'var(--text)' }}>
+            {task.scheduledStart && task.estimatedDelivery ?
+              `${getBusinessDays(task.scheduledStart as string, task.estimatedDelivery as string)} d` :
+              '--'
+            }
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5 pl-1">
+          <p className="text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 opacity-50" style={{ color: 'var(--text)' }}>
+            <Clock size={10} /> Horas
+          </p>
+          <p className="text-[11px] font-black" style={{ color: 'var(--text)' }}>
+            {formatDecimalToTime(totalAllocatedHours)} <span className="opacity-20 mx-0.5">/</span> {formatDecimalToTime(totalActualHours)}
           </p>
         </div>
       </div>
