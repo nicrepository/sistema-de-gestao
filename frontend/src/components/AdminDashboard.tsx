@@ -1324,10 +1324,10 @@ const AdminDashboard: React.FC = () => {
                                     className="group border rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
                                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                                   >
-                                    <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center border-b border-[var(--border)]">
+                                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center border-b border-[var(--border)]" style={{ backgroundColor: 'var(--bg-elevated)' }}>
                                       <img src={client.logoUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={client.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/100x100?text=${client.name.charAt(0)}`; }} />
                                     </div>
-                                    <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center bg-slate-50 dark:bg-slate-900/20 shadow-inner">
+                                    <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center shadow-inner" style={{ backgroundColor: 'var(--surface-2)' }}>
                                       <h4 className="text-[11px] font-black uppercase tracking-tight truncate mb-0.5" style={{ color: 'var(--text)' }}>{client.name}</h4>
                                       <div className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">
                                         {clientProjects.length} {clientProjects.length === 1 ? 'PROJETO' : 'PROJETOS'}
@@ -1491,10 +1491,10 @@ const AdminDashboard: React.FC = () => {
                           className="group border rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
                           style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                         >
-                          <div className="flex-1 min-h-0 overflow-hidden bg-white flex items-center justify-center border-b border-[var(--border)]">
+                          <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-100 flex items-center justify-center border-b border-[var(--border)]">
                             <img src={partner.logoUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={partner.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/200x200?text=${partner.name.charAt(0)}`; }} />
                           </div>
-                          <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center bg-slate-50 dark:bg-slate-900/20 shadow-inner">
+                          <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center shadow-inner" style={{ backgroundColor: 'var(--surface-2)' }}>
                             <h3 className="text-[11px] font-black truncate uppercase tracking-tight mb-0.5" style={{ color: 'var(--text)' }}>{partner.name}</h3>
                             <div className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{partner.clients.length} {partner.clients.length === 1 ? 'CLIENTE' : 'CLIENTES'}</div>
                           </div>
@@ -1507,26 +1507,28 @@ const AdminDashboard: React.FC = () => {
                         <div
                           key={partner.id}
                           onClick={() => setSelectedPartnerId(partner.id)}
-                          className="flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-[2rem] border group transition-all shadow-sm hover:shadow-lg relative overflow-hidden cursor-pointer bg-[var(--surface)] border-[var(--border)]"
+                          className="flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-[2rem] border group transition-all shadow-sm hover:shadow-lg relative overflow-hidden cursor-pointer"
+                          style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                         >
                           <div className="flex items-center gap-6 z-10">
-                            <div className="w-16 h-16 bg-white rounded-2xl border flex items-center justify-center overflow-hidden shadow-sm border-[var(--border)] p-1 shrink-0">
+                            <div className="w-16 h-16 rounded-2xl border flex items-center justify-center overflow-hidden shadow-sm p-1 shrink-0" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
                               <img src={partner.logoUrl} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" alt={partner.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/200x200?text=${partner.name.charAt(0)}`; }} />
                             </div>
                             <div>
-                              <h3 className="text-sm font-black uppercase tracking-[0.05em] mb-1 text-[var(--text)]">{partner.name}</h3>
+                              <h3 className="text-sm font-black uppercase tracking-[0.05em] mb-1" style={{ color: 'var(--text)' }}>{partner.name}</h3>
                               <div className="flex items-center gap-3 mt-1">
-                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border)]">
+                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                                   {partner.clients.length} {partner.clients.length === 1 ? 'Cliente Vinculado' : 'Clientes Vinculados'}
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm bg-[var(--primary-soft)] text-[var(--primary)]">
+                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)' }}>
                                   {partner.tenure}
                                 </span>
                               </div>
                             </div>
                           </div>
 
-                          <button className="z-10 mt-4 md:mt-0 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all shadow-sm flex items-center gap-2 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-600 bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]">
+                          <button className="z-10 mt-4 md:mt-0 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all shadow-sm flex items-center gap-2 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-600"
+                            style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)', borderColor: 'var(--border)' }}>
                             Ver Detalhes
                             <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all -ml-2 group-hover:ml-0" />
                           </button>
