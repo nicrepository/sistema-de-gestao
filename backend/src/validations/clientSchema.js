@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createClientSchema = z.object({
-    NomeCliente: z.string().min(3, "Nome do cliente deve ter ao menos 3 caracteres"),
+    NomeCliente: z.string().min(2, "Nome do cliente deve ter ao menos 2 caracteres"),
     "E-mail": z.string().optional().nullable().transform(() => undefined),
     email: z.string().email("E-mail privado inválido").or(z.literal("")).optional().nullable(),
     ativo: z.boolean().optional(),
