@@ -190,6 +190,21 @@ export function mapDbProjectToProject(row: any): Project {
         project_type: row.project_type || 'planned',
         horas_vendidas: row.horas_vendidas ? Number(row.horas_vendidas) : undefined,
         valor_diario: row.valor_diario ? Number(row.valor_diario) : undefined,
+        description: row.description || undefined,
+        managerClient: row.manager_client || row.managerClient || undefined,
+        responsibleNicLabsId: row.responsible_nic_labs_id ? String(row.responsible_nic_labs_id) : undefined,
+        startDateReal: row.start_date_real || undefined,
+        endDateReal: row.end_date_real || undefined,
+        docLink: row.doc_link || undefined,
+        gapsIssues: row.gaps_issues || undefined,
+        importantConsiderations: row.important_considerations || undefined,
+        weeklyStatusReport: row.weekly_status_report || undefined,
+        projectManagerId: row.project_manager_id ? String(row.project_manager_id) : undefined,
+        budget: row.budget ? Number(row.budget) : undefined,
+        criticalDate: row.critical_date || undefined,
+        responsibleUserId: row.responsible_user_id ? String(row.responsible_user_id) : undefined,
+        risks: row.risks || undefined,
+        successFactor: row.success_factor || undefined,
     };
 }
 

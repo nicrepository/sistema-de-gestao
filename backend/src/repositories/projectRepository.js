@@ -18,7 +18,24 @@ const PROJECT_SELECT = [
     'valor_total_rs',
     'torre',
     'partner_id',
-    'horas_vendidas'
+    'horas_vendidas',
+    'description',
+    'manager_client',
+    'responsible_nic_labs_id',
+    'start_date_real',
+    'end_date_real',
+    'doc_link',
+    'gaps_issues',
+    'important_considerations',
+    'weekly_status_report',
+    'valor_diario',
+    'project_type',
+    'project_manager_id',
+    'budget',
+    'critical_date',
+    'responsible_user_id',
+    'risks',
+    'success_factor'
 ].join(', ');
 
 export const projectRepository = {

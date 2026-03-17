@@ -13,7 +13,12 @@ const CLIENT_SELECT = [
     'contato_principal',
     'tipo_cliente',
     'partner_id',
-    'doc_nic_ativo'
+    'doc_nic_ativo',
+    'cnpj',
+    'email_contato',
+    'telefone',
+    'responsavel_interno_id',
+    'responsavel_externo'
 ].join(', ');
 
 export const clientRepository = {

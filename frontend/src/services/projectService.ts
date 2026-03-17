@@ -42,6 +42,8 @@ export async function createProject(data: Partial<Project>): Promise<number> {
     torre: clean(data.torre),
     project_type: data.project_type || 'continuous',
     valor_diario: clean(data.valor_diario),
+    project_manager_id: safeNum(data.projectManagerId),
+    responsible_user_id: safeNum(data.responsibleUserId),
   };
 
   const result = await apiRequest<any>('/projects', {
@@ -94,6 +96,8 @@ export async function updateProject(projectId: string, data: Partial<Project>): 
   if (data.torre !== undefined) payload.torre = clean(data.torre);
   if (data.project_type !== undefined) payload.project_type = data.project_type;
   if ((data as any).valor_diario !== undefined) payload.valor_diario = clean((data as any).valor_diario);
+  if (data.projectManagerId !== undefined) payload.project_manager_id = safeNum(data.projectManagerId);
+  if (data.responsibleUserId !== undefined) payload.responsible_user_id = safeNum(data.responsibleUserId);
 
   await apiRequest(`/projects/${projectId}`, {
     method: 'PUT',

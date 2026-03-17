@@ -126,7 +126,11 @@ const ProjectDetailView: React.FC = () => {
     torre: '',
     project_type: 'continuous' as 'planned' | 'continuous',
     valor_diario: 0,
-    fora_do_fluxo: false
+    fora_do_fluxo: false,
+    successFactor: '',
+    risks: '',
+    projectManagerId: '',
+    responsibleUserId: ''
   });
   const [memberSearch, setMemberSearch] = useState('');
 
@@ -175,7 +179,11 @@ const ProjectDetailView: React.FC = () => {
         torre: project.torre || '',
         project_type: project.project_type || 'continuous',
         valor_diario: (project as any).valor_diario || 0,
-        fora_do_fluxo: (project as any).fora_do_fluxo || false
+        fora_do_fluxo: (project as any).fora_do_fluxo || false,
+        successFactor: project.successFactor || '',
+        risks: project.risks || '',
+        projectManagerId: project.projectManagerId || '',
+        responsibleUserId: project.responsibleUserId || ''
       });
       const membersResult = projectMembers.filter((pm: ProjectMember) => String(pm.id_projeto) === projectId);
       const selectedIds = membersResult.map((m: ProjectMember) => String(m.id_colaborador));
@@ -226,7 +234,11 @@ const ProjectDetailView: React.FC = () => {
         torre: '',
         project_type: 'continuous',
         valor_diario: 0,
-        fora_do_fluxo: false
+        fora_do_fluxo: false,
+        successFactor: '',
+        risks: '',
+        projectManagerId: '',
+        responsibleUserId: ''
       });
       setSelectedUsers([]);
       setMemberAllocations({});
@@ -626,6 +638,7 @@ const ProjectDetailView: React.FC = () => {
           weeklyStatusReport: formData.weeklyStatusReport,
           gapsIssues: formData.gapsIssues,
           importantConsiderations: formData.importantConsiderations,
+          successFactor: formData.successFactor,
         };
         if (!projectId) throw new Error("ID do projeto não encontrado.");
         await updateProject(projectId, collaboratorData as any);
@@ -862,7 +875,7 @@ const ProjectDetailView: React.FC = () => {
         className="flex-1 overflow-y-auto p-5 custom-scrollbar"
         style={{ backgroundColor: 'var(--bg)' }}
       >
-        <div className="max-w-7xl mx-auto space-y-5 pb-10">
+        <div className="max-w-full px-4 md:px-8 space-y-5 pb-10">
 
           {/* VALIDATION BANNER FOR MANDATORY FIELDS - only show if fields are actually missing */}
           {isEditing && (
@@ -928,9 +941,9 @@ const ProjectDetailView: React.FC = () => {
                 className="space-y-8"
               >
                 {/* KPI ROW */}
-                <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
                   {/* Resumo do Planejamento - Cronograma & Peso */}
-                  <div className="p-4 rounded-[32px] border shadow-sm relative overflow-hidden transition-all hover:shadow-md flex flex-col" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', height: '400px' }}>
+                  <div className={`p-4 rounded-[32px] border shadow-sm relative overflow-hidden transition-all hover:shadow-md flex flex-col ${isAdmin ? 'lg:col-span-6' : 'lg:col-span-7'}`} style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', height: '400px' }}>
                     <div className="flex items-center justify-between mb-4 shrink-0">
                       <div>
                         <h4 className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>TAREFAS</h4>
@@ -1109,7 +1122,7 @@ const ProjectDetailView: React.FC = () => {
                   </div>
 
                   {/* Progresso vs Plano */}
-                  <div className="p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md h-[400px] flex flex-col" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className={`p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md h-[400px] flex flex-col ${isAdmin ? 'lg:col-span-2' : 'lg:col-span-2'}`} style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
 
                     <div className="mb-6 pb-6 border-b border-dashed shrink-0" style={{ borderColor: 'var(--border)' }}>
                       <h4 className="text-[10px] font-black uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>Status de Entrega</h4>
@@ -1192,7 +1205,7 @@ const ProjectDetailView: React.FC = () => {
 
                   {/* Finanças (Visible only to Admin) */}
                   {isAdmin && (
-                    <div className="p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md h-[400px] flex flex-col" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                    <div className="p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md h-[400px] flex flex-col lg:col-span-2" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
 
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>Finanças</h4>
@@ -1267,7 +1280,7 @@ const ProjectDetailView: React.FC = () => {
                   )}
 
                   {/* Timeline do Projeto */}
-                  <div className="h-[400px] flex flex-col p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                  <div className={`h-[400px] flex flex-col p-5 rounded-[32px] border shadow-sm relative transition-all hover:shadow-md ${isAdmin ? 'lg:col-span-2' : 'lg:col-span-3'}`} style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--muted)' }}>Timeline do Projeto</h4>
                       <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
@@ -1405,8 +1418,8 @@ const ProjectDetailView: React.FC = () => {
                 </div>
 
                 {/* MAIN GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-                  <div className="lg:col-span-2 space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  <div className="lg:col-span-8 space-y-5">
                     <div className="p-5 rounded-[32px] border shadow-sm" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
                       <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--primary)' }}><Info size={14} /> Detalhes Estruturais</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1448,7 +1461,7 @@ const ProjectDetailView: React.FC = () => {
                                       <option value="direto">Direto (Sem Parceiro)</option>
                                       {clients.filter((c: Client) => c.tipo_cliente === 'parceiro').map((c: Client) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
-                                  ) : <p className="text-xs font-black truncate" style={{ color: 'var(--text)' }}>{clients.find((c: Client) => c.id === project?.partnerId)?.name || 'Nic-Labs'}</p>}
+                                  ) : <p className="text-xs font-black truncate" style={{ color: 'var(--text)' }}>{clients.find((c: Client) => c.id === project?.partnerId)?.name || 'Direto'}</p>}
                                 </div>
                               </div>
                             </div>
@@ -1540,10 +1553,72 @@ const ProjectDetailView: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      {(isEditing || project?.description) && (
-                        <div>
-                          <p className="text-[10px] font-black uppercase mb-3" style={{ color: 'var(--muted)' }}>Visão de Escopo</p>
-                          {isEditing ? <textarea value={formData.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })} className="w-full h-32 p-4 rounded-2xl border outline-none text-sm" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} /> : <p className="text-sm leading-relaxed italic p-5 rounded-2xl border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text-2)' }}>{project?.description}</p>}
+                      {(isEditing || project?.description || project?.importantConsiderations || project?.successFactor) && (
+                        <div className="mt-8 pt-8 border-t space-y-6" style={{ borderColor: 'var(--bg)' }}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 rounded-lg bg-purple-500/10">
+                                <Target size={14} className="text-purple-500" />
+                              </div>
+                              <p className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text)' }}>Visão de Escopo</p>
+                            </div>
+                            {!isEditing && <span className="text-[8px] font-bold opacity-30 uppercase">Planejamento e Objetivos</span>}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Descrição do Escopo</p>
+                              {isEditing ? (
+                                <textarea 
+                                  value={formData.description} 
+                                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })} 
+                                  className="w-full min-h-[120px] p-4 rounded-2xl border outline-none text-sm resize-y transition-all focus:border-purple-500 shadow-inner" 
+                                  style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
+                                  placeholder="Descreva o escopo detalhado, entregáveis e limites do projeto..."
+                                />
+                              ) : (
+                                <div className="p-5 rounded-[24px] border bg-gradient-to-br from-white/[0.03] to-transparent h-fit" style={{ borderColor: 'var(--border)' }}>
+                                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium" style={{ color: 'var(--text-2)' }}>{project?.description || '(Sem descrição de escopo)'}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Considerações Importantes</p>
+                                {isEditing ? (
+                                  <textarea 
+                                    value={formData.importantConsiderations} 
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, importantConsiderations: e.target.value })} 
+                                    className="w-full h-24 p-3 rounded-xl border outline-none text-xs resize-none transition-all focus:border-purple-500" 
+                                    style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
+                                    placeholder="Regras de negócio, restrições ou observações críticas..."
+                                  />
+                                ) : (
+                                  <div className="p-4 rounded-2xl border bg-amber-500/[0.02]" style={{ borderColor: 'var(--border)' }}>
+                                    <p className="text-xs leading-relaxed italic whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{project?.importantConsiderations || '--'}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Fatores de Sucesso</p>
+                                {isEditing ? (
+                                  <textarea 
+                                    value={formData.successFactor} 
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, successFactor: e.target.value })} 
+                                    className="w-full h-24 p-3 rounded-xl border outline-none text-xs resize-none transition-all focus:border-purple-500" 
+                                    style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
+                                    placeholder="Quais critérios definem que este projeto foi bem-sucedido?"
+                                  />
+                                ) : (
+                                  <div className="p-4 rounded-2xl border bg-emerald-500/[0.02]" style={{ borderColor: 'var(--border)' }}>
+                                    <p className="text-xs leading-relaxed font-bold whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{project?.successFactor || '--'}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                       {isEditing && (
@@ -1569,7 +1644,7 @@ const ProjectDetailView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-6 self-start">
+                  <div className="lg:col-span-4 space-y-6">
                     {/* SAÚDE QUALITATIVA */}
                     {(isEditing || project?.weeklyStatusReport || project?.gapsIssues) && (
                       <div className="p-6 rounded-[32px] border shadow-sm space-y-4" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
@@ -1591,6 +1666,7 @@ const ProjectDetailView: React.FC = () => {
                               ) : <p className="text-xs font-medium" style={{ color: 'var(--danger)' }}>{project?.gapsIssues}</p>}
                             </div>
                           )}
+                          {/* Considerações e Sucesso movidos para Visão de Escopo */}
                         </div>
                       </div>
                     )}
@@ -1879,7 +1955,7 @@ const ProjectDetailView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                   {filteredTasks.length > 0 ? (
                     filteredTasks.map((task: Task) => (
                       <ProjectTaskCard

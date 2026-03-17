@@ -107,6 +107,11 @@ export async function fetchClients(): Promise<Client[]> {
       tipo_cliente: row.tipo_cliente || 'cliente_final',
       partner_id: row.partner_id ? String(row.partner_id) : undefined,
       doc_nic_ativo: row.doc_nic_ativo ?? false,
+      cnpj: (row as any).cnpj || undefined,
+      telefone: (row as any).telefone || undefined,
+      email_contato: (row as any).email_contato || undefined,
+      responsavel_interno_id: (row as any).responsavel_interno_id ? String((row as any).responsavel_interno_id) : undefined,
+      responsavel_externo: (row as any).responsavel_externo || undefined,
     } as Client;
   });
 }

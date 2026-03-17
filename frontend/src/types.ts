@@ -74,6 +74,8 @@ export interface Project {
   project_type?: 'planned' | 'continuous';
   valor_diario?: number;
   fora_do_fluxo?: boolean;
+  projectManagerId?: string;
+  responsibleUserId?: string;
 }
 
 export interface Task {
