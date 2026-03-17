@@ -63,7 +63,25 @@ export const clientService = {
             telefone: data.telefone || data.Telefone || null,
             cnpj: data.cnpj || null,
             doc_nic_ativo: data.doc_nic_ativo ?? false,
-            Criado: data.Criado || new Date().toISOString().split('T')[0]
+            Criado: data.Criado || new Date().toISOString().split('T')[0],
+            
+            // Novos campos detalhados
+            razao_social: data.razao_social || null,
+            segmento: data.segmento || null,
+            email_financeiro: data.email_financeiro || null,
+            responsavel_tecnico: data.responsavel_tecnico || null,
+            data_inicio_contrato: data.data_inicio_contrato || null,
+            data_fim_contrato: data.data_fim_contrato || null,
+            endereco_rua: data.endereco_rua || null,
+            endereco_numero: data.endereco_numero || null,
+            endereco_complemento: data.endereco_complemento || null,
+            endereco_bairro: data.endereco_bairro || null,
+            endereco_cidade: data.endereco_cidade || null,
+            endereco_estado: data.endereco_estado || null,
+            endereco_cep: data.endereco_cep || null,
+            contato_celular: data.contato_celular || null,
+            contato_whatsapp: data.contato_whatsapp || null,
+            contato_cargo: data.contato_cargo || null
         };
 
         if (payload.tipo_cliente === 'cliente_final' && !payload.partner_id) {
@@ -115,6 +133,24 @@ export const clientService = {
         if (data.telefone !== undefined) payload.telefone = data.telefone;
         if (data.cnpj !== undefined) payload.cnpj = data.cnpj;
         if (data.doc_nic_ativo !== undefined) payload.doc_nic_ativo = data.doc_nic_ativo;
+
+        // Novos campos detalhados
+        if (data.razao_social !== undefined) payload.razao_social = data.razao_social;
+        if (data.segmento !== undefined) payload.segmento = data.segmento;
+        if (data.email_financeiro !== undefined) payload.email_financeiro = data.email_financeiro;
+        if (data.responsavel_tecnico !== undefined) payload.responsavel_tecnico = data.responsavel_tecnico;
+        if (data.data_inicio_contrato !== undefined) payload.data_inicio_contrato = data.data_inicio_contrato;
+        if (data.data_fim_contrato !== undefined) payload.data_fim_contrato = data.data_fim_contrato;
+        if (data.endereco_rua !== undefined) payload.endereco_rua = data.endereco_rua;
+        if (data.endereco_numero !== undefined) payload.endereco_numero = data.endereco_numero;
+        if (data.endereco_complemento !== undefined) payload.endereco_complemento = data.endereco_complemento;
+        if (data.endereco_bairro !== undefined) payload.endereco_bairro = data.endereco_bairro;
+        if (data.endereco_cidade !== undefined) payload.endereco_cidade = data.endereco_cidade;
+        if (data.endereco_estado !== undefined) payload.endereco_estado = data.endereco_estado;
+        if (data.endereco_cep !== undefined) payload.endereco_cep = data.endereco_cep;
+        if (data.contato_celular !== undefined) payload.contato_celular = data.contato_celular;
+        if (data.contato_whatsapp !== undefined) payload.contato_whatsapp = data.contato_whatsapp;
+        if (data.contato_cargo !== undefined) payload.contato_cargo = data.contato_cargo;
 
         // Se o cliente ficar desativado, ele deve sair do parceiro (unlinking automático)
         if (payload.ativo === false) {

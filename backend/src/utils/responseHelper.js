@@ -1,3 +1,5 @@
+import { logger } from './logger.js';
+
 /**
  * responseHelper.js - Padronização de respostas da API
  * Sucesso: { success: true, data: {} }
@@ -19,7 +21,7 @@ export const sendError = (res, message, status = 400) => {
 };
 
 export const handleRouteError = (res, error, context = 'Route') => {
-    console.error(`[${context}] Erro identificado:`, error.message);
+    logger.error(`[${context}] Erro identificado: ${error.message || error}`, { context, stack: error.stack });
 
     // Erros customizados do banco podem ser tratados aqui
     if (error.code === 'PGRST116') {

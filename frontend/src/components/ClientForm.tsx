@@ -595,6 +595,45 @@ const ClientForm: React.FC = () => {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
         <form onSubmit={handleSubmit} className="w-full space-y-8">
 
+          {/* NOVO: Status e Documentação em Destaque no Topo */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-[var(--surface-2)] border-2 border-[var(--border)] rounded-[32px] shadow-sm mb-10">
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[var(--muted)] ml-1">Status da Conta</label>
+              <button
+                type="button"
+                onClick={() => setActive(!active)}
+                className={`w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-3.5 h-3.5 rounded-full ${active ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`} />
+                  <span className="font-black uppercase tracking-widest text-sm">{active ? 'Conta Ativa' : 'Conta Inativa'}</span>
+                </div>
+                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border transition-colors ${active ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'}`}>
+                  {active ? 'OK' : 'Bloqueado'}
+                </div>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[var(--muted)] ml-1">Documentação Corporativa</label>
+              <button
+                type="button"
+                onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
+                className={`w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg transition-colors ${doc_nic_ativo ? 'bg-purple-500/10 text-purple-600' : 'bg-black/5 text-muted'}`}>
+                    <FileText size={18} />
+                  </div>
+                  <span className="font-black uppercase tracking-widest text-sm">DOC. NIC</span>
+                </div>
+                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border transition-colors ${doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
+                  {doc_nic_ativo ? 'Vinculado' : 'Pendente'}
+                </div>
+              </button>
+            </div>
+          </section>
+
           {/* -- FIELDS FOR PARTNER -- */}
           {tipo_cliente === 'parceiro' && (
             <>
@@ -726,25 +765,7 @@ const ClientForm: React.FC = () => {
 
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-purple-500" />
                   <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados Contratuais</h3>
-                  {isEdit && (
-                    <div
-                      onClick={() => setActive(!active)}
-                      className={`ml-4 px-3 py-1 rounded-full cursor-pointer transition-all border flex items-center gap-2 ${active ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-white/5 border-white/10 text-white/40'}`}
-                    >
-                      <span className="text-[10px] font-black uppercase tracking-widest">{active ? 'Ativo' : 'Inativo'}</span>
-                    </div>
-                  )}
-                  {isEdit && (
-                    <div
-                      onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
-                      className={`ml-4 px-3 py-1 rounded-full cursor-pointer transition-all border flex items-center gap-2 ${doc_nic_ativo ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-white/5 border-white/10 text-white/40'}`}
-                    >
-                      <FileText className={`w-3 h-3 ${doc_nic_ativo ? 'text-primary' : 'opacity-30'}`} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">DOC. NIC</span>
-                    </div>
-                  )}
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
                   <div className="col-span-12 lg:col-span-8">
@@ -994,17 +1015,7 @@ const ClientForm: React.FC = () => {
 
               <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-blue-500" />
                   <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados Contratuais (Opcional)</h3>
-                  {isEdit && (
-                    <div
-                      onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
-                      className={`ml-4 px-3 py-1 rounded-full cursor-pointer transition-all border flex items-center gap-2 ${doc_nic_ativo ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-white/5 border-white/10 text-white/40'}`}
-                    >
-                      <FileText className={`w-3 h-3 ${doc_nic_ativo ? 'text-primary' : 'opacity-30'}`} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">DOC. NIC</span>
-                    </div>
-                  )}
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
                   <div className="col-span-12 md:col-span-6 lg:col-span-2 relative">

@@ -32,6 +32,7 @@ async function updateViews() {
             CREATE OR REPLACE VIEW v_clientes AS 
             SELECT 
                 "ID_Cliente" AS id, 
+                "ID_Cliente",
                 "NomeCliente" AS nome, 
                 "NomeCliente" AS "NomeCliente",
                 ativo, 
@@ -40,7 +41,29 @@ async function updateViews() {
                 "NewLogo" AS "new_logo",
                 contato_principal,
                 tipo_cliente,
-                partner_id
+                partner_id,
+                doc_nic_ativo,
+                cnpj,
+                email_contato,
+                telefone,
+                responsavel_interno_id,
+                responsavel_externo,
+                razao_social,
+                segmento,
+                email_financeiro,
+                responsavel_tecnico,
+                data_inicio_contrato,
+                data_fim_contrato,
+                endereco_rua,
+                endereco_numero,
+                endereco_complemento,
+                endereco_bairro,
+                endereco_cidade,
+                endereco_estado,
+                endereco_cep,
+                contato_celular,
+                contato_whatsapp,
+                contato_cargo
             FROM dim_clientes 
             WHERE deleted_at IS NULL;
             `,

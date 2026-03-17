@@ -1646,23 +1646,50 @@ const AdminDashboard: React.FC = () => {
                 <div className="p-2 rounded-xl border hidden sm:flex" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
                   <Briefcase className="w-5 h-5 text-slate-600" />
                 </div>
-                <div>
-                  <h1 className="text-base lg:text-lg font-black tracking-tight flex items-center gap-2 whitespace-nowrap" style={{ color: 'var(--text)' }}>
-                    {viewMode === 'grid' ? 'Clientes' : viewMode === 'list' ? 'Clientes -> Projetos' : 'Projetos -> Tarefas'}
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-base lg:text-xl font-black tracking-tight flex items-center gap-2 whitespace-nowrap" style={{ color: 'var(--text)' }}>
+                    {viewMode === 'grid' ? 'Ecossistema de Clientes' : viewMode === 'list' ? 'Gestão de Clientes' : 'Fluxo de Projetos'}
                     <InfoTooltip title="Visão de Gestão" content="Espaço dedicado ao acompanhamento operacional. Alterne entre as visualizações de Clientes, Projetos ou Tarefas nos ícones à direita." />
                   </h1>
-                  <div className="text-[8px] font-black uppercase tracking-widest leading-none flex items-center gap-3" style={{ color: 'var(--muted)' }}>
+                  
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
                     {searchTerm ? (
-                      <span className="text-purple-500">{filteredSortedClients.length} Encontrados</span>
+                      <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-500 text-[9px] font-black uppercase tracking-widest border border-purple-500/20">
+                        {filteredSortedClients.length} Resultados Encontrados
+                      </span>
                     ) : (
                       <>
-                        <span>{activeClients.length} Clientes • {safeProjects.length} Projetos</span>
-                        <div className="flex items-center gap-2 border-l border-[var(--border)] pl-3 ml-1">
-                          <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-slate-400" /> {safeTasks.filter(t => t.status === 'Todo').length} Pré-Proj.</span>
-                          <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-yellow-500" /> {safeTasks.filter(t => t.status === 'Review').length} Análise</span>
-                          <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-blue-500" /> {safeTasks.filter(t => t.status === 'In Progress').length} Andamento</span>
-                          <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-purple-500" /> {safeTasks.filter(t => t.status === 'Testing').length} Teste</span>
-                          <span className="flex items-center gap-1"><div className="w-1 h-1 rounded-full bg-emerald-500" /> {safeTasks.filter(t => t.status === 'Done').length} Concluído</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{activeClients.length} Clientes</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{safeProjects.length} Projetos</span>
+                        </div>
+                        
+                        <div className="w-px h-3 bg-[var(--border)] mx-1" />
+
+                        {/* STATUS PILLS */}
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10" title="Pré-Projeto">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <span className="text-[9px] font-black text-slate-500">{safeTasks.filter(t => t.status === 'Todo').length}</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-500/5 border border-yellow-500/20" title="Análise">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                            <span className="text-[9px] font-black text-yellow-600 dark:text-yellow-500">{safeTasks.filter(t => t.status === 'Review').length}</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/5 border border-blue-500/20" title="Andamento">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <span className="text-[9px] font-black text-blue-600 dark:text-blue-500">{safeTasks.filter(t => t.status === 'In Progress').length}</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/5 border border-purple-500/20" title="Teste">
+                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                            <span className="text-[9px] font-black text-purple-600 dark:text-purple-500">{safeTasks.filter(t => t.status === 'Testing').length}</span>
+                          </div>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/5 border border-emerald-500/20" title="Concluído">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500">{safeTasks.filter(t => t.status === 'Done').length}</span>
+                          </div>
                         </div>
                       </>
                     )}
@@ -1768,35 +1795,23 @@ const AdminDashboard: React.FC = () => {
                   ))}
                 </div>
 
-                {/* TOGGLE FORA DO FLUXO */}
-                <button
-                  onClick={() => {
-                    const newVal = !showForaDoFluxo;
-                    setShowForaDoFluxo(newVal);
-                    localStorage.setItem('admin_show_fora_do_fluxo', String(newVal));
-                  }}
-                  className={`p-1.5 px-2 rounded-md transition-all flex items-center gap-1.5 font-bold text-[10px] border ${showForaDoFluxo ? 'bg-purple-600/10 border-purple-600/20 text-purple-600' : 'text-[var(--muted)] border-transparent hover:bg-[var(--surface-hover)]'}`}
-                  title={showForaDoFluxo ? "Ocultar Fora do Fluxo" : "Ver Fora do Fluxo"}
-                >
-                  <FolderKanban size={13} />
-                  <span className="hidden lg:inline">{showForaDoFluxo ? 'Ocultar Fora do Fluxo' : 'Ver Fora do Fluxo'}</span>
-                </button>
-
-                {/* ACTION BUTTONS */}
-                <div className="flex items-center gap-1 shrink-0">
+                {/* ACTION BUTTONS - NEW PROMINENT STYLE */}
+                <div className="flex items-center gap-3 shrink-0 ml-4">
                   <button
                     onClick={() => navigate('/admin/projects/new')}
-                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all font-bold text-[10px] bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-hover)] shadow-sm"
+                    className="group px-3 py-2 rounded-xl flex items-center gap-2 transition-all font-black text-[10px] uppercase tracking-widest bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-hover)] shadow-sm hover:shadow-md active:scale-95"
+                    title="Novo Projeto"
                   >
-                    <Briefcase size={12} className="text-purple-600" />
-                    <span className="hidden sm:inline">Projeto</span>
+                    <Briefcase size={14} className="text-purple-600" />
+                    <span className="hidden lg:inline">Projeto</span>
                   </button>
+                  
                   <button
                     onClick={() => navigate('/admin/clients/new?tipo=cliente_final')}
-                    className="px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition-all font-bold text-[10px] bg-[var(--text)] text-[var(--bg)] hover:opacity-90"
+                    className="px-6 py-2.5 rounded-xl flex items-center gap-2.5 shadow-xl transition-all font-black text-xs uppercase tracking-widest bg-slate-950 text-white hover:bg-slate-900 hover:-translate-y-0.5 active:scale-95 border border-transparent dark:bg-white dark:text-purple-700 dark:hover:bg-slate-50 dark:border-white/10 shadow-black/10 dark:shadow-purple-500/10"
                   >
-                    <Plus size={12} />
-                    <span className="hidden sm:inline">Cliente</span>
+                    <Plus size={16} className="text-white dark:text-purple-600" />
+                    <span>Novo Cliente</span>
                   </button>
                 </div>
               </div>
