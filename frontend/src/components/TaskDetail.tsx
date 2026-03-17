@@ -17,6 +17,7 @@ import CalendarPicker from './CalendarPicker';
 import * as allocationService from '@/services/allocationService';
 import WorkingDaysModal from './WorkingDaysModal';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
+import { toUpperCase, toSentenceCase, cleanText } from '@/utils/textFormatter';
 
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -33,6 +34,17 @@ const TaskDetail: React.FC = () => {
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = (el: HTMLTextAreaElement | null) => {
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  };
+
+
   const [workingDaysModal, setWorkingDaysModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -98,6 +110,11 @@ const TaskDetail: React.FC = () => {
     link_ef: '',
     is_impediment: false
   });
+
+  useEffect(() => {
+    if (formData.description) autoResize(descriptionRef.current);
+    if (formData.notes) autoResize(notesRef.current);
+  }, [formData.description, formData.notes]);
 
   const [editingMainHours, setEditingMainHours] = useState<string | null>(null);
   const [editingMemberHours, setEditingMemberHours] = useState<Record<string, string>>({});
@@ -719,7 +736,15 @@ const TaskDetail: React.FC = () => {
                   <div className="space-y-3">
                     <div>
                       <label className={`text-[9px] font-black uppercase mb-1 block opacity-60 ${hasError('title') ? 'text-yellow-500' : ''}`}>Nome da Tarefa *</label>
-                      <input type="text" value={formData.title || ''} onChange={e => { setFormData({ ...formData, title: e.target.value }); markDirty(); }} className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('title') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`} style={{ color: 'var(--text)' }} />
+                      <input
+                        type="text"
+                        value={formData.title || ''}
+                        onChange={e => { setFormData({ ...formData, title: toUpperCase(e.target.value) }); markDirty(); }}
+                        onBlur={() => setFormData((prev: any) => ({ ...prev, title: cleanText(prev.title || '') }))}
+                        spellCheck={true}
+                        className={`w-full px-3 py-1 text-xs font-bold border rounded-lg outline-none transition-all ${hasError('title') ? 'bg-yellow-400/20 border-yellow-400/50 shadow-[0_0_10px_rgba(250,204,21,0.1)]' : 'bg-[var(--bg)] border-[var(--border)]'}`}
+                        style={{ color: 'var(--text)' }}
+                      />
                     </div>
                     <div>
                       <label className="text-[9px] font-black uppercase mb-1 block opacity-60">Status</label>
@@ -1062,9 +1087,19 @@ const TaskDetail: React.FC = () => {
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Descrição da Atividade</h4>
                   </div>
                   <textarea
+                    ref={descriptionRef}
                     value={formData.description || ''}
-                    onChange={e => { setFormData({ ...formData, description: e.target.value }); markDirty(); }}
-                    className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-indigo-500/30 leading-relaxed"
+                    onChange={e => { 
+                      setFormData({ ...formData, description: toSentenceCase(e.target.value) }); 
+                      markDirty();
+                      autoResize(e.target);
+                    }}
+                    onBlur={(e) => { 
+                      setFormData((prev: any) => ({ ...prev, description: cleanText(prev.description || '') })); 
+                      autoResize(e.target); 
+                    }}
+                    className="w-full min-h-[80px] p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-indigo-500/30 leading-relaxed overflow-hidden"
+                    spellCheck={true}
                     style={{ color: 'var(--text)' }}
                     placeholder="Instruções e detalhamento..."
                   />
@@ -1077,9 +1112,19 @@ const TaskDetail: React.FC = () => {
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500">Anotações Internas</h4>
                     </div>
                     <textarea
+                      ref={notesRef}
                       value={formData.notes || ''}
-                      onChange={e => { setFormData({ ...formData, notes: e.target.value }); markDirty(); }}
-                      className="w-full h-20 p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-amber-500/30 leading-relaxed"
+                      onChange={e => { 
+                        setFormData({ ...formData, notes: toSentenceCase(e.target.value) }); 
+                        markDirty();
+                        autoResize(e.target);
+                      }}
+                      onBlur={(e) => {
+                        setFormData((prev: any) => ({ ...prev, notes: cleanText(prev.notes || '') }));
+                        autoResize(e.target);
+                      }}
+                      className="w-full min-h-[80px] p-3 text-xs font-medium border rounded-xl bg-[var(--bg)] border-[var(--border)] outline-none transition-all focus:ring-1 focus:ring-amber-500/30 leading-relaxed overflow-hidden"
+                      spellCheck={true}
                       style={{ color: 'var(--text)' }}
                       placeholder="Observações técnicas, credenciais..."
                     />

@@ -7,12 +7,13 @@ import {
   ArrowLeft, Plus, Briefcase, CheckSquare, Clock, Edit,
   LayoutGrid, ListTodo, Filter, Trash2, Save, Upload,
   User as UserIcon, Building2, Globe, Phone, FileText, AlertTriangle, AlertCircle,
-  Search, ChevronDown, Handshake, X, Check
+  Search, ChevronDown, Handshake, X, Check, DollarSign, Mail, Calendar, CalendarDays
 } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { motion } from 'framer-motion';
 import * as CapacityUtils from '../utils/capacity';
 import type { Client, User, Project, Task, ProjectMember, TimesheetEntry } from '../types';
+import { toUpperCase, toSentenceCase, cleanText } from '../utils/textFormatter';
 
 type ViewTab = 'details' | 'projects' | 'tasks';
 
@@ -42,7 +43,23 @@ const ClientDetailsView: React.FC = () => {
     partner_id: '',
     pais: '',
     active: true,
-    doc_nic_ativo: false
+    doc_nic_ativo: false,
+    razao_social: '',
+    segmento: '',
+    email_financeiro: '',
+    responsavel_tecnico: '',
+    data_inicio_contrato: '',
+    data_fim_contrato: '',
+    endereco_rua: '',
+    endereco_numero: '',
+    endereco_complemento: '',
+    endereco_bairro: '',
+    endereco_cidade: '',
+    endereco_estado: '',
+    endereco_cep: '',
+    contato_celular: '',
+    contato_whatsapp: '',
+    contato_cargo: ''
   });
 
   // Searchable Partner Select States
@@ -101,7 +118,23 @@ const ClientDetailsView: React.FC = () => {
         partner_id: client.partner_id || '',
         pais: client.pais || '',
         active: client.active ?? true,
-        doc_nic_ativo: client.doc_nic_ativo ?? false
+        doc_nic_ativo: client.doc_nic_ativo ?? false,
+        razao_social: client.razao_social || '',
+        segmento: client.segmento || '',
+        email_financeiro: client.email_financeiro || '',
+        responsavel_tecnico: client.responsavel_tecnico || '',
+        data_inicio_contrato: client.data_inicio_contrato || '',
+        data_fim_contrato: client.data_fim_contrato || '',
+        endereco_rua: client.endereco_rua || '',
+        endereco_numero: client.endereco_numero || '',
+        endereco_complemento: client.endereco_complemento || '',
+        endereco_bairro: client.endereco_bairro || '',
+        endereco_cidade: client.endereco_cidade || '',
+        endereco_estado: client.endereco_estado || '',
+        endereco_cep: client.endereco_cep || '',
+        contato_celular: client.contato_celular || '',
+        contato_whatsapp: client.contato_whatsapp || '',
+        contato_cargo: client.contato_cargo || ''
       });
     }
   }, [client]);
@@ -224,7 +257,23 @@ const ClientDetailsView: React.FC = () => {
         telefone: formData.telefone,
         pais: formData.pais,
         active: formData.active,
-        doc_nic_ativo: formData.doc_nic_ativo
+        doc_nic_ativo: formData.doc_nic_ativo,
+        razao_social: formData.razao_social,
+        segmento: formData.segmento,
+        email_financeiro: formData.email_financeiro,
+        responsavel_tecnico: formData.responsavel_tecnico,
+        data_inicio_contrato: formData.data_inicio_contrato || null,
+        data_fim_contrato: formData.data_fim_contrato || null,
+        endereco_rua: formData.endereco_rua,
+        endereco_numero: formData.endereco_numero,
+        endereco_complemento: formData.endereco_complemento,
+        endereco_bairro: formData.endereco_bairro,
+        endereco_cidade: formData.endereco_cidade,
+        endereco_estado: formData.endereco_estado,
+        endereco_cep: formData.endereco_cep,
+        contato_celular: formData.contato_celular,
+        contato_whatsapp: formData.contato_whatsapp,
+        contato_cargo: formData.contato_cargo
       } as Partial<Client>);
 
       alert('Cliente atualizado com sucesso!');
@@ -469,6 +518,48 @@ const ClientDetailsView: React.FC = () => {
                         </div>
                       </div>
 
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--text-muted)' }}>Razão Social</label>
+                        <div className="relative group">
+                          {isEditing && (
+                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={18} />
+                          )}
+                          <input
+                            type="text"
+                            value={formData.razao_social}
+                            onChange={(e) => setFormData({ ...formData, razao_social: toUpperCase(e.target.value) })}
+                            className="w-full pl-12 pr-4 py-4 border-2 border-transparent focus:border-purple-500 rounded-2xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-xl"
+                            style={{
+                              backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
+                              color: 'var(--text)',
+                              borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
+                            }}
+                            placeholder="Nome Juridico"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--text-muted)' }}>Segmento / Indústria</label>
+                        <div className="relative group">
+                          {isEditing && (
+                            <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={18} />
+                          )}
+                          <input
+                            type="text"
+                            value={formData.segmento}
+                            onChange={(e) => setFormData({ ...formData, segmento: toSentenceCase(cleanText(e.target.value)) })}
+                            className="w-full pl-12 pr-4 py-4 border-2 border-transparent focus:border-purple-500 rounded-2xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-xl"
+                            style={{
+                              backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
+                              color: 'var(--text)',
+                              borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
+                            }}
+                            placeholder="Ex: Varejo, Tecnologia..."
+                          />
+                        </div>
+                      </div>
+
                       <div className="md:col-span-2">
                         <label className="block text-xs font-black uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--text-muted)' }}>URL da Logomarca</label>
                         <div className="flex gap-4">
@@ -523,6 +614,170 @@ const ClientDetailsView: React.FC = () => {
                           <FileText className={`w-4 h-4 ${formData.doc_nic_ativo ? 'text-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]' : 'opacity-30'}`} />
                           <span className="font-black uppercase tracking-widest text-xs">DOC. NIC</span>
                         </button>
+                      </div>
+                    </div>
+
+                    <div className="p-8 rounded-[24px] border mt-12" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                      <h4 className="text-xs font-black uppercase mb-6 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
+                        <Globe size={16} className="text-purple-500" /> Endereço e Contato Detalhado
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="md:col-span-3">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Rua / Logradouro</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_rua}
+                            onChange={(e) => setFormData({ ...formData, endereco_rua: toUpperCase(e.target.value) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Número</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_numero}
+                            onChange={(e) => setFormData({ ...formData, endereco_numero: e.target.value })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Complemento</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_complemento}
+                            onChange={(e) => setFormData({ ...formData, endereco_complemento: toSentenceCase(cleanText(e.target.value)) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Bairro</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_bairro}
+                            onChange={(e) => setFormData({ ...formData, endereco_bairro: toUpperCase(e.target.value) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Cidade</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_cidade}
+                            onChange={(e) => setFormData({ ...formData, endereco_cidade: toUpperCase(e.target.value) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>UF</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_estado}
+                            onChange={(e) => setFormData({ ...formData, endereco_estado: toUpperCase(e.target.value) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>CEP</label>
+                          <input
+                            type="text"
+                            value={formData.endereco_cep}
+                            onChange={(e) => setFormData({ ...formData, endereco_cep: e.target.value })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Celular / WhatsApp</label>
+                          <input
+                            type="text"
+                            value={formData.contato_celular}
+                            onChange={(e) => setFormData({ ...formData, contato_celular: e.target.value })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Cargo do Responsável</label>
+                          <input
+                            type="text"
+                            value={formData.contato_cargo}
+                            onChange={(e) => setFormData({ ...formData, contato_cargo: toSentenceCase(cleanText(e.target.value)) })}
+                            className="w-full px-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-8 rounded-[24px] border mt-12" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                      <h4 className="text-xs font-black uppercase mb-6 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
+                        <DollarSign size={16} className="text-purple-500" /> Dados de Contrato & Financeiro
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Email Financeiro</label>
+                          <div className="relative group">
+                            {isEditing && <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500/50" />}
+                            <input
+                              type="email"
+                              value={formData.email_financeiro}
+                              onChange={(e) => setFormData({ ...formData, email_financeiro: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                              style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                              placeholder="financeiro@empresa.com"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Responsável Técnico</label>
+                          <div className="relative group">
+                            {isEditing && <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500/50" />}
+                            <input
+                              type="text"
+                              value={formData.responsavel_tecnico}
+                              onChange={(e) => setFormData({ ...formData, responsavel_tecnico: toSentenceCase(cleanText(e.target.value)) })}
+                              className="w-full pl-12 pr-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                              style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                              placeholder="Nome do contato principal"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Início do Contrato</label>
+                          <div className="relative group">
+                            {isEditing && (
+                              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500/50" />
+                            )}
+                            <input
+                              type="date"
+                              value={formData.data_inicio_contrato}
+                              onChange={(e) => setFormData({ ...formData, data_inicio_contrato: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                              style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Fim do Contrato</label>
+                          <div className="relative group">
+                            {isEditing && (
+                              <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500/50" />
+                            )}
+                            <input
+                              type="date"
+                              value={formData.data_fim_contrato}
+                              onChange={(e) => setFormData({ ...formData, data_fim_contrato: e.target.value })}
+                              className="w-full pl-12 pr-4 py-3 border-2 focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
+                              style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -736,7 +991,7 @@ const ClientDetailsView: React.FC = () => {
                       <div className="flex items-center justify-between pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
                         <button
                           type="button"
-                          onClick={() => setItemToDelete({ id: clientId, type: 'client' })}
+                          onClick={() => setItemToDelete({ id: clientId || '', type: 'client' })}
                           className="px-6 py-3 text-red-500 hover:bg-red-500/10 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
                         >
                           Excluir Cliente

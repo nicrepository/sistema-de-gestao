@@ -18,6 +18,7 @@ import { User, Project, Client, Task, ProjectMember, TimesheetEntry, Holiday, Ab
 import { getProjectStatusByTimeline } from '../utils/projectStatus';
 import { ALL_ADMIN_ROLES } from '../constants/roles';
 import CalendarPicker from './CalendarPicker';
+import { toUpperCase, toSentenceCase, cleanText } from '../utils/textFormatter';
 
 // --- UTILS ---
 const parseSafeDate = (d: string | null | undefined) => {
@@ -143,6 +144,13 @@ const ProjectDetailView: React.FC = () => {
   const [memberAllocations, setMemberAllocations] = useState<Record<string, number>>({});
 
   // balanceAllocations removido (cálculos nas tarefas)
+
+  const autoResize = (el: HTMLElement | null) => {
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  };
 
   // --- AUTOMATION: Fill End Date based on Start Date if empty ---
   useEffect(() => {
@@ -760,7 +768,9 @@ const ProjectDetailView: React.FC = () => {
                 {isEditing ? (
                   <input
                     value={formData.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: toUpperCase(e.target.value) })}
+                    onBlur={() => setFormData(prev => ({ ...prev, name: cleanText(prev.name) }))}
+                    spellCheck={true}
                     onKeyDown={handleKeyDown}
                     className={`border-b outline-none px-2 py-1 text-xl font-bold rounded transition-colors min-w-[300px] ${!formData.name ? 'bg-yellow-500/20 border-yellow-500' : 'bg-white/10 border-white text-white'}`}
                   />
@@ -1437,8 +1447,11 @@ const ProjectDetailView: React.FC = () => {
                           {isEditing ? (
                             <textarea 
                               value={formData.description} 
-                              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
-                              className="w-full min-h-[160px] p-5 rounded-[24px] border outline-none text-sm resize-y transition-all focus:border-emerald-500 shadow-inner" 
+                              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setFormData({ ...formData, description: toSentenceCase(e.target.value) }); autoResize(e.target); }}
+                              onBlur={(e) => { setFormData(prev => ({ ...prev, description: cleanText(prev.description) })); autoResize(e.target); }}
+                              onFocus={(e) => autoResize(e.target)}
+                              spellCheck={true}
+                              className="w-full min-h-[160px] p-5 rounded-[24px] border outline-none text-sm transition-all focus:border-emerald-500 shadow-inner overflow-hidden"
                               style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
                               placeholder="Descreva o escopo detalhado, entregáveis e limites do projeto..."
                             />
@@ -1618,7 +1631,7 @@ const ProjectDetailView: React.FC = () => {
                             <div>
                               <p className="text-[9px] font-black uppercase mb-1" style={{ color: 'var(--muted)' }}>Resumo da Semana</p>
                               {isEditing ? (
-                                <textarea value={formData.weeklyStatusReport} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, weeklyStatusReport: e.target.value })} className="w-full h-20 p-2 rounded text-xs border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} placeholder="O que aconteceu esta semana?" />
+                                <textarea value={formData.weeklyStatusReport} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setFormData({ ...formData, weeklyStatusReport: toSentenceCase(e.target.value) }); autoResize(e.target); }} onBlur={(e) => { setFormData(prev => ({ ...prev, weeklyStatusReport: cleanText(prev.weeklyStatusReport) })); autoResize(e.target); }} onFocus={(e) => autoResize(e.target)} spellCheck={true} className="w-full min-h-[80px] p-2 rounded text-xs border overflow-hidden" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} placeholder="O que aconteceu esta semana?" />
                               ) : <p className="text-xs border-l-2 pl-3 py-1 rounded-r-lg" style={{ borderColor: 'var(--warning)', backgroundColor: 'var(--bg)', color: 'var(--text-2)' }}>{project?.weeklyStatusReport}</p>}
                             </div>
                           )}
@@ -1626,7 +1639,7 @@ const ProjectDetailView: React.FC = () => {
                             <div>
                               <p className="text-[9px] font-black uppercase mb-1" style={{ color: 'var(--muted)' }}>Problemas e Bloqueios</p>
                               {isEditing ? (
-                                <textarea value={formData.gapsIssues} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, gapsIssues: e.target.value })} className="w-full h-20 p-2 rounded text-xs border" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} placeholder="Ex: Acesso bloqueado, falta de doc..." />
+                                <textarea value={formData.gapsIssues} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setFormData({ ...formData, gapsIssues: toSentenceCase(e.target.value) }); autoResize(e.target); }} onBlur={(e) => { setFormData(prev => ({ ...prev, gapsIssues: cleanText(prev.gapsIssues) })); autoResize(e.target); }} onFocus={(e) => autoResize(e.target)} spellCheck={true} className="w-full min-h-[80px] p-2 rounded text-xs border overflow-hidden" style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} placeholder="Ex: Acesso bloqueado, falta de doc..." />
                               ) : <p className="text-xs font-medium" style={{ color: 'var(--danger)' }}>{project?.gapsIssues}</p>}
                             </div>
                           )}
@@ -1637,8 +1650,11 @@ const ProjectDetailView: React.FC = () => {
                               {isEditing ? (
                                 <textarea 
                                   value={formData.importantConsiderations} 
-                                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, importantConsiderations: e.target.value })} 
-                                  className="w-full h-24 p-2 rounded text-xs border" 
+                                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setFormData({ ...formData, importantConsiderations: toSentenceCase(e.target.value) }); autoResize(e.target); }} 
+                                  onBlur={(e) => { setFormData(prev => ({ ...prev, importantConsiderations: cleanText(prev.importantConsiderations) })); autoResize(e.target); }}
+                                  onFocus={(e) => autoResize(e.target)}
+                                  spellCheck={true}
+                                  className="w-full min-h-[100px] p-2 rounded text-xs border overflow-hidden" 
                                   style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
                                 />
                               ) : <p className="text-xs leading-relaxed italic whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{project?.importantConsiderations}</p>}
@@ -1651,8 +1667,11 @@ const ProjectDetailView: React.FC = () => {
                               {isEditing ? (
                                 <textarea 
                                   value={formData.successFactor} 
-                                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, successFactor: e.target.value })} 
-                                  className="w-full h-24 p-2 rounded text-xs border" 
+                                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setFormData({ ...formData, successFactor: toSentenceCase(e.target.value) }); autoResize(e.target); }} 
+                                  onBlur={(e) => { setFormData(prev => ({ ...prev, successFactor: cleanText(prev.successFactor) })); autoResize(e.target); }}
+                                  onFocus={(e) => autoResize(e.target)}
+                                  spellCheck={true}
+                                  className="w-full min-h-[100px] p-2 rounded text-xs border overflow-hidden" 
                                   style={{ backgroundColor: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }} 
                                 />
                               ) : <p className="text-xs leading-relaxed font-bold whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{project?.successFactor}</p>}

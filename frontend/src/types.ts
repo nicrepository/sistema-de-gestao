@@ -31,7 +31,7 @@ export interface Client {
   logoUrl: string;
   active?: boolean;
   Criado?: string;
-  Contrato?: string;
+  Contrato?: string; // Manter para compatibilidade legada se necessário
   pais?: string;
   contato_principal?: string;
   cnpj?: string;
@@ -42,6 +42,24 @@ export interface Client {
   responsavel_externo?: string;
   email_contato?: string;
   doc_nic_ativo?: boolean;
+
+  // Novos Campos
+  razao_social?: string;
+  segmento?: string;
+  email_financeiro?: string;
+  responsavel_tecnico?: string;
+  data_inicio_contrato?: string;
+  data_fim_contrato?: string;
+  endereco_rua?: string;
+  endereco_numero?: string;
+  endereco_complemento?: string;
+  endereco_bairro?: string;
+  endereco_cidade?: string;
+  endereco_estado?: string;
+  endereco_cep?: string;
+  contato_celular?: string;
+  contato_whatsapp?: string;
+  contato_cargo?: string;
 }
 
 export interface Project {

@@ -18,7 +18,23 @@ const CLIENT_SELECT = [
     'email_contato',
     'telefone',
     'responsavel_interno_id',
-    'responsavel_externo'
+    'responsavel_externo',
+    'razao_social',
+    'segmento',
+    'email_financeiro',
+    'responsavel_tecnico',
+    'data_inicio_contrato',
+    'data_fim_contrato',
+    'endereco_rua',
+    'endereco_numero',
+    'endereco_complemento',
+    'endereco_bairro',
+    'endereco_cidade',
+    'endereco_estado',
+    'endereco_cep',
+    'contato_celular',
+    'contato_whatsapp',
+    'contato_cargo'
 ].join(', ');
 
 export const clientRepository = {
