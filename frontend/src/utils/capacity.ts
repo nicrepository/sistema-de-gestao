@@ -215,7 +215,8 @@ export const simulateUserDailyAllocation = (
     timesheetEntries: TimesheetEntry[],
     holidays: Holiday[] = [],
     userDailyCap: number = 8,
-    absences: Absence[] = []
+    absences: Absence[] = [],
+    taskMemberAllocations: TaskMemberAllocation[] = []
 ): DayAllocation[] => {
     const allocations: DayAllocation[] = [];
     const start = new Date(startDate + 'T12:00:00');
@@ -259,17 +260,62 @@ export const simulateUserDailyAllocation = (
                     const p = allProjects.find(proj => String(proj.id) === String(t.projectId));
                     if (!p || p.active === false) return;
 
+                    // --- CALCULO DE ESFORÇO ---
+                    let totalEffort = 0;
+                    const specificAllocation = taskMemberAllocations.find(a => String(a.taskId) === String(t.id) && String(a.userId) === String(userId));
+                    const hasAnyAllocationInTask = taskMemberAllocations.some(a => String(a.taskId) === String(t.id) && a.reservedHours > 0);
+
+                    if (specificAllocation && specificAllocation.reservedHours > 0) {
+                        totalEffort = specificAllocation.reservedHours;
+                    } else if (!hasAnyAllocationInTask) {
+                        const teamIds = Array.from(new Set([t.developerId, ...(t.collaboratorIds || [])])).filter(Boolean);
+                        totalEffort = parseTimeToDecimal(String(t.estimatedHours || 0)) / (teamIds.length || 1);
+                    } else {
+                        const isMainDev = String(t.developerId) === String(userId);
+                        if (isMainDev) {
+                            const totalAllocatedToOthers = taskMemberAllocations
+                                .filter(a => String(a.taskId) === String(t.id) && String(a.userId) !== String(userId))
+                                .reduce((sum, a) => sum + (Number(a.reservedHours) || 0), 0);
+                            totalEffort = Math.max(0, parseTimeToDecimal(String(t.estimatedHours || 0)) - totalAllocatedToOthers);
+                        }
+                    }
+
+                    const reportedOnTask = timesheetEntries
+                        .filter(e => String(e.taskId) === String(t.id) && String(e.userId) === String(userId))
+                        .reduce((sum, e) => sum + (Number(e.totalHours) || 0), 0);
+
+                    if (reportedOnTask > totalEffort) {
+                        totalEffort = reportedOnTask;
+                    }
+
+                    const remainingEffort = Math.max(0, totalEffort - reportedOnTask);
+                    if (remainingEffort <= 0) return;
+
                     const tStart = t.scheduledStart || t.actualStart || p.startDate || startDate;
                     const tEnd = t.estimatedDelivery || p.estimatedDelivery || endDate;
 
-                    if (dateStr >= tStart && dateStr <= tEnd) {
-                        const totalDays = getWorkingDaysInRange(tStart, tEnd, holidays, absences.filter(a => String(a.userId) === String(userId)), userDailyCap) || 1;
-                        const hoursPerDay = (Number(t.estimatedHours) || 0) / totalDays;
+                    if (tEnd < todayStr) {
+                        // Atrasada: Joga todo o atraso para 'hoje'
+                        if (dateStr === todayStr) {
+                            if (p.project_type === 'continuous') {
+                                dayTotalContinuous += remainingEffort;
+                            } else {
+                                dayTotalPlanned += remainingEffort;
+                            }
+                        }
+                    } else {
+                        const effectiveStart = (tStart > todayStr) ? tStart : todayStr;
+                        const effectiveEnd = (tEnd > todayStr) ? tEnd : todayStr;
 
-                        if (p.project_type === 'continuous') {
-                            dayTotalContinuous += hoursPerDay;
-                        } else {
-                            dayTotalPlanned += hoursPerDay;
+                        if (dateStr >= effectiveStart && dateStr <= effectiveEnd) {
+                            const totalDays = getWorkingDaysInRange(effectiveStart, effectiveEnd, holidays, absences.filter(a => String(a.userId) === String(userId)), userDailyCap) || 1;
+                            const hoursPerDay = remainingEffort / totalDays;
+
+                            if (p.project_type === 'continuous') {
+                                dayTotalContinuous += hoursPerDay;
+                            } else {
+                                dayTotalPlanned += hoursPerDay;
+                            }
                         }
                     }
                 });

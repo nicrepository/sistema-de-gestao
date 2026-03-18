@@ -1,4 +1,4 @@
-﻿// components/TeamMemberDetail.tsx - Reestruturado: Resumo Topo + Edição Principal
+// components/TeamMemberDetail.tsx - Reestruturado: Resumo Topo + Edição Principal
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -147,7 +147,7 @@ const TeamMemberDetail: React.FC = () => {
       }
 
       const totalWorkingDays = CapacityUtils.getWorkingDaysInRange(monthStart, monthEnd, holidays || [], userAbsences, dailyMeta);
-      const calculatedTotal = dailyMeta * totalGrossWorkingDays;
+      const calculatedTotal = dailyMeta * totalWorkingDays;
 
       const heatmap = CapacityUtils.getWorkingDaysBreakdown(monthStart, monthEnd, holidays || [], userAbsences, dailyMeta);
 
@@ -639,7 +639,7 @@ const TeamMemberDetail: React.FC = () => {
                                     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
                                     const daily = CapacityUtils.simulateUserDailyAllocation(
-                                       user.id, startDate, endDate, projects, tasks, projectMembers, timesheetEntries, holidays || [], Number(String(formData.dailyAvailableHours).replace(',', '.')) || 8, absences
+                                       user.id, startDate, endDate, projects, tasks, projectMembers, timesheetEntries, holidays || [], Number(String(formData.dailyAvailableHours).replace(',', '.')) || 8, absences, taskMemberAllocations
                                     );
 
                                     return daily.map(day => {
@@ -867,7 +867,7 @@ const TeamMemberDetail: React.FC = () => {
                                           </div>
                                           <p className="text-[8px] font-bold uppercase opacity-40 mt-1 cursor-help hover:text-[var(--primary)] transition-colors" onClick={() => openWorkingDaysBreakdown('total')}>
                                              REF: {new Date(capacityMonth + '-02').toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()} |
-                                             META: <span className="underline decoration-dotted underline-offset-2">{capacityStats.totalGrossWorkingDays} DIAS × {capacityStats.dailyMeta}H = {capacityStats.calculatedTotal}H</span> {capacityStats.isCurrentMonth ? <span onClick={(e) => { e.stopPropagation(); openWorkingDaysBreakdown('residual'); }}>| SALDO: <span className="underline decoration-dotted underline-offset-2">{capacityStats.finalResidualDays} DIAS ÚTEIS</span></span> : ''}
+                                             META: <span className="underline decoration-dotted underline-offset-2">{capacityStats.totalWorkingDays} DIAS × {capacityStats.dailyMeta}H = {capacityStats.calculatedTotal}H</span> {capacityStats.isCurrentMonth ? <span onClick={(e) => { e.stopPropagation(); openWorkingDaysBreakdown('residual'); }}>| SALDO: <span className="underline decoration-dotted underline-offset-2">{capacityStats.finalResidualDays} DIAS ÚTEIS</span></span> : ''}
                                           </p>
                                        </div>
                                     </div>
