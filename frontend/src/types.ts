@@ -8,6 +8,18 @@ export type Role = 'admin' | 'administrador' | 'developer' | 'gestor' | 'gestao'
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type Impact = 'Low' | 'Medium' | 'High';
 
+export interface Organization {
+  id: string;
+  name: string;
+  logo_url?: string | null;
+  theme_primary?: string | null;
+  theme_secondary?: string | null;
+  theme_accent?: string | null;
+  theme_mode?: 'dark' | 'light' | null;
+  theme_overrides?: any | null;
+  slug?: string | null;
+}
+
 export interface User {
   id: string;
   name: string;

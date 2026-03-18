@@ -29,6 +29,7 @@ import timesheetsRoutes from "./routes/timesheets.js";
 import auditLogsRoutes from "./routes/auditLogs.js";
 import collaboratorRoutes from "./routes/collaborators.js";
 import supportRoutes from "./routes/support.js";
+import organizationRoutes from "./routes/organizationRoutes.js";
 
 const app = express();
 app.set('trust proxy', 1);
@@ -120,6 +121,7 @@ apiV1.use("/support", supportRoutes);
 apiV1.use("/sync", syncRoutes);
 apiV1.use("/notes", notesRoutes);
 apiV1.use("/audit-logs", auditLogsRoutes);
+apiV1.use("/organizations", organizationRoutes);
 
 // Allocations v1
 apiV1.get("/allocations", authMiddleware, allocationController.list);
@@ -143,6 +145,7 @@ app.use("/api/support", supportRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/audit-logs", authMiddleware, auditLogsRoutes);
+app.use("/api/organizations", organizationRoutes);
 
 // Allocations Fallback direct /api
 app.get("/api/allocations", authMiddleware, allocationController.list);

@@ -6,6 +6,7 @@ import { DataProvider } from './contexts/DataContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import AppRoutes from './routes/AppRoutes';
 import * as serviceWorkerRegistration from './utils/serviceWorkerRegistration';
+import { useOrganizationTheme } from './hooks/useOrganizationTheme';
 
 // Theme Helpers
 const getThemeKey = (userId: string) => `nic_theme_${userId}`;
@@ -34,17 +35,22 @@ export const ThemeContext = React.createContext<{
 });
 
 function AppContent() {
-    const { currentUser } = useAuth();
+    const { currentUser, organization } = useAuth();
     const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
 
-    // Carregar tema quando usuário mudar
+    // Aplica o tema dinâmico da organização (cores, gradientes e modo base)
+    useOrganizationTheme();
+
+    // Carregar preferência manual do usuário quando mudar
     useEffect(() => {
         if (currentUser?.id) {
-            const theme = loadTheme(currentUser.id);
-            setThemeMode(theme);
-            applyTheme(theme);
+            // Se a organização já definiu um modo, usamos ele como base
+            // Senão, pegamos a preferência do usuário (localStorage)
+            const baseTheme = organization?.theme_mode || loadTheme(currentUser.id);
+            setThemeMode(baseTheme as 'dark' | 'light');
+            applyTheme(baseTheme as 'dark' | 'light');
         }
-    }, [currentUser?.id]);
+    }, [currentUser?.id, organization?.theme_mode]);
 
     const toggleTheme = () => {
         if (!currentUser?.id) return;

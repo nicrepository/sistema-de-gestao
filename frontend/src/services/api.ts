@@ -174,3 +174,22 @@ export async function fetchHolidays(): Promise<any[]> {
 export async function fetchAllocations(): Promise<any[]> {
   return await apiRequest<any[]>('/allocations');
 }
+
+// =====================================================
+// ORGANIZATION & THEME FUNCTIONS
+// =====================================================
+
+export async function fetchMyOrganization(): Promise<any> {
+    return await apiRequest('/organizations/me');
+}
+
+export async function generateOrganizationTheme(orgId: string): Promise<any> {
+    return await apiRequest(`/organizations/${orgId}/theme/generate`, { method: 'POST' });
+}
+
+export async function updateOrganizationTheme(orgId: string, data: any): Promise<any> {
+    return await apiRequest(`/organizations/${orgId}/theme`, { 
+        method: 'PATCH',
+        body: JSON.stringify(data)
+    });
+}

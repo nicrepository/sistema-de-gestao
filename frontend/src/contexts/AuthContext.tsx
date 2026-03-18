@@ -1,7 +1,8 @@
 // contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback, PropsWithChildren } from 'react';
-import { User } from '@/types';
+import { User, Organization } from '@/types';
 import { supabase } from '@/services/supabaseClient';
+import { fetchMyOrganization } from '@/services/api';
 import { ALL_ADMIN_ROLES } from '@/constants/roles';
 
 interface AuthContextType {
@@ -9,6 +10,7 @@ interface AuthContextType {
     isLoading: boolean;
     authReady: boolean;
     isAdmin: boolean;
+    organization: Organization | null;
     login: (user: User, token: string) => void;
     logout: () => void;
     updateUser: (user: User) => void;
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
             return null;
         }
     });
+    const [organization, setOrganization] = useState<Organization | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [authReady, setAuthReady] = useState(false);
 
@@ -52,14 +55,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
                 // Sem sessão válida no Supabase — limpa tudo
                 const localToken = localStorage.getItem(AUTH_TOKEN_KEY);
                 if (localToken) {
-                    // Token no localStorage mas sem sessão Supabase = token velho/corrompido
                     console.warn('[Auth] Token no localStorage sem sessão Supabase. Limpando.');
                     localStorage.removeItem(AUTH_TOKEN_KEY);
                     localStorage.removeItem(USER_CACHE_KEY);
-                    setCurrentUser(null);
-                } else {
-                    setCurrentUser(null);
                 }
+                setCurrentUser(null);
+            }
+
+            // Independente de sessão (para permitir logo na tela de login por subdomínio ou cache), 
+            // tenta buscar a organização associada
+            if (localStorage.getItem(AUTH_TOKEN_KEY)) {
+              try {
+                  const org = await fetchMyOrganization();
+                  setOrganization(org);
+              } catch (err) {
+                  console.error('[Auth] Erro ao buscar organização:', err);
+              }
             }
         } catch (e) {
             console.error('[Auth] Erro ao inicializar sessão:', e);
@@ -88,10 +99,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return () => subscription.unsubscribe();
     }, [init]);
 
-    const login = (user: User, token: string) => {
+    const login = async (user: User, token: string) => {
         setCurrentUser(user);
         localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
         localStorage.setItem(AUTH_TOKEN_KEY, token);
+
+        // Busca organização pós-login
+        try {
+            const org = await fetchMyOrganization();
+            setOrganization(org);
+        } catch (err) {
+            console.error('[Auth] Erro ao buscar organização pós-login:', err);
+        }
     };
 
     const logout = () => {
@@ -117,6 +136,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
             isLoading: !authReady || isLoading,
             authReady,
             isAdmin,
+            organization,
             login,
             logout,
             updateUser
