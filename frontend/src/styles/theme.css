@@ -621,12 +621,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-color: #B8C1CC !important;
   }
 
-  /* Placeholder Colors */
-  input::placeholder,
-  textarea::placeholder {
-    color: #A0AEC0 !important;
-    opacity: 1;
-  }
+
 
   /* Opacity Adjustments */
   .opacity-30 {
@@ -659,4 +654,21 @@ html.dark {
   .opacity-60 {
     opacity: 0.6 !important;
   }
+}
+
+/* ================================================
+   GLOBAL COMPONENT OVERRIDES
+   ================================================ */
+
+/* Placeholder Styling - Ultra Soft & Discrete */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-placeholder) !important;
+  opacity: 0.25 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-placeholder) !important;
+  opacity: 0.18 !important;
 }

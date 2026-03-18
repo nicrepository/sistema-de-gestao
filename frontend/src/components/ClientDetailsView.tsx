@@ -320,7 +320,9 @@ const ClientDetailsView: React.FC = () => {
     contato_nome_2: '',
     contato_email_2: '',
     contato_celular_2: '',
-    contato_cargo_2: ''
+    contato_cargo_2: '',
+    responsavel_interno_id: '',
+    email_comercial: ''
   });
 
   // Searchable Partner Select States
@@ -393,7 +395,9 @@ const ClientDetailsView: React.FC = () => {
         contato_nome_2: client.contato_nome_2 || '',
         contato_email_2: client.contato_email_2 || '',
         contato_celular_2: client.contato_celular_2 || '',
-        contato_cargo_2: client.contato_cargo_2 || ''
+        contato_cargo_2: client.contato_cargo_2 || '',
+        responsavel_interno_id: client.responsavel_interno_id || '',
+        email_comercial: client.contato_email_1 || ''
       });
     }
   }, [client]);
@@ -614,7 +618,8 @@ const ClientDetailsView: React.FC = () => {
         contato_nome_2: formData.contato_nome_2,
         contato_email_2: formData.contato_email_2,
         contato_celular_2: formData.contato_celular_2,
-        contato_cargo_2: formData.contato_cargo_2
+        contato_cargo_2: formData.contato_cargo_2,
+        responsavel_interno_id: formData.responsavel_interno_id
       } as Partial<Client>);
 
       alert('Cliente atualizado com sucesso!');
@@ -750,601 +755,588 @@ const ClientDetailsView: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-[1500px] mx-auto space-y-8">
 
 
           {/* 2. CONTEÚDO DAS TABS */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {activeTab === 'details' && (
-              <div className="rounded-[32px] shadow-sm border p-10" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                <div className="flex items-center gap-3 mb-10 border-b pb-6" style={{ borderColor: 'var(--border)' }}>
-                  <div className="p-3 rounded-2xl text-purple-600" style={{ backgroundColor: 'var(--surface-hover)' }}>
-                    <UserIcon size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black" style={{ color: 'var(--text)' }}>Perfil Corporativo</h3>
-                    <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--muted)' }}>Gerenciamento de dados e configurações contratuais</p>
-                  </div>
-                </div>
-
-                {/* SEÇÃO DE STATUS COMPACTA - Versão Ultra Mini */}
-                <div className="flex items-center gap-2 mb-8">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-full shadow-sm">
-                    <span className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)]">Conta:</span>
-                    <button
-                      type="button"
-                      onClick={() => isEditing && setFormData({ ...formData, active: !formData.active })}
-                      disabled={!isEditing}
-                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all ${formData.active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'} ${!isEditing ? 'cursor-default' : 'hover:scale-105'}`}
-                    >
-                      <div className={`w-1 h-1 rounded-full ${formData.active ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                      <span className="font-black text-[8px] uppercase">{formData.active ? 'Ativa' : 'Off'}</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-full shadow-sm">
-                    <span className="text-[7px] font-black uppercase tracking-widest text-[var(--text-muted)]">Docs:</span>
-                    <button
-                      type="button"
-                      onClick={() => isEditing && setFormData({ ...formData, doc_nic_ativo: !formData.doc_nic_ativo })}
-                      disabled={!isEditing}
-                      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all ${formData.doc_nic_ativo ? 'bg-purple-500/10 text-purple-600' : 'bg-[var(--surface-3)] text-[var(--muted)]'} ${!isEditing ? 'cursor-default' : 'hover:scale-105'}`}
-                    >
-                      <span className="font-black text-[8px] uppercase">{formData.doc_nic_ativo ? 'OK' : 'Pend'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSave} className="space-y-8">
-                  <fieldset disabled={!isEditing} className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
-                      {(isEditing || formData.name) && (
-                        <div className="lg:col-span-2">
-                          <label className="block text-[9px] font-black uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--text-muted)' }}>Nome da Empresa</label>
-                          <div className="relative group">
-                            {isEditing && (
-                              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={16} />
-                            )}
-                            <input
-                              type="text"
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              className="w-full pl-12 pr-4 py-3 border-2 border-transparent focus:border-purple-500 rounded-xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-lg"
-                              style={{
-                                backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
-                                color: 'var(--text)',
-                                borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
-                              }}
-                            />
-                          </div>
+              <div className="space-y-6">
+                <form onSubmit={handleSave} className="space-y-6">
+                  <fieldset disabled={loading} className="space-y-8">
+                    {/* -- FIELDS FOR PARTNER -- */}
+                {formData.tipo_cliente === 'parceiro' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                    <section className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Building2 className="w-4 h-4 text-purple-500" />
+                        <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Informações Institucionais</h3>
+                      </div>
+                      <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
+                        <div className="col-span-12 md:col-span-8 lg:col-span-4">
+                          <label className="block text-[10px] font-bold mb-1 uppercase">Nome do Parceiro *</label>
+                          <input
+                            type="text"
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            disabled={!isEditing}
+                            className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-purple-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
+                            placeholder="Ex: Consultoria de Tecnologia"
+                            required
+                          />
                         </div>
-                      )}
-
-                      {(isEditing || formData.cnpj) && (
-                        <div>
-                          <label className="block text-[9px] font-black uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--text-muted)' }}>CNPJ / Identificação</label>
-                          <div className="relative group">
-                            {isEditing && (
-                              <FileText className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={16} />
-                            )}
-                            <input
-                              type="text"
-                              value={formData.cnpj}
-                              onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                              className="w-full pl-12 pr-4 py-3 border-2 border-transparent focus:border-purple-500 rounded-xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-lg"
-                              style={{
-                                backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
-                                color: 'var(--text)',
-                                borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
-                              }}
-                            />
-                          </div>
+                        <div className="col-span-12 md:col-span-4 lg:col-span-2">
+                          <label className="block text-[10px] font-bold mb-1 uppercase">CNPJ / ID</label>
+                          <input 
+                            type="text" 
+                            value={formData.cnpj} 
+                            onChange={e => setFormData({ ...formData, cnpj: e.target.value })} 
+                            disabled={!isEditing}
+                            className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-purple-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`} 
+                            placeholder="00.000.000/0001-00" 
+                          />
                         </div>
-                      )}
-
-                      {(isEditing || formData.razao_social) && (
-                        <div className="lg:col-span-2">
-                          <label className="block text-[9px] font-black uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--text-muted)' }}>Razão Social</label>
-                          <div className="relative group">
-                            {isEditing && (
-                              <FileText className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={16} />
-                            )}
-                            <input
-                              type="text"
-                              value={formData.razao_social}
-                              onChange={(e) => setFormData({ ...formData, razao_social: toUpperCase(e.target.value) })}
-                              className="w-full pl-12 pr-4 py-3 border-2 border-transparent focus:border-purple-500 rounded-xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-lg"
-                              style={{
-                                backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
-                                color: 'var(--text)',
-                                borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
-                              }}
+                        <div className="col-span-12 md:col-span-4 lg:col-span-2">
+                          <label className="block text-[10px] font-bold mb-1 uppercase">URL do Logo</label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              value={formData.logoUrl} 
+                              onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} 
+                              disabled={!isEditing}
+                              className={`flex-1 p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-purple-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`} 
+                              placeholder="https://..." 
                             />
-                          </div>
-                        </div>
-                      )}
-
-                      {(isEditing || formData.segmento) && (
-                        <div>
-                          <label className="block text-[9px] font-black uppercase tracking-[0.2em] mb-2" style={{ color: 'var(--text-muted)' }}>Segmento / Indústria</label>
-                          <div className="relative group">
-                            {isEditing && (
-                              <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--text-placeholder)' }} size={16} />
-                            )}
-                            <input
-                              type="text"
-                              value={formData.segmento}
-                              onChange={(e) => setFormData({ ...formData, segmento: toSentenceCase(cleanText(e.target.value)) })}
-                              className="w-full pl-12 pr-4 py-3 border-2 border-transparent focus:border-purple-500 rounded-xl outline-none transition-all font-bold disabled:bg-transparent disabled:px-0 disabled:border-b disabled:rounded-none disabled:text-lg"
-                              style={{
-                                backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent',
-                                color: 'var(--text)',
-                                borderBottomColor: isEditing ? 'transparent' : 'var(--border)'
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* SEÇÃO DE CONTATOS - 4 COLUNAS EM LINHA - DUAS LINHAS */}
-                    <div className="p-8 rounded-[24px] border border-dashed mt-10" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                      <h4 className="text-[10px] font-black uppercase mb-6 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
-                        <UserIcon size={14} className="text-purple-500" /> Contatos e Responsáveis no Cliente
-                      </h4>
-                      
-                      <div className="space-y-8">
-                        {/* Linha 1: Contato Principal */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Ponto de Contato Principal</label>
-                            <input
-                              type="text"
-                              value={formData.contato_nome_1}
-                              onChange={(e) => setFormData({ ...formData, contato_nome_1: toSentenceCase(e.target.value) })}
-                              placeholder="Nome do Representante"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Email do Contato</label>
-                            <input
-                              type="email"
-                              value={formData.contato_email_1}
-                              onChange={(e) => setFormData({ ...formData, contato_email_1: e.target.value })}
-                              placeholder="email@cliente.com"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Celular / WhatsApp</label>
-                            <input
-                              type="text"
-                              value={formData.contato_celular_1}
-                              onChange={(e) => setFormData({ ...formData, contato_celular_1: e.target.value })}
-                              placeholder="(11) 90000-0000"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Cargo do Responsável</label>
-                            <input
-                              type="text"
-                              value={formData.contato_cargo_1}
-                              onChange={(e) => setFormData({ ...formData, contato_cargo_1: toSentenceCase(e.target.value) })}
-                              placeholder="Ex: Gerente de Projetos"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
+                            {formData.logoUrl && <img src={formData.logoUrl} alt="Preview" className="w-10 h-10 object-contain bg-white rounded-lg border p-1" />}
                           </div>
                         </div>
 
-                        {/* Linha 2: Contato 2 */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Ponto de Contato 2</label>
-                            <input
-                              type="text"
-                              value={formData.contato_nome_2}
-                              onChange={(e) => setFormData({ ...formData, contato_nome_2: toSentenceCase(e.target.value) })}
-                              placeholder="Nome do Segundo Contato"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Email do Contato 2</label>
-                            <input
-                              type="email"
-                              value={formData.contato_email_2}
-                              onChange={(e) => setFormData({ ...formData, contato_email_2: e.target.value })}
-                              placeholder="contato2@cliente.com"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Celular 2</label>
-                            <input
-                              type="text"
-                              value={formData.contato_celular_2}
-                              onChange={(e) => setFormData({ ...formData, contato_celular_2: e.target.value })}
-                              placeholder="(11) 90000-0000"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Cargo 2</label>
-                            <input
-                              type="text"
-                              value={formData.contato_cargo_2}
-                              onChange={(e) => setFormData({ ...formData, contato_cargo_2: toSentenceCase(e.target.value) })}
-                              placeholder="Ex: Coordenador"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
+                        <div className="col-span-12 md:col-span-4 lg:col-span-2">
+                          <label className="block text-[10px] font-bold mb-1 uppercase">Status da Conta</label>
+                          <button
+                            type="button"
+                            onClick={handleToggleActive}
+                            disabled={!isEditing}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all group ${formData.active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'} ${!isEditing ? 'cursor-default opacity-70' : ''}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${formData.active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                              <span className="font-black uppercase tracking-widest text-[10px]">{formData.active ? 'Conta Ativa' : 'Conta Inativa'}</span>
+                            </div>
+                            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${formData.active ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'}`}>
+                              {formData.active ? 'OK' : 'Bloqueado'}
+                            </div>
+                          </button>
                         </div>
 
-                        {/* Linha 3: Internal / Contract Info (Incorporated as requested) */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-[var(--border)]">
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Responsável Técnico / Apoio</label>
-                            <input
-                              type="text"
-                              value={formData.responsavel_tecnico}
-                              onChange={(e) => setFormData({ ...formData, responsavel_tecnico: toSentenceCase(e.target.value) })}
-                              placeholder="Nome do Técnico"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Email Financeiro</label>
-                            <input
-                              type="email"
-                              value={formData.email_financeiro}
-                              onChange={(e) => setFormData({ ...formData, email_financeiro: e.target.value })}
-                              placeholder="financeiro@empresa.com"
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Início Vigência</label>
-                            <input
-                              type="date"
-                              value={formData.data_inicio_contrato}
-                              onChange={(e) => setFormData({ ...formData, data_inicio_contrato: e.target.value })}
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[8px] font-black uppercase mb-1.5" style={{ color: 'var(--text-muted)' }}>Fim Vigência</label>
-                            <input
-                              type="date"
-                              value={formData.data_fim_contrato}
-                              onChange={(e) => setFormData({ ...formData, data_fim_contrato: e.target.value })}
-                              className="w-full px-4 py-2 bg-[var(--input-bg)] border border-[var(--border)] rounded-xl font-bold text-sm outline-none focus:border-purple-500 disabled:bg-transparent disabled:border-none disabled:px-0"
-                            />
-                          </div>
+                        <div className="col-span-12 md:col-span-4 lg:col-span-2">
+                          <label className="block text-[10px] font-bold mb-1 uppercase">Documentação NIC</label>
+                          <button
+                            type="button"
+                            onClick={handleToggleDoc}
+                            disabled={!isEditing}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all group ${formData.doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'} ${!isEditing ? 'cursor-default opacity-70' : ''}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <FileText size={14} className={formData.doc_nic_ativo ? 'text-purple-600' : 'text-muted'} />
+                              <span className="font-black uppercase tracking-widest text-[10px]">DOC. NIC</span>
+                            </div>
+                            <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${formData.doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
+                              {formData.doc_nic_ativo ? 'Permitido' : 'Não Permitido'}
+                            </div>
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    </section>
+                  </div>
+                )}
 
-                    <div className="p-8 rounded-[24px] border border-solid mt-10" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                      <h4 className="text-[10px] font-black uppercase mb-6 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
-                        <Globe size={14} className="text-purple-500" /> Endereço e Localização
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                        <div className="md:col-span-1" ref={paisDropdownRef}>
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>País</label>
-                          <div className="relative">
-                            <div 
-                              ref={triggerRef}
-                              onClick={() => isEditing && togglePaisDropdown()}
-                              className={`flex items-center gap-3 w-full pl-4 pr-10 py-2.5 border-2 rounded-xl transition-all ${isEditing ? (isPaisDropdownOpen ? 'border-purple-500 shadow-md bg-[var(--input-bg)]' : 'border-transparent bg-[var(--input-bg)] hover:border-purple-500/30 cursor-pointer') : 'border-transparent bg-transparent border-b !border-[var(--border)] rounded-none px-0 cursor-default'}`}
-                            >
-                              {getFlagUrl(formData.pais) ? (
-                                <img 
-                                  src={getFlagUrl(formData.pais)!} 
-                                  alt={formData.pais} 
-                                  className="w-5 h-3.5 object-cover rounded-sm border border-black/10" 
-                                />
-                              ) : (
-                                <Globe className="w-4 h-4 opacity-40" />
-                              )}
-                              <span className={`font-bold text-[var(--text)] flex-1 ${!isEditing ? 'text-base' : ''}`}>
-                                {formData.pais || 'Selecionar'}
-                              </span>
-                              {isEditing && (
-                                <ChevronDown className={`w-4 h-4 transition-transform absolute right-4 ${isPaisDropdownOpen ? 'rotate-180' : ''}`} />
-                              )}
+                {/* -- FIELDS FOR CLIENT -- */}
+                {formData.tipo_cliente === 'cliente_final' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="grid grid-cols-12 gap-6">
+                      {/* Coluna Esquerda: Dados da Empresa */}
+                      <div className="col-span-12 lg:col-span-8 flex flex-col">
+                        <section className="space-y-4 flex-1 flex flex-col">
+                          <div className="flex items-center gap-2 mb-2 px-1">
+                            <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                              <Building2 className="w-4 h-4" />
                             </div>
-
-                            {isEditing && isPaisDropdownOpen && (
-                              <div className={`absolute z-[100] left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 min-w-[280px] ${dropdownDirection === 'up' ? 'bottom-[calc(100%+8px)] origin-bottom' : 'top-[calc(100%+8px)] origin-top'}`}>
-                                <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]/50">
-                                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-lg">
-                                    <Search className="w-4 h-4 opacity-40" />
-                                    <input
-                                      type="text"
-                                      placeholder="Buscar país..."
-                                      value={paisSearch}
-                                      onChange={(e) => setPaisSearch(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Escape') setIsPaisDropdownOpen(false);
-                                      }}
-                                      autoFocus
-                                      className="bg-transparent border-none outline-none text-sm w-full font-medium"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                  {filteredCountries.length > 0 ? (
-                                    filteredCountries.map((c) => (
-                                      <div
-                                        key={c.code}
-                                        onClick={() => {
-                                          setFormData({ ...formData, pais: c.name });
-                                          setPaisSearch('');
-                                          setIsPaisDropdownOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 p-3.5 cursor-pointer transition-colors hover:bg-[var(--bg)] ${formData.pais === c.name ? 'bg-[var(--bg)]' : ''}`}
-                                      >
-                                        <img 
-                                          src={`https://flagcdn.com/w40/${c.code}.png`} 
-                                          alt={c.name} 
-                                          className="w-6 h-4 object-cover rounded-sm border border-black/5" 
-                                        />
-                                        <span className={`text-[13px] ${formData.pais === c.name ? 'font-black text-purple-600' : 'font-bold'}`}>
-                                          {c.name}
-                                        </span>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="p-4 text-center text-xs text-muted">Nenhum país encontrado</div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                            <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Dados da Empresa</h3>
                           </div>
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>CEP</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_cep}
-                            onChange={(e) => setFormData({ ...formData, endereco_cep: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Cidade</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_cidade}
-                            onChange={(e) => setFormData({ ...formData, endereco_cidade: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>UF</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_estado}
-                            onChange={(e) => setFormData({ ...formData, endereco_estado: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Logradouro</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_rua}
-                            onChange={(e) => setFormData({ ...formData, endereco_rua: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Nº</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_numero}
-                            onChange={(e) => setFormData({ ...formData, endereco_numero: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Bairro</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_bairro}
-                            onChange={(e) => setFormData({ ...formData, endereco_bairro: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-
-                        <div className="md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Complemento</label>
-                          <input
-                            type="text"
-                            value={formData.endereco_complemento}
-                            onChange={(e) => setFormData({ ...formData, endereco_complemento: e.target.value })}
-                            className="w-full px-4 py-2.5 border-2 border-transparent focus:border-purple-500 rounded-xl font-bold outline-none disabled:bg-transparent disabled:border-none disabled:px-0 disabled:text-base"
-                            style={{ backgroundColor: isEditing ? 'var(--input-bg)' : 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-6 rounded-[24px] border border-dashed mt-8" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                      <h4 className="text-[10px] font-black uppercase mb-4 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
-                        <Handshake size={14} className="text-purple-500" /> Vínculos e Parcerias
-                      </h4>
-                      <div className="grid grid-cols-1 gap-6">
-                        {formData.tipo_cliente === 'cliente_final' && (
-                          <div className="relative">
-                            <label className="block text-[9px] font-black uppercase mb-2 opacity-60" style={{ color: 'var(--text-muted)' }}>Parceiros Vinculados *</label>
-
-                            <div
-                              onClick={() => isEditing && setIsDropdownOpen(true)}
-                              className={`w-full p-3 border-2 rounded-xl text-left transition-all flex flex-wrap gap-2 outline-none ${isEditing ? 'cursor-pointer border-[var(--border)] hover:border-purple-500/40 bg-[var(--input-bg)]' : 'border-none bg-transparent'}`}
-                            >
-                              {selectedPartners.length > 0 ? (
-                                selectedPartners.map((p: any) => (
-                                  <div key={p.id} className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1.5 rounded-lg shadow-sm">
-                                    {p.logoUrl ? (
-                                      <img src={p.logoUrl} alt={p.name} className="w-5 h-5 object-contain rounded border bg-white p-0.5" />
-                                    ) : (
-                                      <Handshake className="w-3.5 h-3.5 text-purple-500 opacity-50" />
-                                    )}
-                                    <span className="text-xs font-bold leading-tight">{p.name}</span>
-                                    {isEditing && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); togglePartner(p.id); }}
-                                        className="ml-1 p-0.5 hover:bg-purple-500/20 rounded-md transition-colors"
-                                      >
-                                        <X size={10} className="text-purple-500" />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))
-                              ) : (
-                                <span className={`${isEditing ? 'text-[var(--text-placeholder)]' : 'text-[var(--text)]'} font-normal text-sm py-1`}>Nenhum parceiro vinculado...</span>
-                              )}
+                          <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm flex-1">
+                            <div className="col-span-12 md:col-span-8">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Nome da Empresa *</label>
+                              <input
+                                type="text"
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl font-bold text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
+                                placeholder="Ex: Indústria XYZ S.A."
+                                required
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-4">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">CNPJ</label>
+                              <input 
+                                type="text" 
+                                value={formData.cnpj} 
+                                onChange={e => setFormData({ ...formData, cnpj: e.target.value })} 
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl font-bold text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`} 
+                                placeholder="00.000.000/0001-00" 
+                              />
                             </div>
 
-                            {/* Modal de Seleção de Parceiros */}
-                            {isEditing && isDropdownOpen && (
-                              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  onClick={() => setIsDropdownOpen(false)}
-                                  className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                                />
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  className="relative w-full max-w-2xl bg-[var(--surface)] border border-[var(--border)] rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                            <div className="col-span-12 md:col-span-4 relative">
+                              <label className="block text-[10px] font-bold text-blue-500 mb-1 uppercase">Parceiro *</label>
+                              <div className="relative" ref={dropdownRef}>
+                                <button
+                                  type="button"
+                                  onClick={() => isEditing && setIsDropdownOpen(!isDropdownOpen)}
+                                  disabled={!isEditing}
+                                  className={`w-full p-3 bg-[var(--bg)] border rounded-xl text-[var(--text)] font-bold transition-all flex items-center justify-between outline-none text-sm ${isDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-[var(--border)] hover:border-blue-500/40'} ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
                                 >
-                                  <div className="p-6 border-b border-[var(--border)] bg-[var(--bg)]/50 backdrop-blur-md flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                      <div className="p-3 bg-purple-500/10 text-purple-600 rounded-2xl">
-                                        <Handshake size={24} />
-                                      </div>
-                                      <div>
-                                        <h3 className="text-lg font-black uppercase tracking-tight">Vincular Parceiros</h3>
-                                        <p className="text-xs font-medium opacity-50">Selecione um ou mais parceiros para este cliente</p>
+                                  {selectedPartners[0] ? (
+                                    <div className="flex items-center gap-2">
+                                      {selectedPartners[0].logoUrl ? (
+                                        <img src={selectedPartners[0].logoUrl} alt={selectedPartners[0].name} className="w-6 h-6 object-contain rounded bg-white p-0.5" />
+                                      ) : (
+                                        <Handshake className="w-4 h-4 opacity-30" />
+                                      )}
+                                      <span className="truncate">{selectedPartners[0].name}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="opacity-100 font-normal text-sm italic">S/ parceiro</span>
+                                  )}
+                                  {isEditing && <ChevronDown className={`w-4 h-4 text-blue-500/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />}
+                                </button>
+
+                                {isEditing && isDropdownOpen && (
+                                  <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl z-50 overflow-hidden">
+                                    <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]">
+                                      <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500/50" />
+                                        <input
+                                          type="text"
+                                          value={searchTerm}
+                                          onChange={e => setSearchTerm(e.target.value)}
+                                          placeholder="Procurar parceiro..."
+                                          className="w-full pl-9 pr-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-medium outline-none focus:border-blue-500"
+                                          autoFocus
+                                        />
                                       </div>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsDropdownOpen(false)}
-                                      className="p-2.5 hover:bg-[var(--surface-hover)] rounded-xl transition-colors"
-                                    >
-                                      <X size={20} className="text-muted" />
-                                    </button>
-                                  </div>
-
-                                  <div className="p-6 pb-2">
-                                    <div className="relative">
-                                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500/50" />
-                                      <input
-                                        id="partner-modal-search"
-                                        name="partnerSearch"
-                                        autoFocus
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        placeholder="Procurar parceiro por nome ou CNPJ..."
-                                        className="w-full pl-12 pr-4 py-4 bg-[var(--bg)] border-2 border-[var(--border)] focus:border-purple-500 rounded-2xl text-base font-bold outline-none transition-all shadow-sm"
-                                        autoComplete="off"
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-2">
-                                    {filteredPartners.length > 0 ? (
-                                      filteredPartners.map((p: any) => {
-                                        const isSelected = (formData.partner_id || '').split(',').includes(p.id);
-                                        return (
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-1">
+                                      {filteredPartners.length > 0 ? (
+                                        filteredPartners.map((p: any) => (
                                           <button
                                             key={p.id}
                                             type="button"
-                                            onClick={() => togglePartner(p.id)}
-                                            className={`w-full p-4 flex items-center gap-4 rounded-[20px] transition-all text-left border-2 ${isSelected ? 'bg-purple-600/10 border-purple-500/30 shadow-sm' : 'hover:bg-purple-500/5 border-transparent'}`}
+                                            onClick={() => {
+                                              setFormData({ ...formData, partner_id: p.id });
+                                              setIsDropdownOpen(false);
+                                              setSearchTerm('');
+                                            }}
+                                            className={`w-full p-2 flex items-center gap-3 rounded-lg transition-all text-left ${formData.partner_id === p.id ? 'bg-blue-500 text-white' : 'hover:bg-blue-500/10'}`}
                                           >
-                                            <div className="relative">
-                                              {p.logoUrl ? (
-                                                <img src={p.logoUrl} alt={p.name} className={`w-12 h-12 object-cover rounded-xl border bg-white ${isSelected ? 'border-purple-500/50' : 'border-[var(--border)]'}`} />
-                                              ) : (
-                                                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center ${isSelected ? 'bg-purple-500/20 border-purple-500/30' : 'bg-[var(--bg)] border-[var(--border)]'}`}>
-                                                  <Handshake className={`w-6 h-6 ${isSelected ? 'text-purple-500' : 'opacity-20'}`} />
-                                                </div>
-                                              )}
-                                              {isSelected && (
-                                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center border-2 border-[var(--surface)] shadow-lg">
-                                                  <Check size={12} strokeWidth={4} />
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="flex flex-col min-w-0 flex-1">
-                                              <span className={`font-black tracking-tight text-base ${isSelected ? 'text-purple-600' : 'text-[var(--text)]'}`}>{p.name}</span>
-                                              {p.cnpj && <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{p.cnpj}</span>}
-                                            </div>
-                                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-purple-600 border-purple-600 shadow-md' : 'border-[var(--border)] bg-transparent'}`}>
-                                              {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+                                            {p.logoUrl && <img src={p.logoUrl} alt={p.name} className="w-7 h-7 object-contain rounded bg-white p-0.5" />}
+                                            <div className="flex flex-col min-w-0">
+                                              <span className="font-bold truncate text-xs">{p.name}</span>
                                             </div>
                                           </button>
-                                        );
-                                      })
-                                    ) : (
-                                      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                                        <div className="p-5 bg-purple-500/5 rounded-full mb-4">
-                                          <Search className="w-10 h-10 text-purple-500/20" />
-                                        </div>
-                                        <p className="text-base font-black text-[var(--text)] uppercase tracking-widest opacity-30">Nenhum parceiro encontrado</p>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="p-6 border-t border-[var(--border)] bg-[var(--bg)]/30 backdrop-blur-md flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                      <span className="text-xs font-black uppercase tracking-widest opacity-50">Selecionados</span>
-                                      <span className="text-lg font-black text-purple-600">{selectedPartners.length} Parceiro(s)</span>
+                                        ))
+                                      ) : (
+                                        <div className="py-2 text-center text-xs italic">Nenhum parceiro encontrado</div>
+                                      )}
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsDropdownOpen(false)}
-                                      className="px-10 py-4 rounded-2xl shadow-xl transition-all font-black text-xs uppercase tracking-widest bg-slate-950 text-white hover:bg-slate-900 hover:-translate-y-0.5 active:scale-95 border border-transparent dark:bg-white dark:text-purple-700 dark:hover:bg-slate-50 dark:border-white/10"
-                                    >
-                                      Confirmar Seleção
-                                    </button>
                                   </div>
-                                </motion.div>
+                                )}
                               </div>
-                            )}
+                            </div>
+                            
+                            <div className="col-span-12 md:col-span-4">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Segmento / Indústria</label>
+                              <input 
+                                type="text" 
+                                value={formData.segmento} 
+                                onChange={e => setFormData({ ...formData, segmento: toSentenceCase(cleanText(e.target.value)) })} 
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`} 
+                                placeholder="Ex: Varejo, Bancário..." 
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-4">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">URL do Logo</label>
+                              <div className="flex gap-2">
+                                <input 
+                                  type="text" 
+                                  value={formData.logoUrl} 
+                                  onChange={e => setFormData({ ...formData, logoUrl: e.target.value })} 
+                                  disabled={!isEditing}
+                                  className={`flex-1 p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`} 
+                                  placeholder="https://..." 
+                                />
+                                {formData.logoUrl && <img src={formData.logoUrl} alt="Preview" className="w-12 h-12 object-contain bg-white rounded-lg border p-1" />}
+                              </div>
+                            </div>
                           </div>
-                        )}
+                        </section>
+                      </div>
+
+                      {/* Coluna Direita: Gestão Interna */}
+                      <div className="col-span-12 lg:col-span-4 flex flex-col">
+                        <section className="space-y-4 flex-1 flex flex-col">
+                          <div className="flex items-center gap-2 mb-2 px-1">
+                            <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                              <UserIcon className="w-4 h-4" />
+                            </div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Gestão Interna</h3>
+                          </div>
+                          <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm flex-1 content-start">
+                            <div className="col-span-12">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Gestor da Conta / PMO Responsável</label>
+                              <select
+                                value={formData.responsavel_interno_id}
+                                onChange={e => setFormData({ ...formData, responsavel_interno_id: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
+                              >
+                                <option value="">Selecione gestor...</option>
+                                {users.filter((u: User) => u.active !== false).map((u: User) => (
+                                  <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="col-span-12 md:col-span-4">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Status</label>
+                              <button
+                                type="button"
+                                onClick={handleToggleActive}
+                                disabled={!isEditing}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all group ${formData.active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'} ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${formData.active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                  <span className="font-black uppercase tracking-tight text-[10px]">{formData.active ? 'Ativa' : 'Off'}</span>
+                                </div>
+                              </button>
+                            </div>
+
+                            <div className="col-span-12 md:col-span-8">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Documentação NIC</label>
+                              <button
+                                type="button"
+                                onClick={handleToggleDoc}
+                                disabled={!isEditing}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all group ${formData.doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'} ${!isEditing ? 'opacity-70 cursor-default' : ''}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <FileText size={14} className={formData.doc_nic_ativo ? 'text-purple-600' : 'text-muted'} />
+                                  <span className="font-black uppercase tracking-tight text-[10px]">Doc. NIC</span>
+                                </div>
+                                <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${formData.doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
+                                  {formData.doc_nic_ativo ? 'Permitido' : 'Não Permitido'}
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                        </section>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                    {/* Bloco de Contatos */}
+                    <div className="p-8 rounded-[32px] border border-dashed mb-10" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-8">
+                        <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                          <UserIcon size={14} />
+                        </div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Contatos e Responsáveis no Cliente</h4>
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-8">
+                        {/* Linha 1 */}
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5 text-[var(--text)]">Contato Principal</label>
+                          <input
+                            type="text"
+                            value={formData.contato_nome_1}
+                            onChange={(e) => setFormData({ ...formData, contato_nome_1: toSentenceCase(e.target.value) })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="Nome"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Email</label>
+                          <input
+                            type="email"
+                            value={formData.contato_email_1}
+                            onChange={(e) => setFormData({ ...formData, contato_email_1: e.target.value })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="email@exemplo.com"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Cel / WhatsApp</label>
+                          <input
+                            type="text"
+                            value={formData.contato_celular_1}
+                            onChange={(e) => setFormData({ ...formData, contato_celular_1: e.target.value })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="(11) 90000-0000"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Cargo</label>
+                          <input
+                            type="text"
+                            value={formData.contato_cargo_1}
+                            onChange={(e) => setFormData({ ...formData, contato_cargo_1: toSentenceCase(e.target.value) })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="Cargo"
+                          />
+                        </div>
+
+                        {/* Linha 2 */}
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5 text-[var(--text)]">Contato 2</label>
+                          <input
+                            type="text"
+                            value={formData.contato_nome_2}
+                            onChange={(e) => setFormData({ ...formData, contato_nome_2: toSentenceCase(e.target.value) })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="Nome 2"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Email 2</label>
+                          <input
+                            type="email"
+                            value={formData.contato_email_2}
+                            onChange={(e) => setFormData({ ...formData, contato_email_2: e.target.value })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="email2@exemplo.com"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Celular 2</label>
+                          <input
+                            type="text"
+                            value={formData.contato_celular_2}
+                            onChange={(e) => setFormData({ ...formData, contato_celular_2: e.target.value })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="(11) 90000-0000"
+                          />
+                        </div>
+                        <div className="col-span-12 md:col-span-3">
+                          <label className="block text-[9px] font-black uppercase mb-1.5">Cargo 2</label>
+                          <input
+                            type="text"
+                            value={formData.contato_cargo_2}
+                            onChange={(e) => setFormData({ ...formData, contato_cargo_2: toSentenceCase(e.target.value) })}
+                            disabled={!isEditing}
+                            className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-blue-500/50 focus:border-blue-500' : 'opacity-70 cursor-default'}`}
+                            placeholder="Cargo 2"
+                          />
+                        </div>
                       </div>
                     </div>
 
+                    {/* Bloco de Endereço */}
+                    <section className="space-y-4 mb-10">
+                      <div className="flex items-center gap-2 mb-4 px-1">
+                        <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                          <Globe className="w-4 h-4" />
+                        </div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Endereço e Localização</h3>
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-6">
+                        {/* Parte 1: Localização Básica */}
+                        <div className="col-span-12 lg:col-span-6">
+                          <div className="grid grid-cols-12 gap-5 p-7 bg-[var(--surface-2)] border border-[var(--border)] rounded-[32px] shadow-sm h-full">
+                            <div className="col-span-12 md:col-span-7" ref={paisDropdownRef}>
+                              <label className="block text-[10px] font-bold mb-1 uppercase">País</label>
+                              <div className="relative">
+                                <div 
+                                  ref={triggerRef}
+                                  onClick={() => isEditing && togglePaisDropdown()}
+                                  className={`flex items-center gap-3 w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl transition-all ${isEditing ? 'cursor-pointer hover:border-blue-500' : 'cursor-default border-transparent bg-transparent px-0'}`}
+                                >
+                                  {getFlagUrl(formData.pais) ? (
+                                    <img src={getFlagUrl(formData.pais)!} alt={formData.pais} className="w-5 h-3.5 object-cover rounded-sm" />
+                                  ) : (
+                                    <Globe className="w-4 h-4 opacity-40" />
+                                  )}
+                                  <span className={`font-bold text-[var(--text)] flex-1 text-sm truncate ${!formData.pais ? 'opacity-30' : ''}`}>
+                                    {formData.pais || 'Selecionar País'}
+                                  </span>
+                                  {isEditing && <ChevronDown size={14} className="opacity-40" />}
+                                </div>
+
+                                {isEditing && isPaisDropdownOpen && (
+                                  <div className={`absolute z-[100] left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 min-w-[280px] ${dropdownDirection === 'up' ? 'bottom-[calc(100%+8px)] origin-bottom' : 'top-[calc(100%+8px)] origin-top'}`}>
+                                    <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]/50">
+                                      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-lg">
+                                        <Search className="w-4 h-4 opacity-40" />
+                                        <input
+                                          type="text"
+                                          placeholder="Buscar país..."
+                                          value={paisSearch}
+                                          onChange={(e) => setPaisSearch(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Escape') setIsPaisDropdownOpen(false);
+                                          }}
+                                          autoFocus
+                                          className="bg-transparent border-none outline-none text-sm w-full font-medium"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                                      {filteredCountries.map((c) => (
+                                        <div
+                                          key={c.code}
+                                          onClick={() => {
+                                            setFormData({ ...formData, pais: c.name });
+                                            setPaisSearch('');
+                                            setIsPaisDropdownOpen(false);
+                                          }}
+                                          className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-[var(--bg)] ${formData.pais === c.name ? 'bg-[var(--bg)]' : ''}`}
+                                        >
+                                          <img src={`https://flagcdn.com/w40/${c.code}.png`} alt={c.name} className="w-6 h-4 object-cover rounded-sm" />
+                                          <span className={`text-sm ${formData.pais === c.name ? 'font-black text-blue-500' : 'font-bold'}`}>{c.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="col-span-12 md:col-span-5">
+                              <label className="block text-[10px] font-bold text-blue-500 mb-1 uppercase">
+                                {formData.pais === 'Brasil' ? 'CEP para Busca *' : 'Zip / Postal Code'}
+                              </label>
+                              <div className="flex gap-1.5 items-center">
+                                <input
+                                  type="text"
+                                  value={formData.endereco_cep}
+                                  onChange={(e) => setFormData({ ...formData, endereco_cep: e.target.value })}
+                                  readOnly={!isEditing}
+                                  className={`flex-1 p-2.5 bg-[var(--bg)] border rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'border-[var(--border)] focus:border-blue-500' : 'border-transparent bg-transparent px-0'}`}
+                                  placeholder="00000-000"
+                                />
+                                {isEditing && formData.pais === 'Brasil' && (
+                                  <button
+                                    type="button"
+                                    onClick={handleCepSearch}
+                                    disabled={cepLoading || formData.endereco_cep.replace(/\D/g, '').length !== 8}
+                                    className="p-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all disabled:opacity-30"
+                                  >
+                                    <Search className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="col-span-12 md:col-span-8">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Cidade</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_cidade}
+                                onChange={(e) => setFormData({ ...formData, endereco_cidade: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="Ex: São Paulo"
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-4">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">{formData.pais === 'Brasil' ? 'UF' : 'Estado'}</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_estado}
+                                onChange={(e) => setFormData({ ...formData, endereco_estado: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="EX: SP"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Parte 2: Logradouro e Detalhes */}
+                        <div className="col-span-12 lg:col-span-6">
+                          <div className="grid grid-cols-12 gap-5 p-7 bg-[var(--surface-2)] border border-[var(--border)] rounded-[32px] shadow-sm h-full font-bold">
+                            <div className="col-span-12 md:col-span-9">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Logradouro / Rua</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_rua}
+                                onChange={(e) => setFormData({ ...formData, endereco_rua: toUpperCase(e.target.value) })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="Rua, Av, Travessa..."
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-3">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Nº</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_numero}
+                                onChange={(e) => setFormData({ ...formData, endereco_numero: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="123"
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-5">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Bairro</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_bairro}
+                                onChange={(e) => setFormData({ ...formData, endereco_bairro: toUpperCase(e.target.value) })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="Ex: Centro"
+                              />
+                            </div>
+                            <div className="col-span-12 md:col-span-7">
+                              <label className="block text-[10px] font-bold mb-1 uppercase">Complemento</label>
+                              <input
+                                type="text"
+                                value={formData.endereco_complemento}
+                                onChange={(e) => setFormData({ ...formData, endereco_complemento: e.target.value })}
+                                disabled={!isEditing}
+                                className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-bold outline-none transition-all ${isEditing ? 'focus:border-blue-500 ring-2 ring-blue-500/10' : 'opacity-70 cursor-default'}`}
+                                placeholder="Bloco, Sala, Apto..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
                     {/* NOVO: Equipe Geral do Cliente */}
-                    <div className="mt-8 border-t pt-8" style={{ borderColor: 'var(--border)' }}>
-                      <h4 className="text-[10px] font-black uppercase mb-5 tracking-widest flex items-center gap-3" style={{ color: 'var(--text-muted)' }}>
-                        <div className="p-1.5 bg-blue-500/10 text-blue-600 rounded-lg"><UserIcon size={12} /></div>
-                        Equipe Envolvida
-                      </h4>
+                    <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+                      <div className="flex items-center gap-2 mb-4 px-1">
+                        <div className="p-1 px-1.5 bg-blue-500/10 text-blue-600 rounded-lg">
+                          <UserIcon size={12} />
+                        </div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                          Equipe Envolvida
+                        </h4>
+                      </div>
                       <div className="flex flex-wrap gap-2.5">
                         {Array.from(new Set([
                           ...clientProjects.flatMap((p: any) =>
@@ -1371,7 +1363,7 @@ const ClientDetailsView: React.FC = () => {
                           );
                         })}
                         {clientProjects.length === 0 && clientTasks.length === 0 && (
-                          <span className="text-[10px] font-black uppercase tracking-wider opacity-60" style={{ color: 'var(--text-muted)' }}>Nenhum colaborador alocado ainda.</span>
+                          <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Nenhum colaborador alocado ainda.</span>
                         )}
                       </div>
                     </div>
@@ -1547,7 +1539,7 @@ const ClientDetailsView: React.FC = () => {
                   })}
                   {clientProjects.length === 0 && (
                     <div className="col-span-full py-20 rounded-[32px] border-2 border-dashed text-center" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                      <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-20" style={{ color: 'var(--text)' }} />
+                      <Briefcase className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text)' }} />
                       <p className="font-bold uppercase tracking-widest text-sm" style={{ color: 'var(--text-muted)' }}>Sem projetos cadastrados</p>
                       <button onClick={() => navigate(`/admin/clients/${clientId}/projects/new`)} className="mt-4 text-purple-600 font-black text-xs uppercase hover:underline">Criar Primeiro Projeto</button>
                     </div>
@@ -1574,7 +1566,7 @@ const ClientDetailsView: React.FC = () => {
 
                 {clientProjects.filter((p: Project) => clientTasks.some((t: Task) => t.projectId === p.id)).length === 0 ? (
                   <div className="py-20 rounded-[32px] border-2 border-dashed text-center" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                    <CheckSquare className="w-12 h-12 mx-auto mb-4 opacity-20" style={{ color: 'var(--text)' }} />
+                    <CheckSquare className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text)' }} />
                     <p className="font-bold uppercase tracking-widest text-sm" style={{ color: 'var(--muted)' }}>Nenhuma tarefa ativa para este cliente</p>
                   </div>
                 ) : (
@@ -1610,7 +1602,7 @@ const ClientDetailsView: React.FC = () => {
                             <div className="flex items-center justify-between md:justify-end gap-8 px-4 border-t md:border-t-0 md:border-l pt-4 md:pt-0" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                               {/* Physical Evolution Stats */}
                               <div className="flex flex-col min-w-[100px]">
-                                <span className="text-[8px] font-black uppercase tracking-tighter mb-1 opacity-50" style={{ color: 'var(--text)' }}>Evolução Média</span>
+                                <span className="text-[8px] font-black uppercase tracking-tighter mb-1" style={{ color: 'var(--text)' }}>Evolução Média</span>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-black" style={{ color: 'var(--brand)' }}>
                                     {projectTasks.length > 0
@@ -1627,7 +1619,7 @@ const ClientDetailsView: React.FC = () => {
 
                               {/* Completion Stats */}
                               <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase tracking-tighter mb-1 opacity-50" style={{ color: 'var(--text)' }}>Concluído</span>
+                                <span className="text-[8px] font-black uppercase tracking-tighter mb-1" style={{ color: 'var(--text)' }}>Concluído</span>
                                 <div className="flex items-center gap-2">
                                   <CheckSquare className="w-3.5 h-3.5" style={{ color: 'var(--brand)' }} />
                                   <span className="text-sm font-black" style={{ color: 'var(--text)' }}>

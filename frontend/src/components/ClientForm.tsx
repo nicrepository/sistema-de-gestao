@@ -578,7 +578,7 @@ const ClientForm: React.FC = () => {
               {tipo_cliente === 'parceiro' ? <Handshake className="text-purple-500" /> : <Building2 className="text-blue-500" />}
               {isEdit ? `Editar ${tipo_cliente === 'parceiro' ? 'Parceiro' : 'Cliente'}` : `Novo ${tipo_cliente === 'parceiro' ? 'Parceiro' : 'Cliente'}`}
             </h2>
-            <p className="text-[var(--text-muted)] text-sm">
+            <p className="opacity-100 text-sm">
               {tipo_cliente === 'parceiro'
                 ? 'Cadastre uma consultoria/parceiro de negócios'
                 : 'Cadastre uma conta cliente vinculada a um parceiro'}
@@ -588,7 +588,7 @@ const ClientForm: React.FC = () => {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className={`px-6 py-2.5 text-white rounded-lg font-bold shadow hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 ${tipo_cliente === 'parceiro' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+          className={`px-6 py-2.5 text-white rounded-lg font-bold shadow hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-100 ${tipo_cliente === 'parceiro' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
         >
           <Save className="w-4 h-4" />
           {loading ? 'Salvando...' : 'Salvar Cadastro'}
@@ -598,44 +598,7 @@ const ClientForm: React.FC = () => {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
         <form onSubmit={handleSubmit} className="w-full space-y-8">
 
-          {/* NOVO: Status e Documentação em Destaque no Topo */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-[var(--surface-2)] border-2 border-[var(--border)] rounded-[32px] shadow-sm mb-10">
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[var(--muted)] ml-1">Status da Conta</label>
-              <button
-                type="button"
-                onClick={() => setActive(!active)}
-                className={`w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-3.5 h-3.5 rounded-full ${active ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]'}`} />
-                  <span className="font-black uppercase tracking-widest text-sm">{active ? 'Conta Ativa' : 'Conta Inativa'}</span>
-                </div>
-                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border transition-colors ${active ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'}`}>
-                  {active ? 'OK' : 'Bloqueado'}
-                </div>
-              </button>
-            </div>
 
-            <div className="space-y-3">
-              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[var(--muted)] ml-1">Documentação Corporativa</label>
-              <button
-                type="button"
-                onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
-                className={`w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all group ${doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg transition-colors ${doc_nic_ativo ? 'bg-purple-500/10 text-purple-600' : 'bg-black/5 text-muted'}`}>
-                    <FileText size={18} />
-                  </div>
-                  <span className="font-black uppercase tracking-widest text-sm">DOC. NIC</span>
-                </div>
-                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border transition-colors ${doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
-                  {doc_nic_ativo ? 'Vinculado' : 'Pendente'}
-                </div>
-              </button>
-            </div>
-          </section>
 
           {/* -- FIELDS FOR PARTNER -- */}
           {tipo_cliente === 'parceiro' && (
@@ -647,7 +610,7 @@ const ClientForm: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
                   <div className="col-span-12 md:col-span-4 lg:col-span-3">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Nome Fantasia (Parceiro) *</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Nome Fantasia (Parceiro) *</label>
                     <input
                       id="client-name"
                       name="name"
@@ -661,7 +624,7 @@ const ClientForm: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-12 md:col-span-2 lg:col-span-2">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">CNPJ</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">CNPJ</label>
                     <input
                       id="client-cnpj"
                       name="cnpj"
@@ -674,7 +637,7 @@ const ClientForm: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-12 md:col-span-6 lg:col-span-7">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">URL do Logo</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">URL do Logo</label>
                     <div className="flex gap-2">
                       <input
                         id="client-logo-url"
@@ -698,19 +661,53 @@ const ClientForm: React.FC = () => {
                   <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Gestão Interna (Nossa Equipe)</h3>
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div className="col-span-12 lg:col-span-4">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Gestor da Conta / PMO Responsável</label>
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Gestor da Conta / PMO Responsável</label>
                     <select
                       id="internal-manager-partner"
                       value={responsavel_interno_id}
                       onChange={e => setResponsavelInternoId(e.target.value)}
-                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-purple-500 outline-none"
+                      className="w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-purple-500 outline-none text-sm"
                     >
                       <option value="">Selecione um gestor interno...</option>
                       {users.filter((u: User) => u.active !== false).map((u: User) => (
                         <option key={u.id} value={u.id}>{u.name}</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Status da Conta</label>
+                    <button
+                      type="button"
+                      onClick={() => setActive(!active)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all group ${active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                        <span className="font-black uppercase tracking-widest text-[10px]">{active ? 'Conta Ativa' : 'Conta Inativa'}</span>
+                      </div>
+                      <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${active ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-red-500 text-white border-red-400'}`}>
+                        {active ? 'OK' : 'Bloqueado'}
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Documentação NIC</label>
+                    <button
+                      type="button"
+                      onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border transition-all group ${doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText size={14} className={doc_nic_ativo ? 'text-purple-600' : 'text-muted'} />
+                        <span className="font-black uppercase tracking-widest text-[10px]">DOC. NIC</span>
+                      </div>
+                      <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
+                        {doc_nic_ativo ? 'Permitido' : 'Não Permitido'}
+                      </div>
+                    </button>
                   </div>
                 </div>
               </section>
@@ -722,7 +719,7 @@ const ClientForm: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
                   <div className="col-span-12 md:col-span-4 lg:col-span-3">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Responsável Comercial</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Responsável Comercial</label>
                     <input
                       id="client-external-manager"
                       name="responsavelComercial"
@@ -735,7 +732,7 @@ const ClientForm: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-12 md:col-span-4 lg:col-span-3">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Email Principal (Comercial)</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Email Principal (Comercial)</label>
                     <input
                       id="client-external-email"
                       name="emailComercial"
@@ -748,497 +745,443 @@ const ClientForm: React.FC = () => {
                     />
                   </div>
                   <div className="col-span-12 md:col-span-4 lg:col-span-2">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Email Financeiro (Faturamento)</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Email Financeiro (Faturamento)</label>
                     <input type="email" value={emailFinanceiro} onChange={e => setEmailFinanceiro(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-purple-500" placeholder="financeiro@consultoria.com" />
                   </div>
                   <div className="col-span-12 md:col-span-4 lg:col-span-2">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Celular / WhatsApp</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Celular / WhatsApp</label>
                     <input type="text" value={contatoCelular1} onChange={e => setContatoCelular1(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-purple-500" placeholder="(11) 90000-0000" />
                   </div>
                   <div className="col-span-12 md:col-span-4 lg:col-span-2">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Cargo / Função</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Cargo / Função</label>
                     <input type="text" value={contatoCargo1} onChange={e => setContatoCargo1(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-purple-500" placeholder="Ex: Diretor de Tecnologia" />
                   </div>
                   <div className="col-span-12 md:col-span-4 lg:col-span-2">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Telefone Fixo (Opcional)</label>
+                    <label className="block text-xs font-bold mb-1 uppercase">Telefone Fixo (Opcional)</label>
                     <input type="text" value={telefone} onChange={e => setTelefone(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-purple-500" placeholder="(11) 0000-0000" />
                   </div>
                 </div>
               </section>
-
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados Contratuais</h3>
-                </div>
-                <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div className="col-span-12 lg:col-span-8">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Razão Social</label>
-                    <input
-                      type="text"
-                      value={razaoSocial}
-                      onChange={e => setRazaoSocial(toUpperCase(e.target.value))}
-                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-purple-500 font-bold"
-                      placeholder="Nome Juridico Completo"
-                    />
-                  </div>
-                  <div className="col-span-12 md:col-span-6 lg:col-span-2 relative">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Início Vigência</label>
-                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
-                      <input
-                        id="client-contract-start"
-                        name="contractStart"
-                        type="date"
-                        value={contractStart}
-                        onChange={e => setContractStart(e.target.value)}
-                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
-                        onClick={(e) => { e.preventDefault(); setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }}
-                        autoComplete="off"
-                      />
-                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowStartCalendar(!showStartCalendar); setShowEndCalendar(false); }} />
-                    </div>
-                    {showStartCalendar && (
-                      <CalendarPicker
-                        selectedDate={contractStart}
-                        onSelectDate={(date) => {
-                          setContractStart(date);
-                        }}
-                        onClose={() => setShowStartCalendar(false)}
-                      />
-                    )}
-                  </div>
-                  <div className="col-span-12 md:col-span-6 lg:col-span-2 relative">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Fim Vigência (Opcional)</label>
-                    <div className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl">
-                      <input
-                        id="client-contract-end"
-                        name="contractEnd"
-                        type="date"
-                        value={contractEnd}
-                        onChange={e => setContractEnd(e.target.value)}
-                        className="bg-transparent outline-none text-[var(--text)] w-full cursor-pointer"
-                        onClick={(e) => { e.preventDefault(); setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }}
-                        autoComplete="off"
-                      />
-                      <CalendarDays className="w-4 h-4 opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => { setShowEndCalendar(!showEndCalendar); setShowStartCalendar(false); }} />
-                    </div>
-                    {showEndCalendar && (
-                      <CalendarPicker
-                        selectedDate={contractEnd}
-                        onSelectDate={(date) => {
-                          setContractEnd(date);
-                        }}
-                        onClose={() => setShowEndCalendar(false)}
-                      />
-                    )}
-                  </div>
-                </div>
-              </section>
-
-
             </>
           )}
-
           {/* -- FIELDS FOR CLIENT -- */}
           {tipo_cliente === 'cliente_final' && (
-            <>
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Dados da Empresa (Cliente Final)</h3>
-                </div>
-                <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div className="col-span-12 md:col-span-8">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Nome da Empresa *</label>
-                    <input
-                      id="client-name-final"
-                      name="name"
-                      type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl font-bold text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none"
-                      placeholder="Ex: Indústria XYZ S.A."
-                      autoComplete="organization"
-                      required
-                    />
-                  </div>
-                  <div className="col-span-12 md:col-span-4">
-                    {/* VINCULO COM PARCEIRO - CRUCIAL */}
-                    <label className="block text-xs font-bold text-blue-500 mb-2 uppercase tracking-wide">Parceiro *</label>
-                    <div className="relative" ref={dropdownRef}>
-                      <button
-                        type="button"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className={`w-full p-4 bg-[var(--bg)] border-2 rounded-xl text-[var(--text)] font-bold transition-all flex items-center justify-between outline-none ${isDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-blue-500/20 hover:border-blue-500/40'}`}
-                      >
-                        {selectedPartner ? (
-                          <div className="flex items-center gap-3">
-                            {selectedPartner.logoUrl ? (
-                              <img src={selectedPartner.logoUrl} alt={selectedPartner.name} className="w-8 h-8 object-contain rounded-lg border bg-white p-1" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-lg border bg-[var(--surface)] flex items-center justify-center">
-                                <Handshake className="w-4 h-4 opacity-30" />
+            <div className="space-y-6">
+              <div className="grid grid-cols-12 gap-6">
+                {/* Coluna Esquerda: Dados da Empresa */}
+                <div className="col-span-12 lg:col-span-8 flex flex-col">
+                  <section className="space-y-4 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Dados da Empresa</h3>
+                    </div>
+                    <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm flex-1">
+                      <div className="col-span-12 md:col-span-8">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">Nome da Empresa *</label>
+                        <input
+                          id="client-name-final"
+                          name="name"
+                          type="text"
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          className="w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl font-bold text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                          placeholder="Ex: Indústria XYZ S.A."
+                          autoComplete="organization"
+                          required
+                        />
+                      </div>
+                      <div className="col-span-12 md:col-span-4">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">CNPJ</label>
+                        <input type="text" value={cnpj} onChange={e => setCnpj(e.target.value)} className="w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl font-bold text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="00.000.000/0001-00" />
+                      </div>
+
+                      <div className="col-span-12 md:col-span-4 relative">
+                        <label className="block text-[10px] font-bold text-blue-500 mb-1 uppercase">Parceiro *</label>
+                        <div className="relative" ref={dropdownRef}>
+                          <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className={`w-full p-3 bg-[var(--bg)] border rounded-xl text-[var(--text)] font-bold transition-all flex items-center justify-between outline-none text-sm ${isDropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-[var(--border)] hover:border-blue-500/40'}`}
+                          >
+                            {selectedPartner ? (
+                              <div className="flex items-center gap-2">
+                                {selectedPartner.logoUrl ? (
+                                  <img src={selectedPartner.logoUrl} alt={selectedPartner.name} className="w-6 h-6 object-contain rounded bg-white p-0.5" />
+                                ) : (
+                                  <Handshake className="w-4 h-4 opacity-30" />
+                                )}
+                                <span className="truncate">{selectedPartner.name}</span>
                               </div>
-                            )}
-                            <span className="truncate">{selectedPartner.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[var(--text-muted)] font-normal italic">selecionar</span>
-                        )}
-                        <ChevronDown className={`w-5 h-5 text-blue-500/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {isDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-3 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                          <div className="p-4 border-b border-[var(--border)] bg-[var(--bg)]/50 backdrop-blur-sm sticky top-0">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500/50" />
-                              <input
-                                id="partner-search"
-                                name="partnerSearch"
-                                autoFocus
-                                type="text"
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                placeholder="Procurar parceiro por nome..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-sm font-medium outline-none focus:border-blue-500"
-                                autoComplete="off"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="max-h-[320px] overflow-y-auto custom-scrollbar p-2">
-                            {filteredPartners.length > 0 ? (
-                              filteredPartners.map((p: Client) => (
-                                <button
-                                  key={p.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setPartnerId(p.id);
-                                    setIsDropdownOpen(false);
-                                    setSearchTerm('');
-                                  }}
-                                  className={`w-full p-3 flex items-center gap-4 rounded-xl transition-all text-left ${partner_id === p.id ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'hover:bg-blue-500/10'}`}
-                                >
-                                  {p.logoUrl ? (
-                                    <img src={p.logoUrl} alt={p.name} className={`w-10 h-10 object-contain rounded-lg border p-1.5 bg-white ${partner_id === p.id ? 'border-transparent' : ''}`} />
-                                  ) : (
-                                    <div className={`w-10 h-10 rounded-lg border flex items-center justify-center ${partner_id === p.id ? 'bg-white/20 border-transparent' : 'bg-[var(--bg)]'}`}>
-                                      <Handshake className={`w-5 h-5 ${partner_id === p.id ? 'text-white' : 'opacity-20'}`} />
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="font-bold truncate text-sm">{p.name}</span>
-                                    {p.cnpj && <span className={`text-[10px] uppercase tracking-wider opacity-60 ${partner_id === p.id ? 'text-blue-50' : ''}`}>{p.cnpj}</span>}
-                                  </div>
-                                </button>
-                              ))
                             ) : (
-                              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                                <div className="p-3 bg-red-50 rounded-full mb-3">
-                                  <Search className="w-6 h-6 text-red-500 opacity-50" />
+                              <span className="opacity-100 font-normal text-sm italic">Clique para selecionar...</span>
+                            )}
+                            <ChevronDown className={`w-4 h-4 text-blue-500/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isDropdownOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl z-50 overflow-hidden">
+                              <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]">
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500/50" />
+                                  <input
+                                    id="partner-search"
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    placeholder="Procurar parceiro..."
+                                    className="w-full pl-9 pr-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-medium outline-none focus:border-blue-500"
+                                    autoFocus
+                                  />
                                 </div>
-                                <p className="text-sm font-bold text-[var(--text-title)]">Nenhum parceiro encontrado</p>
-                                <p className="text-xs text-[var(--text-muted)] mt-1">Tente buscar por outro termo ou nome</p>
                               </div>
-                            )}
-                          </div>
+                              <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-1">
+                                {filteredPartners.length > 0 ? (
+                                  filteredPartners.map((p: Client) => (
+                                    <button
+                                      key={p.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setPartnerId(p.id);
+                                        setIsDropdownOpen(false);
+                                        setSearchTerm('');
+                                      }}
+                                      className={`w-full p-2 flex items-center gap-3 rounded-lg transition-all text-left ${partner_id === p.id ? 'bg-blue-500 text-white' : 'hover:bg-blue-500/10'}`}
+                                    >
+                                      {p.logoUrl && <img src={p.logoUrl} alt={p.name} className="w-7 h-7 object-contain rounded bg-white p-0.5" />}
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="font-bold truncate text-xs">{p.name}</span>
+                                      </div>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <div className="py-2 text-center text-xs italic">Nenhum parceiro encontrado</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
+                      
+                      <div className="col-span-12 md:col-span-4">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">Segmento / Indústria</label>
+                        <input type="text" value={segmento} onChange={e => setSegmento(toSentenceCase(cleanText(e.target.value)))} className="w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Ex: Varejo, Bancário..." />
+                      </div>
+                      <div className="col-span-12 md:col-span-4">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">URL do Logo</label>
+                        <div className="flex gap-2">
+                          <input type="text" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} className="flex-1 p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="https://..." />
+                          {logoUrl && <img src={logoUrl} alt="Preview" className="w-12 h-12 object-contain bg-white rounded-lg border p-1" />}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-5">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Segmento / Indústria</label>
-                    <input type="text" value={segmento} onChange={e => setSegmento(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Varejo, Bancário..." />
-                  </div>
-                  <div className="col-span-12 md:col-span-3">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">CNPJ</label>
-                    <input type="text" value={cnpj} onChange={e => setCnpj(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.000.000/0001-00" />
-                  </div>
-                  <div className="col-span-12 md:col-span-4">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">URL do Logo</label>
-                    <div className="flex gap-2">
-                       <input type="text" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} className="flex-1 p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://..." />
-                       {logoUrl && <img src={logoUrl} alt="Preview" className="w-12 h-12 object-contain bg-white rounded-lg border p-1" />}
-                    </div>
-                  </div>
+                  </section>
                 </div>
-              </section>
+
+                {/* Coluna Direita: Gestão Interna */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col">
+                  <section className="space-y-4 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                      <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Gestão Interna</h3>
+                    </div>
+                    <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm flex-1 content-start">
+                      <div className="col-span-12">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">Gestor da Conta / PMO Responsável</label>
+                        <select
+                          id="internal-manager-client"
+                          value={responsavel_interno_id}
+                          onChange={e => setResponsavelInternoId(e.target.value)}
+                          className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] font-bold focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        >
+                          <option value="">Selecione gestor...</option>
+                          {users.filter((u: User) => u.active !== false).map((u: User) => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-span-12 md:col-span-4">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">Status</label>
+                        <button
+                          type="button"
+                          onClick={() => setActive(!active)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all group ${active ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600' : 'border-red-500/30 bg-red-500/5 text-red-600'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                            <span className="font-black uppercase tracking-tight text-[10px]">{active ? 'Ativa' : 'Off'}</span>
+                          </div>
+                        </button>
+                      </div>
+
+                      <div className="col-span-12 md:col-span-8">
+                        <label className="block text-[10px] font-bold mb-1 uppercase">Documentação NIC</label>
+                        <button
+                          type="button"
+                          onClick={() => setDoc_nic_ativo(!doc_nic_ativo)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all group ${doc_nic_ativo ? 'border-purple-500/30 bg-purple-500/5 text-purple-600' : 'border-[var(--border)] bg-[var(--surface-3)] text-[var(--muted)] hover:border-purple-500/20'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText size={14} className={doc_nic_ativo ? 'text-purple-600' : 'text-muted'} />
+                            <span className="font-black uppercase tracking-tight text-[10px]">Doc. NIC</span>
+                          </div>
+                          <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border transition-colors ${doc_nic_ativo ? 'bg-purple-500 text-white border-purple-400' : 'bg-[var(--border)] text-muted border-[var(--border)]'}`}>
+                            {doc_nic_ativo ? 'Permitido' : 'Não Permitido'}
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
 
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserIcon className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Gestão Interna (Nossa Equipe)</h3>
-                </div>
-                <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-                  <div className="col-span-12 lg:col-span-4">
-                    <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Gestor da Conta / PMO Responsável</label>
-                    <select
-                      id="internal-manager-client"
-                      value={responsavel_interno_id}
-                      onChange={e => setResponsavelInternoId(e.target.value)}
-                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="">Selecione um gestor interno...</option>
-                      {users.filter((u: User) => u.active !== false).map((u: User) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className="p-1 px-2 bg-blue-500/10 text-blue-600 rounded-lg">
+                    <UserIcon className="w-4 h-4" />
                   </div>
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserIcon className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Contatos e Responsáveis no Cliente</h3>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-600">Contatos e Responsáveis no Cliente</h3>
                 </div>
                 <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
                   {/* Linha Contato 1 */}
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Nome Contato 1</label>
+                    <label className="block text-[10px] font-black uppercase mb-1 text-[var(--text)]">Nome Contato 1</label>
                     <input type="text" value={contatoNome1} onChange={e => setContatoNome1(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="Contato Principal" />
                   </div>
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Email Contato 1</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Email Contato 1</label>
                     <input type="email" value={contatoEmail1} onChange={e => setContatoEmail1(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="email@exemplo.com" />
                   </div>
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Celular 1</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Celular 1</label>
                     <input type="text" value={contatoCelular1} onChange={e => setContatoCelular1(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="(11) 90000-0000" />
                   </div>
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Cargo 1</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Cargo 1</label>
                     <input type="text" value={contatoCargo1} onChange={e => setContatoCargo1(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="Gerente, Diretor..." />
                   </div>
 
                   {/* Linha Contato 2 */}
                   <div className="col-span-12 md:col-span-3 mt-2">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Nome Contato 2</label>
+                    <label className="block text-[10px] font-black uppercase mb-1 text-[var(--text)]">Nome Contato 2</label>
                     <input type="text" value={contatoNome2} onChange={e => setContatoNome2(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="Contato Secundário" />
                   </div>
                   <div className="col-span-12 md:col-span-3 mt-2">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Email Contato 2</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Email Contato 2</label>
                     <input type="email" value={contatoEmail2} onChange={e => setContatoEmail2(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="email2@exemplo.com" />
                   </div>
                   <div className="col-span-12 md:col-span-3 mt-2">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Celular 2</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Celular 2</label>
                     <input type="text" value={contatoCelular2} onChange={e => setContatoCelular2(e.target.value)} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="(11) 90000-0000" />
                   </div>
                   <div className="col-span-12 md:col-span-3 mt-2">
-                    <label className="block text-[10px] font-black uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Cargo 2</label>
+                    <label className="block text-[10px] font-black uppercase mb-1">Cargo 2</label>
                     <input type="text" value={contatoCargo2} onChange={e => setContatoCargo2(toSentenceCase(cleanText(e.target.value)))} className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 font-bold" placeholder="Analista, Coordenador..." />
                   </div>
                 </div>
               </section>
-
-
-
-            </>
+            </div>
           )}
 
           <section className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Globe className={`w-4 h-4 ${tipo_cliente === 'parceiro' ? 'text-purple-500' : 'text-blue-500'}`} />
-              <h3 className="text-xs font-black uppercase tracking-widest text-[var(--muted)]">Endereço Completo</h3>
-            </div>
-            <div className="grid grid-cols-12 gap-6 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
-               {/* País Primeiro */}
-              <div className="col-span-12 md:col-span-4" ref={paisDropdownRef}>
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">País</label>
-                <div className="relative">
-                  <div 
-                    ref={triggerRef}
-                    onClick={togglePaisDropdown}
-                    className={`flex items-center gap-3 w-full p-4 bg-[var(--bg)] border-2 rounded-xl cursor-pointer transition-all ${isPaisDropdownOpen ? (tipo_cliente === 'parceiro' ? 'border-purple-500 shadow-md' : 'border-blue-500 shadow-md') : 'border-[var(--border)]'} hover:bg-[var(--surface)]`}
-                  >
-                    {getFlagUrl(pais) ? (
-                      <img 
-                        src={getFlagUrl(pais)!} 
-                        alt={pais} 
-                        className="w-6 h-4 object-cover rounded-sm shadow-sm" 
-                      />
-                    ) : (
-                      <Globe className="w-5 h-5 opacity-40" />
-                    )}
-                    <span className={`font-extrabold text-[var(--text)] flex-1 ${!pais ? 'opacity-30' : ''}`}>
-                      {pais || 'Selecionar País'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${isPaisDropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
-
-                  {isPaisDropdownOpen && (
-                    <div className={`absolute z-[100] left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 min-w-[280px] ${dropdownDirection === 'up' ? 'bottom-[calc(100%+8px)] origin-bottom' : 'top-[calc(100%+8px)] origin-top'}`}>
-                      <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]/50">
-                        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-lg">
-                          <Search className="w-4 h-4 opacity-40" />
-                          <input
-                            type="text"
-                            placeholder="Buscar país..."
-                            value={paisSearch}
-                            onChange={(e) => setPaisSearch(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') setIsPaisDropdownOpen(false);
-                            }}
-                            autoFocus
-                            className="bg-transparent border-none outline-none text-sm w-full font-medium"
-                          />
-                        </div>
-                      </div>
-                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                        {filteredCountries.length > 0 ? (
-                          filteredCountries.map((c) => (
-                            <div
-                              key={c.code}
-                              onClick={() => {
-                                setPais(c.name);
-                                setPaisSearch('');
-                                setIsPaisDropdownOpen(false);
-                              }}
-                              className={`flex items-center gap-3 p-4 cursor-pointer transition-colors hover:bg-[var(--bg)] ${pais === c.name ? 'bg-[var(--bg)]' : ''}`}
-                            >
-                              <img 
-                                src={`https://flagcdn.com/w40/${c.code}.png`} 
-                                alt={c.name} 
-                                className="w-6 h-4 object-cover rounded-sm" 
-                              />
-                              <span className={`text-sm ${pais === c.name ? 'font-black text-blue-500' : 'font-bold'}`}>
-                                {c.name}
-                              </span>
-                              {pais === c.name && <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold">
-                            Nenhum país encontrado
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <div className={`p-1 px-2 rounded-lg ${tipo_cliente === 'parceiro' ? 'bg-purple-500/10 text-purple-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                <Globe className="w-4 h-4" />
               </div>
+              <h3 className={`text-xs font-black uppercase tracking-widest ${tipo_cliente === 'parceiro' ? 'text-purple-600' : 'text-blue-600'}`}>Endereço Completo</h3>
+            </div>
 
-              {/* CEP / Zip Code - Somente Brasil */}
-              {pais === 'Brasil' ? (
-                <div className="col-span-12 md:col-span-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className={`block text-xs font-bold mb-1 uppercase ${tipo_cliente === 'parceiro' ? 'text-purple-500' : 'text-blue-500'}`}>
-                    CEP para Busca *
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-1 relative">
-                      <input 
-                        type="text" 
-                        value={enderecoCep} 
-                        onChange={e => setEnderecoCep(e.target.value)} 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleCepSearch();
-                          }
-                        }}
-                        className={`w-full p-4 bg-[var(--bg)] border-2 rounded-xl text-[var(--text)] outline-none font-bold transition-all ${tipo_cliente === 'parceiro' ? 'border-purple-500/20 focus:border-purple-500' : 'border-blue-500/20 focus:border-blue-500'}`} 
-                        placeholder="00000-000" 
-                      />
-                      {cepLoading && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="grid grid-cols-12 gap-6">
+              {/* Parte 1: Localização Básica */}
+              <div className="col-span-12 lg:col-span-6">
+                <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm h-full font-bold">
+                  {/* País */}
+                  <div className="col-span-12 md:col-span-7" ref={paisDropdownRef}>
+                    <label className="block text-[10px] font-bold mb-1 uppercase">País</label>
+                    <div className="relative">
+                      <div 
+                        ref={triggerRef}
+                        onClick={togglePaisDropdown}
+                        className={`flex items-center gap-3 w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl cursor-pointer transition-all ${isPaisDropdownOpen ? (tipo_cliente === 'parceiro' ? 'border-purple-500' : 'border-blue-500') : ''} hover:bg-[var(--surface-hover)]`}
+                      >
+                        {getFlagUrl(pais) ? (
+                          <img src={getFlagUrl(pais)!} alt={pais} className="w-5 h-3.5 object-cover rounded-sm" />
+                        ) : (
+                          <Globe className="w-4 h-4 opacity-40" />
+                        )}
+                        <span className={`font-bold text-[var(--text)] flex-1 text-sm truncate ${!pais ? 'opacity-30' : ''}`}>
+                          {pais || 'Selecionar País'}
+                        </span>
+                        <ChevronDown size={14} className="opacity-40" />
+                      </div>
+
+                      {isPaisDropdownOpen && (
+                        <div className={`absolute z-[100] left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 min-w-[280px] ${dropdownDirection === 'up' ? 'bottom-[calc(100%+8px)] origin-bottom' : 'top-[calc(100%+8px)] origin-top'}`}>
+                          <div className="p-3 border-b border-[var(--border)] bg-[var(--bg)]/50">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-lg">
+                              <Search className="w-4 h-4 opacity-40" />
+                              <input
+                                type="text"
+                                placeholder="Buscar país..."
+                                value={paisSearch}
+                                onChange={(e) => setPaisSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') setIsPaisDropdownOpen(false);
+                                }}
+                                autoFocus
+                                className="bg-transparent border-none outline-none text-sm w-full font-medium"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+                            {filteredCountries.map((c) => (
+                              <div
+                                key={c.code}
+                                onClick={() => {
+                                  setPais(c.name);
+                                  setPaisSearch('');
+                                  setIsPaisDropdownOpen(false);
+                                }}
+                                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors hover:bg-[var(--bg)] ${pais === c.name ? 'bg-[var(--bg)]' : ''}`}
+                              >
+                                <img src={`https://flagcdn.com/w40/${c.code}.png`} alt={c.name} className="w-6 h-4 object-cover rounded-sm" />
+                                <span className={`text-sm ${pais === c.name ? 'font-black text-blue-500' : 'font-bold'}`}>{c.name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleCepSearch}
-                      disabled={cepLoading || enderecoCep.replace(/\D/g, '').length !== 8}
-                      className={`px-6 py-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-sm flex items-center gap-2 disabled:opacity-30 ${tipo_cliente === 'parceiro' ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                    >
-                      <Search className="w-4 h-4" />
-                      Pesquisar
-                    </button>
-                    {cepError && <span className="text-[10px] text-red-500 font-bold uppercase ml-2">{cepError}</span>}
+                  </div>
+
+                  {/* CEP */}
+                  <div className="col-span-12 md:col-span-5">
+                    <label className={`block text-[10px] font-bold mb-1 uppercase ${tipo_cliente === 'parceiro' ? 'text-purple-500' : 'text-blue-500'}`}>
+                      {pais === 'Brasil' ? 'CEP para Busca *' : 'Zip / Postal Code'}
+                    </label>
+                    <div className="flex gap-1.5 items-center">
+                      <div className="flex-1 relative">
+                        <input 
+                          type="text" 
+                          value={enderecoCep} 
+                          onChange={e => setEnderecoCep(e.target.value)} 
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && pais === 'Brasil') {
+                              e.preventDefault();
+                              handleCepSearch();
+                            }
+                          }}
+                          className={`w-full p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none font-bold text-sm`} 
+                          placeholder="00000-000" 
+                        />
+                        {cepLoading && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      {pais === 'Brasil' && (
+                        <button
+                          type="button"
+                          onClick={handleCepSearch}
+                          disabled={cepLoading || enderecoCep.replace(/\D/g, '').length !== 8}
+                          className={`p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center disabled:opacity-30 ${tipo_cliente === 'parceiro' ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                        >
+                          <Search className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+
+                  {/* Cidade */}
+                  <div className="col-span-12 md:col-span-8">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Cidade</label>
+                    <input 
+                      type="text" 
+                      value={enderecoCidade} 
+                      onChange={e => setEnderecoCidade(toUpperCase(e.target.value))} 
+                      className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'}`} 
+                      placeholder="Ex: São Paulo" 
+                      readOnly={isAddressFromCep}
+                    />
+                  </div>
+
+                  {/* Estado / UF */}
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">{pais === 'Brasil' ? 'UF' : 'Estado'}</label>
+                    <input 
+                      type="text" 
+                      value={enderecoEstado} 
+                      onChange={e => setEnderecoEstado(toUpperCase(e.target.value))} 
+                      className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'}`} 
+                      placeholder="Ex: SP" 
+                      readOnly={isAddressFromCep}
+                    />
                   </div>
                 </div>
-              ) : (
-                /* Espaçador para manter o layout estável em endereços internacionais */
-                <div className="hidden md:block md:col-span-8"></div>
-              )}
-
-              {/* Campos sempre visíveis */}
-              <div className="col-span-12 md:col-span-3 lg:col-span-2">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">
-                  {pais === 'Brasil' ? 'Estado (UF)' : 'Estado / Província'}
-                </label>
-                 <input 
-                  type="text" 
-                  value={enderecoEstado} 
-                  onChange={e => setEnderecoEstado(toUpperCase(e.target.value))} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'} ${tipo_cliente === 'parceiro' && !isAddressFromCep ? 'focus:border-purple-500' : ''}`} 
-                  placeholder="Ex: SP" 
-                  readOnly={isAddressFromCep}
-                />
               </div>
 
-              <div className="col-span-12 md:col-span-5 lg:col-span-4">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Cidade</label>
-                <input 
-                  type="text" 
-                  value={enderecoCidade} 
-                  onChange={e => setEnderecoCidade(toUpperCase(e.target.value))} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'} ${tipo_cliente === 'parceiro' && !isAddressFromCep ? 'focus:border-purple-500' : ''}`} 
-                  placeholder="Ex: São Paulo" 
-                  readOnly={isAddressFromCep}
-                />
-              </div>
+              {/* Parte 2: Logradouro e Complementos */}
+              <div className="col-span-12 lg:col-span-6">
+                <div className="grid grid-cols-12 gap-5 p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm h-full font-bold">
+                  {/* Logradouro */}
+                  <div className="col-span-12 md:col-span-9">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Logradouro / Rua</label>
+                    <input 
+                      type="text" 
+                      value={enderecoRua} 
+                      onChange={e => setEnderecoRua(toUpperCase(e.target.value))} 
+                      className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all text-sm ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'}`} 
+                      placeholder="Rua, Av, Travessa..." 
+                      readOnly={isAddressFromCep}
+                    />
+                  </div>
 
-              <div className="col-span-12 md:col-span-4 lg:col-span-6">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">
-                  {pais === 'Brasil' ? 'Bairro' : 'Bairro / Distrito'}
-                </label>
-                <input 
-                  type="text" 
-                  value={enderecoBairro} 
-                  onChange={e => setEnderecoBairro(toUpperCase(e.target.value))} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'} ${tipo_cliente === 'parceiro' && !isAddressFromCep ? 'focus:border-purple-500' : ''}`} 
-                  placeholder="Ex: Centro" 
-                  readOnly={isAddressFromCep}
-                />
-              </div>
+                  {/* Número */}
+                  <div className="col-span-12 md:col-span-3">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Nº</label>
+                    <input 
+                      type="text" 
+                      value={enderecoNumero} 
+                      onChange={e => setEnderecoNumero(e.target.value)} 
+                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none font-bold focus:border-blue-500 text-sm" 
+                      placeholder="123" 
+                    />
+                  </div>
 
-              <div className="col-span-12 md:col-span-9 lg:col-span-10">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Logradouro / Rua</label>
-                <input 
-                  type="text" 
-                  value={enderecoRua} 
-                  onChange={e => setEnderecoRua(toUpperCase(e.target.value))} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'} ${tipo_cliente === 'parceiro' && !isAddressFromCep ? 'focus:border-purple-500' : ''}`} 
-                  placeholder="Rua, Av, Travessa..." 
-                  readOnly={isAddressFromCep}
-                />
-              </div>
+                  {/* Bairro */}
+                  <div className="col-span-12 md:col-span-5">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Bairro</label>
+                    <input 
+                      type="text" 
+                      value={enderecoBairro} 
+                      onChange={e => setEnderecoBairro(toUpperCase(e.target.value))} 
+                      className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all text-sm ${isAddressFromCep ? 'bg-blue-500/[0.03] border-blue-500/30 font-black text-blue-500 cursor-default' : 'focus:border-blue-500'}`} 
+                      placeholder="Ex: Centro" 
+                      readOnly={isAddressFromCep}
+                    />
+                  </div>
 
-              <div className="col-span-12 md:col-span-3 lg:col-span-2">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Número</label>
-                <input 
-                  type="text" 
-                  value={enderecoNumero} 
-                  onChange={e => setEnderecoNumero(e.target.value)} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none font-bold transition-all shadow-sm ${tipo_cliente === 'parceiro' ? 'focus:border-purple-500' : 'focus:border-blue-500'}`} 
-                  placeholder="Ex: 123" 
-                />
-              </div>
-
-              <div className="col-span-12">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Complemento (Bloco, Apto, Sala...)</label>
-                <input 
-                  type="text" 
-                  value={enderecoComplemento} 
-                  onChange={e => setEnderecoComplemento(e.target.value)} 
-                  className={`w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none transition-all ${tipo_cliente === 'parceiro' ? 'focus:border-purple-500' : 'focus:border-blue-500'}`} 
-                  placeholder="Opcional" 
-                />
+                  {/* Complemento */}
+                  <div className="col-span-12 md:col-span-7">
+                    <label className="block text-[10px] font-bold mb-1 uppercase">Complemento</label>
+                    <input 
+                      type="text" 
+                      value={enderecoComplemento} 
+                      onChange={e => setEnderecoComplemento(e.target.value)} 
+                      className="w-full p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-[var(--text)] outline-none focus:border-blue-500 text-sm font-bold" 
+                      placeholder="Bloco, Sala, Apto..." 
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </section>
-
 
           <div className="flex justify-end pt-4">
             {isEdit && (
@@ -1251,7 +1194,6 @@ const ClientForm: React.FC = () => {
               </button>
             )}
           </div>
-
         </form>
       </div>
 
