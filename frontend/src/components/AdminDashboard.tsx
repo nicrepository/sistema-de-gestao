@@ -1422,102 +1422,122 @@ const AdminDashboard: React.FC = () => {
       {
         activeTab === 'parceiros' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-8 pb-10 flex flex-col h-full">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pt-6">
-              <div className="flex items-center gap-4">
-                <div className="rounded-2xl border-2 overflow-hidden flex items-center justify-center bg-white shadow-lg mx-auto md:mx-0" style={{ borderColor: 'var(--border)', width: '64px', height: '64px' }}>
-                  {selectedPartnerId && partnerMetrics.find(p => p.id === selectedPartnerId)?.logoUrl ? (
-                    <img
-                      src={partnerMetrics.find(p => p.id === selectedPartnerId)?.logoUrl}
-                      className="w-full h-full object-cover"
-                      alt="Logo Parceiro"
-                    />
-                  ) : (
-                    <Handshake className="w-8 h-8 text-emerald-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl font-black tracking-tight flex items-center gap-2" style={{ color: 'var(--text)' }}>
-                    {selectedPartnerId ? (
-                      <button
-                        onClick={() => setSelectedPartnerId(null)}
-                        className="flex items-center gap-2 hover:text-emerald-500 transition-colors"
-                      >
-                        <ArrowLeft className="w-5 h-5" />
-                        {partnerMetrics.find(p => p.id === selectedPartnerId)?.name}
-                      </button>
-                    ) : partnerViewMode === 'grid' ? (
-                      'Ecossistema de Parceiros'
+            {/* PREMIUM PARTNERS HEADER */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-4 border-b border-[var(--border)] mb-8 bg-[var(--surface)]/50 backdrop-blur-sm sticky top-0 z-40 -mx-8 px-8">
+              {/* LEFT: PARTNER INFO & BREADCRUMBS */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl border-2 flex items-center justify-center bg-white shadow-md relative overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+                    {selectedPartnerId && partnerMetrics.find(p => p.id === selectedPartnerId)?.logoUrl ? (
+                      <img
+                        src={partnerMetrics.find(p => p.id === selectedPartnerId)?.logoUrl}
+                        className="w-full h-full object-cover"
+                        alt="Logo Parceiro"
+                      />
                     ) : (
-                      'Portfólio de Canais'
+                      <Handshake className="w-6 h-6 text-emerald-600" />
                     )}
-                    <InfoTooltip title="Gestão de Canais" content="Gerencie seus parceiros comerciais e acompanhe o sucesso de cada canal de venda." />
-                  </h1>
-                  <p className="text-xs font-bold uppercase tracking-widest mt-0.5" style={{ color: 'var(--muted)' }}>
-                    {!selectedPartnerId
-                      ? `${partnerMetrics.length} Parceiros • ${partnerMetrics.reduce((acc: number, p: any) => acc + p.clients.length, 0)} Clientes Vinculados`
-                      : 'Visão Detalhada do Parceiro'
-                    }
-                  </p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] opacity-80">Rede de Parceiros</span>
+                      <div className="w-1 h-1 rounded-full bg-emerald-500/30" />
+                      <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">
+                        {selectedPartnerId ? 'Visão Detalhada' : partnerSearchTerm ? `${partnerMetrics.length} Resultados` : 'Visão Geral'}
+                      </span>
+                    </div>
+                    <h1 className="text-xl lg:text-2xl font-black tracking-tight flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                      {selectedPartnerId ? (
+                        <button
+                          onClick={() => setSelectedPartnerId(null)}
+                          className="flex items-center gap-2 hover:text-emerald-500 transition-colors group"
+                        >
+                          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                          <span className="truncate max-w-[200px] md:max-w-[400px]">
+                            {partnerMetrics.find(p => p.id === selectedPartnerId)?.name}
+                          </span>
+                        </button>
+                      ) : partnerViewMode === 'grid' ? (
+                        'Ecossistema de Parceiros'
+                      ) : (
+                        'Portfólio de Canais'
+                      )}
+                      <InfoTooltip title="Gestão de Canais" content="Gerencie seus parceiros comerciais e acompanhe o sucesso de cada canal de venda no ecossistema." />
+                    </h1>
+                  </div>
                 </div>
+
+                {/* KPI MINI BADGES - PARTNER THEME (EMERALD) */}
+                {!selectedPartnerId && (
+                  <div className="flex items-center gap-2 p-1.5 bg-[var(--surface-2)]/80 rounded-2xl border border-[var(--border)] shadow-inner">
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm hover:shadow-md transition-all group">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-[var(--text)] -mb-0.5">{partnerMetrics.length}</span>
+                        <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Parceiros</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm hover:shadow-md transition-all group">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.5)] group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-[var(--text)] -mb-0.5">{partnerMetrics.reduce((acc: number, p: any) => acc + p.clients.length, 0)}</span>
+                        <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Clientes</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* RIGHT: FILTERS & ACTIONS */}
               <div className="flex flex-wrap items-center gap-3">
                 {!selectedPartnerId && (
-                  <div className="relative group/search">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within/search:text-emerald-500 transition-colors" />
-                    <input
-                      type="text"
-                      value={partnerSearchTerm}
-                      onChange={(e) => setPartnerSearchTerm(e.target.value)}
-                      placeholder="Buscar parceiro ou cliente..."
-                      className="pl-9 pr-4 py-2 w-64 border rounded-xl text-xs transition-all focus:ring-2 focus:ring-emerald-500/20 outline-none shadow-sm hover:shadow-md"
-                      style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                    />
-                    {partnerSearchTerm && (
-                      <button
-                        onClick={() => setPartnerSearchTerm('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-                      >
-                        <X size={12} className="text-slate-400" />
-                      </button>
-                    )}
-                  </div>
+                  <>
+                    <div className="relative group/search flex-1 md:flex-none min-w-[200px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--muted)] group-focus-within/search:text-emerald-500 transition-colors" />
+                      <input
+                        type="text"
+                        value={partnerSearchTerm}
+                        onChange={(e) => setPartnerSearchTerm(e.target.value)}
+                        placeholder="Buscar parceiro ou cliente..."
+                        className="pl-10 pr-4 py-2.5 w-full md:w-64 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-2xl text-[11px] font-bold text-[var(--text)] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/40 transition-all placeholder:text-[var(--text-placeholder)] placeholder:opacity-75 shadow-inner"
+                      />
+                      {partnerSearchTerm && (
+                        <button onClick={() => setPartnerSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-[var(--surface-3)] rounded-full text-[var(--muted)]">
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 p-1 bg-[var(--surface-2)]/80 rounded-2xl border border-[var(--border)] shadow-inner">
+                      {(['grid', 'list'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => { setPartnerViewMode(mode); localStorage.setItem('admin_partners_view_mode', mode); }}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${partnerViewMode === mode ? 'bg-[var(--surface)] shadow-md text-emerald-500 border border-[var(--border)]' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'}`}
+                          title={mode === 'grid' ? 'Visão em Cards' : 'Visão em Lista'}
+                        >
+                          {mode === 'grid' ? <LayoutGrid size={16} /> : <List size={16} />}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => navigate('/admin/clients/new?tipo=parceiro&returnTo=dashboard&sub=parceiros')}
+                      className="h-10 px-6 rounded-2xl flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all font-black text-[11px] uppercase tracking-[0.1em] bg-[var(--text)] text-[var(--bg)] hover:scale-[1.02] active:scale-[0.98] group"
+                    >
+                      <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                      <span>Novo Parceiro</span>
+                    </button>
+                  </>
                 )}
 
-                {!selectedPartnerId && (
-                  <div className="flex p-1 rounded-xl border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                    <button
-                      onClick={() => { setPartnerViewMode('grid'); localStorage.setItem('admin_partners_view_mode', 'grid'); }}
-                      className="p-2 px-3 rounded-lg transition-all flex items-center gap-2"
-                      style={{
-                        backgroundColor: partnerViewMode === 'grid' ? 'var(--text)' : 'transparent',
-                        color: partnerViewMode === 'grid' ? 'var(--bg)' : 'var(--muted)'
-                      }}
-                      title="Visão em Cards"
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => { setPartnerViewMode('list'); localStorage.setItem('admin_partners_view_mode', 'list'); }}
-                      className="p-2 px-3 rounded-lg transition-all flex items-center gap-2"
-                      style={{
-                        backgroundColor: partnerViewMode === 'list' ? 'var(--text)' : 'transparent',
-                        color: partnerViewMode === 'list' ? 'var(--bg)' : 'var(--muted)'
-                      }}
-                      title="Visão em Lista"
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-
-                {!selectedPartnerId && (
+                {selectedPartnerId && (
                   <button
-                    onClick={() => navigate('/admin/clients/new?tipo=parceiro&returnTo=dashboard&sub=parceiros')}
-                    className="ml-2 px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all font-bold text-xs bg-[var(--text)] text-[var(--bg)] hover:opacity-90 active:scale-95"
+                    onClick={() => navigate(`/admin/clients/${selectedPartnerId}/edit?returnTo=dashboard&sub=parceiros`)}
+                    className="h-10 px-6 rounded-2xl flex items-center gap-2 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-all font-black text-[11px] uppercase tracking-[0.1em] shadow-sm hover:shadow-emerald-500/10 active:scale-[0.98]"
                   >
-                    <Plus size={16} />
-                    Novo Parceiro
+                    <Edit2 size={16} />
+                    Editar Dados do Canal
                   </button>
                 )}
               </div>
@@ -1540,24 +1560,24 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex border-b border-[var(--border)] gap-8">
                           <button
                             onClick={() => setPartnerSubTab('clientes')}
-                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'clientes' ? 'text-purple-600' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'clientes' ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
                           >
                             1. Clientes
-                            {partnerSubTab === 'clientes' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600 rounded-t-full" />}
+                            {partnerSubTab === 'clientes' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-t-full" />}
                           </button>
                           <button
                             onClick={() => setPartnerSubTab('resumo')}
-                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'resumo' ? 'text-purple-600' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'resumo' ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
                           >
                             2. Dados e Resumo
-                            {partnerSubTab === 'resumo' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600 rounded-t-full" />}
+                            {partnerSubTab === 'resumo' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-t-full" />}
                           </button>
                           <button
                             onClick={() => setPartnerSubTab('info')}
-                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'info' ? 'text-purple-600' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
+                            className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${partnerSubTab === 'info' ? 'text-emerald-500' : 'text-[var(--muted)] hover:text-[var(--text)]'}`}
                           >
                             3. Informações
-                            {partnerSubTab === 'info' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600 rounded-t-full" />}
+                            {partnerSubTab === 'info' && <motion.div layoutId="partner-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-t-full" />}
                           </button>
                         </div>
 
@@ -1571,29 +1591,38 @@ const AdminDashboard: React.FC = () => {
                                   <div
                                     key={client.id}
                                     onClick={() => setShowClientDetailsId(client.id)}
-                                    className="group border rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
+                                    className="group relative border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
                                     style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                                   >
-                                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center border-b border-[var(--border)]" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                                      <img src={client.logoUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={client.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/100x100?text=${client.name.charAt(0)}`; }} />
-                                    </div >
-                                    <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center shadow-inner" style={{ backgroundColor: 'var(--surface-2)' }}>
+                                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-4" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+                                      <img
+                                        src={client.logoUrl}
+                                        className="max-w-[80%] max-h-[80%] object-contain group-hover:scale-110 transition-transform duration-500"
+                                        alt={client.name}
+                                        onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=f0f9ff&color=0ea5e9`; }}
+                                      />
+                                    </div>
+                                    <div className="shrink-0 px-4 py-4 flex flex-col justify-center text-center bg-[var(--surface-2)]/50 backdrop-blur-sm border-t border-[var(--border)]">
                                       <h4 className="text-[11px] font-black uppercase tracking-tight truncate mb-0.5" style={{ color: 'var(--text)' }}>{client.name}</h4>
-                                      <div className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">
-                                        {clientProjects.length} {clientProjects.length === 1 ? 'PROJETO' : 'PROJETOS'}
+                                      <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[8px] font-black uppercase tracking-widest">
+                                          {clientProjects.length} {clientProjects.length === 1 ? 'PROJETO' : 'PROJETOS'}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div >
+                                  </div>
                                 );
                               })}
                               <button
                                 onClick={() => setIsAddClientModalOpen(true)}
-                                className="border-2 border-dashed border-[var(--border)] rounded-xl flex flex-col items-center justify-center p-6 text-[var(--muted)] hover:text-purple-600 hover:border-purple-600/50 hover:bg-purple-600/5 transition-all group h-[220px]"
+                                className="border-2 border-dashed border-[var(--border)] rounded-2xl flex flex-col items-center justify-center p-6 text-[var(--muted)] hover:text-emerald-500 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group h-[220px]"
                               >
-                                <Plus className="w-8 h-8 mb-2 opacity-30 group-hover:scale-110 transition-transform" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Adicionar Cliente</span>
+                                <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                  <Plus className="w-5 h-5 opacity-50 group-hover:opacity-100" />
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Vincular Cliente</span>
                               </button>
-                            </div >
+                            </div>
                           )}
 
                           {
@@ -1602,33 +1631,33 @@ const AdminDashboard: React.FC = () => {
                                 {/* Coluna de Métricas */}
                                 <div className="md:col-span-2 space-y-6">
                                   <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-6 rounded-[2rem] border bg-emerald-500/10 border-emerald-500/30">
-                                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Faturamento Total</p>
+                                    <div className="p-6 rounded-[2.5rem] border bg-emerald-500/10 border-emerald-500/30 group hover:bg-emerald-500/20 transition-all duration-300">
+                                      <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mb-1">Faturamento Total</p>
                                       <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
                                         {partner.totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}
                                       </p>
                                     </div>
-                                    <div className="p-6 rounded-[2rem] border bg-blue-500/10 border-blue-500/30">
-                                      <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Carga Horária</p>
+                                    <div className="p-6 rounded-[2.5rem] border bg-blue-500/10 border-blue-500/30 group hover:bg-blue-500/20 transition-all duration-300">
+                                      <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-1">Carga Horária</p>
                                       <p className="text-2xl font-black text-blue-700 dark:text-blue-300 font-mono">
                                         {Math.round(partner.totalHours)}<span className="text-xs ml-0.5 opacity-50 uppercase">h</span>
                                       </p>
                                     </div>
-                                    <div className="p-6 rounded-[2rem] border bg-purple-500/10 border-purple-500/30">
-                                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">SLA / Entregabilidade</p>
-                                      <p className="text-2xl font-black text-purple-700 dark:text-purple-300 font-mono">{Math.round(partner.averageProgress)}%</p>
+                                    <div className="p-6 rounded-[2.5rem] border bg-amber-500/10 border-amber-500/30 group hover:bg-amber-500/20 transition-all duration-300">
+                                      <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] mb-1">Entregabilidade</p>
+                                      <p className="text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">{Math.round(partner.averageProgress)}%</p>
                                     </div>
-                                    <div className="p-6 rounded-[2rem] border bg-amber-500/10 border-amber-500/30">
-                                      <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">Volume de Tarefas</p>
-                                      <p className="text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">{partner.taskCount}</p>
+                                    <div className="p-6 rounded-[2.5rem] border bg-slate-500/10 border-slate-500/30 group hover:bg-slate-500/20 transition-all duration-300">
+                                      <p className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em] mb-1">Volume de Tarefas</p>
+                                      <p className="text-2xl font-black text-slate-700 dark:text-slate-300 font-mono">{partner.taskCount}</p>
                                     </div>
                                   </div>
 
-                                  <div className="p-8 rounded-[2.5rem] border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                                  <div className="p-8 rounded-[2.5rem] border shadow-sm" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
                                     <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--muted)] mb-6 flex items-center gap-2">
-                                      <TrendingUp size={14} className="text-purple-500" /> Histórico de Performance
+                                      <TrendingUp size={14} className="text-emerald-500" /> Histórico de Performance
                                     </h4>
-                                    <div className="h-40 flex items-center justify-center border-2 border-dashed rounded-2xl text-[10px] font-bold uppercase tracking-widest" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                    <div className="h-40 flex items-center justify-center border-2 border-dashed rounded-3xl text-[10px] font-bold uppercase tracking-widest bg-[var(--surface)]/50" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
                                       Gráfico de Crescimento (Em breve)
                                     </div>
                                   </div>
@@ -1636,15 +1665,17 @@ const AdminDashboard: React.FC = () => {
 
                                 {/* Coluna de Contato Rápido */}
                                 <div className="space-y-6">
-                                  <div className="p-6 rounded-[2.5rem] border shadow-sm" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-6 pb-2 border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-muted)' }}>Gestão do Relacionamento</h4>
-                                    <div className="space-y-8">
+                                  <div className="p-6 rounded-[2.5rem] border shadow-sm overflow-hidden relative" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12" />
+                                    
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 pb-2 border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-muted)' }}>Gestão do Relacionamento</h4>
+                                    <div className="space-y-8 relative z-10">
                                       <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-purple-500/20">
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-500/30">
                                           {internalResp?.name?.charAt(0) || 'N'}
                                         </div>
                                         <div>
-                                          <p className="text-[9px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-0.5">Gestor Interno</p>
+                                          <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Gestor de Canal</p>
                                           <p className="text-sm font-black text-[var(--textTitle)]">{internalResp?.name || 'Não atribuído'}</p>
                                         </div>
                                       </div>
@@ -1684,8 +1715,7 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                     <button
                                       onClick={() => navigate(`/admin/clients/${partner.id}/edit?returnTo=${partner.id}&sub=info`)}
-                                      className="px-6 py-2.5 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg"
-                                      style={{ backgroundColor: 'var(--primary)', boxShadow: '0 4px 14px 0 var(--shadow)' }}
+                                      className="px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                       <Edit2 size={12} /> Editar
                                     </button>
@@ -1742,15 +1772,24 @@ const AdminDashboard: React.FC = () => {
                         <div
                           key={partner.id}
                           onClick={() => setSelectedPartnerId(partner.id)}
-                          className="group border rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
+                          className="group relative border rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-[220px]"
                           style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                         >
-                          <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-slate-100 flex items-center justify-center border-b border-[var(--border)]">
-                            <img src={partner.logoUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={partner.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/200x200?text=${partner.name.charAt(0)}`; }} />
+                          <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-4 bg-white dark:bg-slate-100/10">
+                            <img
+                              src={partner.logoUrl}
+                              className="max-w-[80%] max-h-[80%] object-contain group-hover:scale-110 transition-transform duration-500"
+                              alt={partner.name}
+                              onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(partner.name)}&background=ecfdf5&color=059669`; }}
+                            />
                           </div>
-                          <div className="shrink-0 px-4 py-3 flex flex-col justify-center text-center shadow-inner" style={{ backgroundColor: 'var(--surface-2)' }}>
+                          <div className="shrink-0 px-4 py-4 flex flex-col justify-center text-center bg-[var(--surface-2)]/50 backdrop-blur-sm border-t border-[var(--border)]">
                             <h3 className="text-[11px] font-black truncate uppercase tracking-tight mb-0.5" style={{ color: 'var(--text)' }}>{partner.name}</h3>
-                            <div className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{partner.clients.length} {partner.clients.length === 1 ? 'CLIENTE' : 'CLIENTES'}</div>
+                            <div className="flex items-center justify-center">
+                              <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest">
+                                {partner.clients.length} {partner.clients.length === 1 ? 'CLIENTE' : 'CLIENTES'}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1761,30 +1800,39 @@ const AdminDashboard: React.FC = () => {
                         <div
                           key={partner.id}
                           onClick={() => setSelectedPartnerId(partner.id)}
-                          className="flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-[2rem] border group transition-all shadow-sm hover:shadow-lg relative overflow-hidden cursor-pointer"
+                          className="flex flex-col md:flex-row items-center justify-between p-4 rounded-3xl border group transition-all hover:shadow-xl hover:shadow-emerald-500/5 relative overflow-hidden cursor-pointer gap-4"
                           style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
                         >
-                          <div className="flex items-center gap-6 z-10">
-                            <div className="w-16 h-16 rounded-2xl border flex items-center justify-center overflow-hidden shadow-sm p-1 shrink-0" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
-                              <img src={partner.logoUrl} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" alt={partner.name} onError={(e) => { e.currentTarget.src = `https://placehold.co/200x200?text=${partner.name.charAt(0)}`; }} />
+                          <div className="flex items-center gap-6 z-10 w-full">
+                            <div className="w-16 h-16 rounded-2xl border flex items-center justify-center overflow-hidden shadow-sm p-1 shrink-0 bg-white dark:bg-slate-100/10" style={{ borderColor: 'var(--border)' }}>
+                              <img
+                                src={partner.logoUrl}
+                                className="max-w-[90%] max-h-[90%] object-contain group-hover:scale-110 transition-transform duration-500"
+                                alt={partner.name}
+                                onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(partner.name)}&background=ecfdf5&color=059669`; }}
+                              />
                             </div>
-                            <div>
-                              <h3 className="text-sm font-black uppercase tracking-[0.05em] mb-1" style={{ color: 'var(--text)' }}>{partner.name}</h3>
-                              <div className="flex items-center gap-3 mt-1">
-                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-sm lg:text-base font-black uppercase tracking-tight truncate" style={{ color: 'var(--text)' }}>{partner.name}</h3>
+                                {partner.cnpj && <span className="text-[9px] font-mono text-[var(--muted)] opacity-60 bg-[var(--surface-3)] px-1.5 py-0.5 rounded-md">CNPJ: {partner.cnpj}</span>}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                                   {partner.clients.length} {partner.clients.length === 1 ? 'Cliente Vinculado' : 'Clientes Vinculados'}
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)' }}>
-                                  {partner.tenure}
-                                </span>
+                                {partner.tenure && (
+                                  <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest px-2.5 py-1 rounded-full bg-[var(--surface-2)] border border-[var(--border)]">
+                                    {partner.tenure}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          <button className="z-10 mt-4 md:mt-0 px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all shadow-sm flex items-center gap-2 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-600"
-                            style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text)', borderColor: 'var(--border)' }}>
+                          <button className="h-10 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all flex items-center gap-2 bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)] group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 active:scale-95 group-hover:shadow-lg group-hover:shadow-emerald-500/20">
                             Ver Detalhes
-                            <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all -ml-2 group-hover:ml-0" />
+                            <ArrowRight size={14} className="-ml-1 group-hover:ml-0 transition-all" />
                           </button>
                         </div>
                       ))}
@@ -1800,183 +1848,168 @@ const AdminDashboard: React.FC = () => {
       {
         activeTab === 'operacional' && (
           <div className="px-8 pb-10">
-            {/* NEW COMPACT HEADER */}
-            {/* COMPACT DASHBOARD HEADER IN ONE ROW - NO WRAP */}
-            <div className="flex flex-row items-center justify-between gap-2 mb-8 w-full">
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="p-2 rounded-xl border hidden sm:flex" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                  <Briefcase className="w-5 h-5 text-slate-600" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-base lg:text-xl font-black tracking-tight flex items-center gap-2 whitespace-nowrap" style={{ color: 'var(--text)' }}>
+            {/* PREMIUM OPERATIONAL HEADER */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-4 border-b border-[var(--border)] mb-8 bg-[var(--surface)]/50 backdrop-blur-sm sticky top-0 z-30 -mx-8 px-8">
+              {/* LEFT: STATUS & TITLE */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4 lg:gap-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[9px] font-black text-[var(--primary)] uppercase tracking-[0.2em] opacity-80">Gestão Operacional</span>
+                    <div className="w-1 h-1 rounded-full bg-[var(--primary)]/30" />
+                    <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{searchTerm ? `${filteredSortedClients.length} Resultados` : 'Dashboard Geral'}</span>
+                  </div>
+                  <h1 className="text-xl lg:text-2xl font-black tracking-tight flex items-center gap-2" style={{ color: 'var(--text)' }}>
                     {viewMode === 'grid' ? 'Ecossistema de Clientes' : viewMode === 'list' ? 'Gestão de Clientes' : 'Fluxo de Projetos'}
                     <InfoTooltip title="Visão de Gestão" content="Espaço dedicado ao acompanhamento operacional. Alterne entre as visualizações de Clientes, Projetos ou Tarefas nos ícones à direita." />
                   </h1>
-                  
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    {searchTerm ? (
-                      <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-500 text-[9px] font-black uppercase tracking-widest border border-purple-500/20">
-                        {filteredSortedClients.length} Resultados Encontrados
-                      </span>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{activeClients.length} Clientes</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{safeProjects.length} Projetos</span>
-                        </div>
-                        
-                        <div className="w-px h-3 bg-[var(--border)] mx-1" />
+                </div>
 
-                        {/* STATUS PILLS */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-500/5 border border-slate-500/10" title="Pré-Projeto">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                            <span className="text-[9px] font-black text-slate-500">{safeTasks.filter(t => t.status === 'Todo').length}</span>
-                          </div>
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-500/5 border border-yellow-500/20" title="Análise">
-                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                            <span className="text-[9px] font-black text-yellow-600 dark:text-yellow-500">{safeTasks.filter(t => t.status === 'Review').length}</span>
-                          </div>
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/5 border border-blue-500/20" title="Andamento">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            <span className="text-[9px] font-black text-blue-600 dark:text-blue-500">{safeTasks.filter(t => t.status === 'In Progress').length}</span>
-                          </div>
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/5 border border-purple-500/20" title="Teste">
-                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                            <span className="text-[9px] font-black text-purple-600 dark:text-purple-500">{safeTasks.filter(t => t.status === 'Testing').length}</span>
-                          </div>
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/5 border border-emerald-500/20" title="Concluído">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500">{safeTasks.filter(t => t.status === 'Done').length}</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                {/* KPI MINI BADGES - PREMIUM STYLE */}
+                <div className="flex items-center gap-2 p-1.5 bg-[var(--surface-2)]/80 rounded-2xl border border-[var(--border)] shadow-inner">
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm hover:shadow-md transition-all group">
+                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.5)] group-hover:scale-110 transition-transform" />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-[var(--text)] -mb-0.5">{activeClients.length}</span>
+                      <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Clientes</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-sm hover:shadow-md transition-all group">
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.5)] group-hover:scale-110 transition-transform" />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-[var(--text)] -mb-0.5">{safeProjects.length}</span>
+                      <span className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest opacity-60">Projetos</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 flex-1 justify-end">
-                {/* BUSCADOOR COMPACTA */}
-                <div className="relative shrink hidden md:block">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              {/* RIGHT: FILTERS & ACTIONS */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* ADVANCED SEARCH COMPACTA */}
+                <div className="relative group/search flex-1 md:flex-none min-w-[180px]">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--muted)] group-focus-within/search:text-[var(--primary)] transition-colors" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar cliente, projeto, tarefa ou dev..."
-                    className="pl-9 pr-3 py-1.5 w-48 lg:w-72 border rounded-xl text-xs transition-all focus:ring-2 focus:ring-purple-500/20 outline-none"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                    placeholder="Pesquisar por nome, tag ou status..."
+                    className="pl-10 pr-4 py-2.5 w-full md:w-64 lg:w-72 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-2xl text-[11px] font-bold text-[var(--text)] outline-none focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)]/40 transition-all placeholder:text-[var(--text-placeholder)] placeholder:opacity-75 shadow-inner"
                   />
-                </div>
-
-                {/* BOTÃO ORDENAR */}
-                <div className="relative shrink-0">
-                  <button
-                    onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
-                    className="px-2 py-1.5 border rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all hover:bg-[var(--surface-hover)] whitespace-nowrap"
-                    style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
-                  >
-                    <ArrowDownAZ className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="hidden sm:inline">{sortBy === 'recent' ? 'Recentes' : sortBy === 'alphabetical' ? 'A-Z' : 'Criação'}</span>
-                  </button>
-
-                  {showSortMenu && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
-                      <div className="absolute right-0 mt-2 w-40 rounded-xl shadow-2xl z-50 p-1.5 overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                        <button onClick={() => handleSortChange('recent')} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === 'recent' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-white/5'}`}>
-                          Recentes
-                        </button>
-                        <button onClick={() => handleSortChange('alphabetical')} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === 'alphabetical' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-white/5'}`}>
-                          Alfabética
-                        </button>
-                        <button onClick={() => handleSortChange('creation')} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === 'creation' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-white/5'}`}>
-                          Criação
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* BOTÃO FILTRAR */}
-                <div className="relative shrink-0">
-                  <button
-                    onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
-                    className="px-2 py-1.5 border rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all hover:bg-[var(--surface-hover)] whitespace-nowrap"
-                    style={{
-                      backgroundColor: taskStatusFilter !== 'all' ? 'var(--surface-2)' : 'var(--surface)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text)'
-                    }}
-                  >
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="hidden sm:inline">{taskStatusFilter === 'all' ? 'Status: Todos' : taskStatusFilter === 'late' ? 'Atrasados' : taskStatusFilter === 'ongoing' ? 'Em Andamento' : 'Concluídos'}</span>
-                  </button>
-
-                  {showFilterMenu && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowFilterMenu(false)} />
-                      <div className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl z-50 p-1.5 overflow-hidden border" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
-                        <button onClick={() => { setTaskStatusFilter('all'); setShowFilterMenu(false); }} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${taskStatusFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-white/5'}`}>
-                          Todos
-                        </button>
-                        <button onClick={() => { setTaskStatusFilter('late'); setShowFilterMenu(false); }} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-red-500 hover:bg-red-500/10`}>
-                          Em Atraso
-                        </button>
-                        <button onClick={() => { setTaskStatusFilter('ongoing'); setShowFilterMenu(false); }} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-blue-500 hover:bg-blue-500/10`}>
-                          Em Andamento
-                        </button>
-                        <button onClick={() => { setTaskStatusFilter('done'); setShowFilterMenu(false); }} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-emerald-500 hover:bg-emerald-500/10`}>
-                          Concluídos
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* VIEW TOGGLE */}
-                <div className="flex p-0.5 rounded-lg border shrink-0" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
-                  {(['grid', 'list', 'tasks'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => toggleViewMode(mode)}
-                      className="p-1 px-1.5 rounded-md transition-all"
-                      style={{
-                        backgroundColor: viewMode === mode ? 'var(--text)' : 'transparent',
-                        color: viewMode === mode ? 'var(--bg)' : 'var(--muted)'
-                      }}
-                    >
-                      {mode === 'grid' && <LayoutGrid className="w-3.5 h-3.5" />}
-                      {mode === 'list' && <List className="w-3.5 h-3.5" />}
-                      {mode === 'tasks' && <Layers className="w-3.5 h-3.5" />}
+                  {searchTerm && (
+                    <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-[var(--surface-3)] rounded-full text-[var(--muted)]">
+                      <X size={12} />
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                {/* ACTION BUTTONS - NEW PROMINENT STYLE */}
-                <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <button
-                    onClick={() => navigate('/admin/projects/new')}
-                    className="group px-3 py-2 rounded-xl flex items-center gap-2 transition-all font-black text-[10px] uppercase tracking-widest bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-hover)] shadow-sm hover:shadow-md active:scale-95"
-                    title="Novo Projeto"
-                  >
-                    <Briefcase size={14} className="text-purple-600" />
-                    <span className="hidden lg:inline">Projeto</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => navigate('/admin/clients/new?tipo=cliente_final')}
-                    className="px-6 py-2.5 rounded-xl flex items-center gap-2.5 shadow-xl transition-all font-black text-xs uppercase tracking-widest bg-slate-950 text-white hover:bg-slate-900 hover:-translate-y-0.5 active:scale-95 border border-transparent dark:bg-white dark:text-purple-700 dark:hover:bg-slate-50 dark:border-white/10 shadow-black/10 dark:shadow-purple-500/10"
-                  >
-                    <Plus size={16} className="text-white dark:text-purple-600" />
-                    <span>Novo Cliente</span>
-                  </button>
+                <div className="flex items-center gap-2 p-1 bg-[var(--surface-2)]/80 rounded-2xl border border-[var(--border)] shadow-inner">
+                  {/* SORT & FILTER DROPDOWNS */}
+                  <div className="flex items-center gap-1">
+                    <div className="relative">
+                      <button
+                        onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
+                        className={`h-9 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${showSortMenu ? 'bg-[var(--surface)] shadow-md text-[var(--primary)] border border-[var(--border)]' : 'text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]'}`}
+                      >
+                        <ArrowDownAZ size={14} />
+                        <span className="hidden xl:inline">{sortBy === 'recent' ? 'Recentes' : sortBy === 'alphabetical' ? 'A-Z' : 'Criação'}</span>
+                      </button>
+
+                      <AnimatePresence>
+                        {showSortMenu && (
+                          <>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={() => setShowSortMenu(false)} />
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }} 
+                              animate={{ opacity: 1, y: 0 }} 
+                              exit={{ opacity: 0, y: 10 }}
+                              className="absolute right-0 mt-2 w-40 rounded-xl shadow-2xl z-50 p-1.5 border bg-[var(--surface)] border-[var(--border)]"
+                            >
+                              {(['recent', 'alphabetical', 'creation'] as const).map(option => (
+                                <button 
+                                  key={option}
+                                  onClick={() => handleSortChange(option)} 
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === option ? 'bg-[var(--primary)] text-white' : 'text-[var(--muted)] hover:bg-[var(--surface-hover)]'}`}
+                                >
+                                  {option === 'recent' ? 'Recentes' : option === 'alphabetical' ? 'Alfabética' : 'Criação'}
+                                </button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="relative">
+                      <button
+                        onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
+                        className={`h-9 px-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${showFilterMenu || taskStatusFilter !== 'all' ? 'bg-[var(--surface)] shadow-md text-[var(--primary)] border border-[var(--border)]' : 'text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]'}`}
+                      >
+                        <Filter size={14} />
+                        <span className="hidden xl:inline">{taskStatusFilter === 'all' ? 'Status' : taskStatusFilter === 'late' ? 'Atraso' : taskStatusFilter === 'ongoing' ? 'Progresso' : 'Fim'}</span>
+                        {taskStatusFilter !== 'all' && <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />}
+                      </button>
+
+                      <AnimatePresence>
+                        {showFilterMenu && (
+                          <>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={() => setShowFilterMenu(false)} />
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }} 
+                              animate={{ opacity: 1, y: 0 }} 
+                              exit={{ opacity: 0, y: 10 }}
+                              className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl z-50 p-1.5 border bg-[var(--surface)] border-[var(--border)]"
+                            >
+                              {[
+                                { id: 'all', label: 'Todos', color: 'text-[var(--muted)]' },
+                                { id: 'late', label: 'Em Atraso', color: 'text-red-500' },
+                                { id: 'ongoing', label: 'Em Andamento', color: 'text-blue-500' },
+                                { id: 'done', label: 'Concluídos', color: 'text-emerald-500' }
+                              ].map(filter => (
+                                <button 
+                                  key={filter.id}
+                                  onClick={() => { setTaskStatusFilter(filter.id as any); setShowFilterMenu(false); }} 
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${taskStatusFilter === filter.id ? 'bg-[var(--primary)] text-white' : `${filter.color} hover:bg-[var(--surface-hover)]`}`}
+                                >
+                                  {filter.label}
+                                </button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <div className="w-px h-5 bg-[var(--border)] mx-1 opacity-50" />
+
+                  {/* VIEW MODE TOGGLE */}
+                  <div className="flex items-center gap-1 p-0.5">
+                    {(['grid', 'list', 'tasks'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => toggleViewMode(mode)}
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${viewMode === mode ? 'bg-[var(--surface)] shadow-md text-[var(--primary)] border border-[var(--border)]' : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'}`}
+                        title={mode === 'grid' ? 'Visualização em Cards' : mode === 'list' ? 'Visualização em Lista' : 'Visualização de Fluxo'}
+                      >
+                        {mode === 'grid' && <LayoutGrid size={16} />}
+                        {mode === 'list' && <List size={16} />}
+                        {mode === 'tasks' && <Layers size={16} />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* PRIMARY ACTION BUTTON */}
+                <button
+                  onClick={() => navigate('/admin/clients/new?tipo=cliente_final')}
+                  className="h-10 px-6 rounded-2xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all font-black text-[11px] uppercase tracking-[0.1em] bg-[var(--text)] text-[var(--bg)] hover:scale-[1.02] active:scale-[0.98] group"
+                >
+                  <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                  <span>Novo Cliente</span>
+                </button>
               </div>
             </div>
+
 
 
             {/* LISTA DE CLIENTES */}
