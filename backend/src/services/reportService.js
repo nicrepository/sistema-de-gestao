@@ -144,6 +144,7 @@ export const reportService = {
             { header: 'MEMBRO DA EQUIPE', key: 'colaborador', width: 28 },
             { header: 'ATIVIDADE DESENVOLVIDA', key: 'tarefa', width: 50 },
             { header: 'ESFORÇO APLICADO', key: 'horas', width: 20 },
+            { header: 'CLIENTE', key: 'cliente', width: 30 },
             { header: 'NOME DO PROJETO', key: 'projeto', width: 40 },
             { header: 'STATUS DO PROJETO', key: 'status_p', width: 20 },
             { header: 'COMPLEXIDADE', key: 'complexidade_p', width: 18 },
