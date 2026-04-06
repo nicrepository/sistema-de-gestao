@@ -195,6 +195,7 @@ export const reportService = {
                 tarefa: taskName,
                 horas: h / 24,
                 projeto: projName,
+                cliente: cliName, 
                 status_p: r.status_p,
                 complexidade_p: r.complexidade_p,
                 data_inicio_p: r.data_inicio_p ? new Date(r.data_inicio_p + 'T12:00:00') : null,
