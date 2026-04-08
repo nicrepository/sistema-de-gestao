@@ -5,6 +5,10 @@ export const collaboratorService = {
         return await collaboratorRepository.findAll(includeInactive);
     },
 
+    async createCollaborator(data) {
+        return await collaboratorRepository.create(data);
+    },
+
     async updateCollaborator(id, data) {
         return await collaboratorRepository.update(id, data);
     }

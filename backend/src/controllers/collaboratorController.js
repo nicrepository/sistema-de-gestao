@@ -12,6 +12,15 @@ export const collaboratorController = {
         }
     },
 
+    async createCollaborator(req, res) {
+        try {
+            const created = await collaboratorService.createCollaborator(req.body);
+            return sendSuccess(res, created, 201);
+        } catch (e) {
+            return handleRouteError(res, e, 'CollaboratorController.createCollaborator');
+        }
+    },
+
     async updateCollaborator(req, res) {
         try {
             const { id } = req.params;
