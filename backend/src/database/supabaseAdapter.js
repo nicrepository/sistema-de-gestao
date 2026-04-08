@@ -61,8 +61,11 @@ export const supabaseAdapter = {
         }
 
         if (query.order) {
-            const ascending = query.order.ascending !== undefined ? query.order.ascending : true;
-            q = q.order(query.order.column, { ascending });
+            const orders = Array.isArray(query.order) ? query.order : [query.order];
+            for (const ord of orders) {
+                const ascending = ord.ascending !== undefined ? ord.ascending : true;
+                q = q.order(ord.column, { ascending });
+            }
         }
 
         if (query.or) {

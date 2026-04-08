@@ -8,7 +8,10 @@ export const timesheetRepository = {
                 colaborador:dim_colaboradores(NomeColaborador:nome_colaborador)
             `,
             is: { deleted_at: null },
-            order: { column: 'Data', ascending: false },
+            order: [
+                { column: 'Data', ascending: false },
+                { column: 'ID_Horas_Trabalhadas', ascending: false }
+            ],
             filters: {},
             gte: {},
             lte: {},
