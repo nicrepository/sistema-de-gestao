@@ -9,6 +9,10 @@ export const collaboratorService = {
         return await collaboratorRepository.create(data);
     },
 
+    async deleteCollaborator(id) {
+        return await collaboratorRepository.delete(id);
+    },
+
     async updateCollaborator(id, data) {
         return await collaboratorRepository.update(id, data);
     }

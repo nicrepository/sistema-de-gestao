@@ -21,6 +21,16 @@ export const collaboratorController = {
         }
     },
 
+    async deleteCollaborator(req, res) {
+        try {
+            const { id } = req.params;
+            await collaboratorService.deleteCollaborator(Number(id));
+            return sendSuccess(res, null, 204);
+        } catch (e) {
+            return handleRouteError(res, e, 'CollaboratorController.deleteCollaborator');
+        }
+    },
+
     async updateCollaborator(req, res) {
         try {
             const { id } = req.params;

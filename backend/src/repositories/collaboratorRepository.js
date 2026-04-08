@@ -1,4 +1,4 @@
-import { dbFindAll, dbUpdate, dbInsert } from '../database/index.js';
+import { dbFindAll, dbUpdate, dbInsert, dbDelete } from '../database/index.js';
 
 // Colunas existentes na view v_colaboradores:
 // id, nome, cargo, nivel, torre, role, email, avatar_url, ativo
@@ -70,6 +70,11 @@ export const collaboratorRepository = {
 
         console.log('[CollaboratorRepository] Criando colaborador:', safeData);
         return await dbInsert('dim_colaboradores', safeData, { returning: true });
+    },
+
+    async delete(id) {
+        console.log(`[CollaboratorRepository] Deletando colaborador ${id}`);
+        return await dbDelete('dim_colaboradores', { id_colaborador: id });
     },
 
     async update(id, data) {

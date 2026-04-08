@@ -27,7 +27,7 @@ export async function createUser(userData: Partial<User>): Promise<string> {
         body: JSON.stringify(payload)
     });
 
-    return String(result.ID_Colaborador);
+    return String(result.id_colaborador);
 }
 
 export async function updateUser(userId: string, updates: Partial<User>): Promise<void> {

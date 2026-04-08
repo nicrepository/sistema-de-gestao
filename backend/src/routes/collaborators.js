@@ -9,5 +9,6 @@ router.use(authMiddleware);
 router.get('/', collaboratorController.getCollaborators);
 router.post('/', collaboratorController.createCollaborator);
 router.put('/:id', collaboratorController.updateCollaborator);
+router.delete('/:id', collaboratorController.deleteCollaborator);
 
 export default router;
