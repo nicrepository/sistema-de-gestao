@@ -265,8 +265,18 @@ const TeamMemberDetail: React.FC = () => {
 
    const handleDeleteUser = async () => {
       if (user && deleteUser) {
-         await deleteUser(user.id);
-         navigate('/admin/team');
+         setLoading(true);
+         try {
+            await deleteUser(user.id);
+            setDeleteModalOpen(false);
+            navigate('/admin/team');
+         } catch (e: any) {
+            console.error('Erro ao excluir colaborador:', e);
+            alert('Erro ao excluir colaborador: ' + (e?.message || 'Tente novamente.'));
+            setDeleteModalOpen(false);
+         } finally {
+            setLoading(false);
+         }
       }
    };
 
@@ -1455,6 +1465,7 @@ const TeamMemberDetail: React.FC = () => {
             message={`Tem certeza que deseja remover permanentemente "${user.name}"? Esta ação não pode ser desfeita.`}
             onConfirm={handleDeleteUser}
             onCancel={() => setDeleteModalOpen(false)}
+            disabled={loading}
          />
 
          {showBreakdown && capData && (

@@ -21,6 +21,7 @@ const TeamList: React.FC = () => {
   // Deletion state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Back to Top Logic
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -176,20 +177,20 @@ const TeamList: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (userToDelete) {
-      try {
-        // Se o controller tiver metodo deleteUser (precisa adicionar se não tiver)
-        if (deleteUser) {
-          await deleteUser(userToDelete.id);
-        } else {
-          alert("Funcionalidade de exclusão não implementada no controller ainda.");
-        }
-      } catch (e) {
-        alert("Erro ao excluir usuário");
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+      if (deleteUser) {
+        await deleteUser(userToDelete.id);
       }
+    } catch (e: any) {
+      console.error('Erro ao excluir colaborador:', e);
+      alert('Erro ao excluir colaborador: ' + (e?.message || 'Tente novamente.'));
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setUserToDelete(null);
     }
-    setDeleteModalOpen(false);
-    setUserToDelete(null);
   };
 
   return (
@@ -517,8 +518,8 @@ const TeamList: React.FC = () => {
         title="Excluir Colaborador"
         message={`Tem certeza que deseja remover "${userToDelete?.name}"?`}
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteModalOpen(false)}
-        disabled={loading}
+        onCancel={() => { if (!isDeleting) { setDeleteModalOpen(false); setUserToDelete(null); } }}
+        disabled={isDeleting}
       />
     </div>
   );

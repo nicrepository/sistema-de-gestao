@@ -105,6 +105,12 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
         throw new Error(`Erro na API (${response.status}): ${errorMsg}`);
     }
 
+    // Respostas sem body (204 No Content ou Content-Length: 0) não devem chamar response.json()
+    const contentLength = response.headers.get('content-length');
+    if (response.status === 204 || contentLength === '0') {
+        return null as unknown as T;
+    }
+
     // O backend customizado retorna no formato { success: true, data: ... }
     const responseData = await response.json();
 

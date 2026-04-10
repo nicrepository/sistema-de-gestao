@@ -25,7 +25,7 @@ export const collaboratorController = {
         try {
             const { id } = req.params;
             await collaboratorService.deleteCollaborator(Number(id));
-            return sendSuccess(res, null, 204);
+            return sendSuccess(res, { deleted: true });
         } catch (e) {
             return handleRouteError(res, e, 'CollaboratorController.deleteCollaborator');
         }
