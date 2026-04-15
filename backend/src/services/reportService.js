@@ -182,12 +182,19 @@ export const reportService = {
             taskMap.set(taskName, taskMap.get(taskName) + h);
 
             if (!clientProjectHierarchy.has(cliName)) {
-                clientProjectHierarchy.set(cliName, { total: 0, projects: new Map() });
+                clientProjectHierarchy.set(cliName, { total: 0, projects: new Map(), collaborators: new Map() });
             }
             const cliData = clientProjectHierarchy.get(cliName);
             cliData.total += h;
-            if (!cliData.projects.has(projName)) cliData.projects.set(projName, 0);
-            cliData.projects.set(projName, cliData.projects.get(projName) + h);
+
+            if (!cliData.collaborators.has(collName)) cliData.collaborators.set(collName, 0);
+            cliData.collaborators.set(collName, cliData.collaborators.get(collName) + h);
+
+            if (!cliData.projects.has(projName)) cliData.projects.set(projName, { hours: 0, collaborators: new Map() });
+            const projData = cliData.projects.get(projName);
+            projData.hours += h;
+            if (!projData.collaborators.has(collName)) projData.collaborators.set(collName, 0);
+            projData.collaborators.set(collName, projData.collaborators.get(collName) + h);
 
             const row = wsDados.addRow({
                 data: r.data_registro ? new Date(r.data_registro + 'T12:00:00') : null,
@@ -292,6 +299,17 @@ export const reportService = {
                 cell.fill = styles.zebraWhite.fill;
             });
 
+            const sortedClientCollabs = Array.from(data.collaborators.entries()).sort((a, b) => b[1] - a[1]);
+            sortedClientCollabs.forEach(([collName, h], idx) => {
+                const r = wsResumo.addRow({ desc: `  ${collName}`, horas: h / 24 });
+                r.getCell('horas').numFmt = formats.hours;
+                r.eachCell(cell => {
+                    cell.border = styles.border;
+                    cell.fill = idx % 2 === 0 ? styles.zebraWhite.fill : styles.zebraGray.fill;
+                    cell.font = { italic: true, size: 9, color: { argb: 'FF4338CA' } };
+                });
+            });
+
             wsResumo.addRow({});
             const projectHeaderTitle = wsResumo.addRow({ desc: 'RESUMO POR PROJETO' });
             projectHeaderTitle.eachCell(cell => {
@@ -299,13 +317,26 @@ export const reportService = {
                 cell.font = styles.projectHeader.font;
             });
 
-            const sortedProjects = Array.from(data.projects.entries()).sort((a, b) => b[1] - a[1]);
-            sortedProjects.forEach(([projName, h], idx) => {
-                const r = wsResumo.addRow({ desc: projName, horas: h / 24 });
+            const sortedProjects = Array.from(data.projects.entries()).sort((a, b) => b[1].hours - a[1].hours);
+            sortedProjects.forEach(([projName, projData], idx) => {
+                const r = wsResumo.addRow({ desc: projName, horas: projData.hours / 24 });
                 r.getCell('horas').numFmt = formats.hours;
                 r.eachCell(cell => {
                     cell.border = styles.border;
                     cell.fill = idx % 2 === 0 ? styles.zebraWhite.fill : styles.zebraGray.fill;
+                });
+
+                const sortedProjCollabs = Array.from(projData.collaborators.entries()).sort((a, b) => b[1] - a[1]);
+                sortedProjCollabs.forEach(([collName, h], cidx) => {
+                    const cr = wsResumo.addRow({ desc: `  ${collName}`, horas: h / 24 });
+                    cr.getCell('horas').numFmt = formats.hours;
+                    cr.eachCell(cell => {
+                        cell.border = styles.border;
+                        cell.fill = cidx % 2 === 0
+                            ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECFDF5' } }
+                            : { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+                        cell.font = { italic: true, size: 9, color: { argb: 'FF065F46' } };
+                    });
                 });
             });
             wsResumo.addRow({});
