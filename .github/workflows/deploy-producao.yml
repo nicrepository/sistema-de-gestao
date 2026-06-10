@@ -114,6 +114,18 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "ERRO: secret VITE_SUPABASE_URL não configurado"
+            echo "Acesse: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+            echo "ERRO: secret VITE_SUPABASE_ANON_KEY não configurado"
+            echo "Acesse: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+
           docker build \
             --build-arg VITE_API_URL="$VITE_API_URL" \
             --build-arg VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
