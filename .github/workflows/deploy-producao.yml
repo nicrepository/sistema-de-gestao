@@ -1,31 +1,175 @@
-name: Deploy Produção Nic-Labs
+name: Deploy Produção Sistema de Gestão
 
 on:
   push:
     branches:
-      - main # Dispara sempre que houver um push ou merge na main
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-sistema-de-gestao
+  cancel-in-progress: true
 
 jobs:
   deploy:
-    runs-on: self-hosted # Força a execução no servidor da Nic-Labs
+    runs-on: self-hosted
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      KUBECONFIG: /home/github-runner/.kube/config
+
+      NAMESPACE: apps
+
+      BACKEND_DEPLOYMENT: gestao-backend
+      FRONTEND_DEPLOYMENT: gestao-frontend
+
+      BACKEND_CONTAINER: gestao-backend
+      FRONTEND_CONTAINER: gestao-frontend
+
+      BACKEND_IMAGE: ghcr.io/nicrepository/gestao-backend
+      FRONTEND_IMAGE: ghcr.io/nicrepository/gestao-frontend
+
+      IMAGE_TAG: sha-${{ github.sha }}
+
+      BACKEND_DOCKERFILE: ./backend/Dockerfile
+      BACKEND_CONTEXT: ./backend
+
+      FRONTEND_DOCKERFILE: ./frontend/Dockerfile
+      FRONTEND_CONTEXT: ./frontend
+
+      VITE_API_BASE_URL: /api
 
     steps:
-      - name: Tratar permissões (Git Safe Directory)
-        run: |
-          git config --global --add safe.directory /opt/nic-labs/core/sistema-de-gestao
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
-      - name: Atualizar o código-fonte (Git Pull)
+      - name: Validar estrutura do projeto
         run: |
-          cd /opt/nic-labs/core/sistema-de-gestao
-          git fetch --all
-          git reset --hard origin/main
+          set -euo pipefail
 
-      - name: Reconstruir e reiniciar contêineres (Docker Compose)
+          echo "Workspace: $GITHUB_WORKSPACE"
+          pwd
+
+          test -f "$BACKEND_DOCKERFILE" || {
+            echo "ERRO: Backend Dockerfile não encontrado em $BACKEND_DOCKERFILE"
+            exit 1
+          }
+
+          test -f "$FRONTEND_DOCKERFILE" || {
+            echo "ERRO: Frontend Dockerfile não encontrado em $FRONTEND_DOCKERFILE"
+            exit 1
+          }
+
+          test -f backend/package.json || {
+            echo "ERRO: backend/package.json não encontrado"
+            exit 1
+          }
+
+          test -f frontend/package.json || {
+            echo "ERRO: frontend/package.json não encontrado"
+            exit 1
+          }
+
+          echo "Estrutura OK"
+
+      - name: Validar acesso ao Kubernetes
         run: |
-          cd /opt/nic-labs/core
-          # Utilizamos o arquivo de segredos específico para evitar o erro de permissão no .env do root
-          docker compose --env-file secrets/gestao_backend.env build gestao_backend gestao_frontend
-          docker compose --env-file secrets/gestao_backend.env up -d gestao_backend gestao_frontend
-          
-          # Limpeza do disco
+          set -euo pipefail
+
+          kubectl get deployment "$BACKEND_DEPLOYMENT" -n "$NAMESPACE"
+          kubectl get deployment "$FRONTEND_DEPLOYMENT" -n "$NAMESPACE"
+
+      - name: Login no GHCR
+        run: |
+          set -euo pipefail
+
+          if [ -z "${{ secrets.GHCR_USER }}" ]; then
+            echo "ERRO: secret GHCR_USER não configurado"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.GHCR_TOKEN }}" ]; then
+            echo "ERRO: secret GHCR_TOKEN não configurado"
+            exit 1
+          fi
+
+          printf '%s' "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+            -u "${{ secrets.GHCR_USER }}" \
+            --password-stdin
+
+      - name: Build backend
+        run: |
+          set -euo pipefail
+
+          docker build \
+            -t "$BACKEND_IMAGE:$IMAGE_TAG" \
+            -t "$BACKEND_IMAGE:latest" \
+            -f "$BACKEND_DOCKERFILE" \
+            "$BACKEND_CONTEXT"
+
+      - name: Build frontend
+        run: |
+          set -euo pipefail
+
+          docker build \
+            --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" \
+            -t "$FRONTEND_IMAGE:$IMAGE_TAG" \
+            -t "$FRONTEND_IMAGE:latest" \
+            -f "$FRONTEND_DOCKERFILE" \
+            "$FRONTEND_CONTEXT"
+
+      - name: Push imagens
+        run: |
+          set -euo pipefail
+
+          docker push "$BACKEND_IMAGE:$IMAGE_TAG"
+          docker push "$BACKEND_IMAGE:latest"
+
+          docker push "$FRONTEND_IMAGE:$IMAGE_TAG"
+          docker push "$FRONTEND_IMAGE:latest"
+
+      - name: Deploy no Kubernetes
+        run: |
+          set -euo pipefail
+
+          kubectl set image deployment/"$BACKEND_DEPLOYMENT" \
+            "$BACKEND_CONTAINER=$BACKEND_IMAGE:$IMAGE_TAG" \
+            -n "$NAMESPACE"
+
+          kubectl set image deployment/"$FRONTEND_DEPLOYMENT" \
+            "$FRONTEND_CONTAINER=$FRONTEND_IMAGE:$IMAGE_TAG" \
+            -n "$NAMESPACE"
+
+          kubectl rollout status deployment/"$BACKEND_DEPLOYMENT" \
+            -n "$NAMESPACE" \
+            --timeout=300s
+
+          kubectl rollout status deployment/"$FRONTEND_DEPLOYMENT" \
+            -n "$NAMESPACE" \
+            --timeout=180s
+
+      - name: Validar pods e serviços
+        run: |
+          set -euo pipefail
+
+          kubectl get pods -n "$NAMESPACE" | grep -E "gestao-backend|gestao-frontend"
+          kubectl get svc -n "$NAMESPACE" | grep -E "gestao-backend|gestao-frontend"
+
+      - name: Mostrar imagens implantadas
+        run: |
+          set -euo pipefail
+
+          kubectl get deployment "$BACKEND_DEPLOYMENT" -n "$NAMESPACE" \
+            -o jsonpath='{.spec.template.spec.containers[*].image}{"\n"}'
+
+          kubectl get deployment "$FRONTEND_DEPLOYMENT" -n "$NAMESPACE" \
+            -o jsonpath='{.spec.template.spec.containers[*].image}{"\n"}'
+
+      - name: Limpar lixo do Docker
+        if: always()
+        run: |
           docker image prune -f
+          docker builder prune -f
