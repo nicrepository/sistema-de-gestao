@@ -40,7 +40,7 @@ jobs:
       FRONTEND_DOCKERFILE: ./frontend/Dockerfile
       FRONTEND_CONTEXT: ./frontend
 
-      VITE_API_BASE_URL: /api
+      VITE_API_URL: /api
 
     steps:
       - name: Checkout do código
@@ -115,7 +115,9 @@ jobs:
           set -euo pipefail
 
           docker build \
-            --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" \
+            --build-arg VITE_API_URL="$VITE_API_URL" \
+            --build-arg VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
             -t "$FRONTEND_IMAGE:$IMAGE_TAG" \
             -t "$FRONTEND_IMAGE:latest" \
             -f "$FRONTEND_DOCKERFILE" \
