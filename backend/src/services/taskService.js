@@ -218,8 +218,9 @@ export const taskService = {
         }
 
         if (data.collaboratorIds !== undefined) {
-            // Apenas administradores ou gestores podem gerenciar equipe da tarefa via updateTask
-            if (isAdmUser(user)) {
+            // Administradores, gestores ou o próprio desenvolvedor dono da tarefa podem gerenciar a equipe
+            const isTaskOwner = String(oldTask.colaborador_id) === String(user.id);
+            if (isAdmUser(user) || isTaskOwner) {
                 await taskRepository.updateCollaborators(id, data.collaboratorIds);
             }
         }
