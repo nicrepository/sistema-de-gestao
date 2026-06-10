@@ -32,11 +32,18 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch - Network First Strategy
+// Fetch - Network First Strategy (somente para assets estáticos, não para /api/)
 self.addEventListener('fetch', (event) => {
     // Only intercept/cache GET requests
     if (event.request.method !== 'GET') {
         return; // Let the request go directly to the network
+    }
+
+    const url = new URL(event.request.url);
+
+    // Never cache API calls — always fetch fresh from network
+    if (url.pathname.startsWith('/api/')) {
+        return;
     }
 
     event.respondWith(
