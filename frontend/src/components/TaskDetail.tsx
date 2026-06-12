@@ -428,7 +428,8 @@ const TaskDetail: React.FC = () => {
       return;
     }
 
-    // Validação de intervalo do projeto
+    // Validação de intervalo do projeto — apenas se as datas foram alteradas pelo usuário
+    // (não bloqueia saves de campos como colaboradores em tarefas já existentes com datas legadas)
     const project = projects.find((p: any) => String(p.id) === String(formData.projectId));
     if (project) {
       const parseSafeDate = (d: string | null | undefined) => {
@@ -442,11 +443,17 @@ const TaskDetail: React.FC = () => {
       const tStart = parseSafeDate(formData.scheduledStart);
       const tEnd = parseSafeDate(formData.estimatedDelivery);
 
-      if (pStart && tStart && tStart < pStart) {
+      // For existing tasks, only validate dates that the user actually changed
+      const originalStart = task?.scheduledStart;
+      const originalEnd = task?.estimatedDelivery?.split('T')[0];
+      const startChanged = isNew || formData.scheduledStart !== originalStart;
+      const endChanged = isNew || formData.estimatedDelivery !== originalEnd;
+
+      if (startChanged && pStart && tStart && tStart < pStart) {
         alert(`A data de início da tarefa (${formData.scheduledStart}) não pode ser anterior ao início do projeto (${project.startDate}).`);
         return;
       }
-      if (pEnd && tEnd && tEnd > pEnd) {
+      if (endChanged && pEnd && tEnd && tEnd > pEnd) {
         alert(`A data de entrega da tarefa (${formData.estimatedDelivery}) não pode ser posterior à entrega do projeto (${project.estimatedDelivery}).`);
         return;
       }
