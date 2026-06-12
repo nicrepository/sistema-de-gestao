@@ -78,6 +78,13 @@ app.use(xss());
 app.use(mongoSanitize());
 app.use(hpp());
 
+// Disable ETag + caching for all API responses (dynamic authenticated data must never be cached)
+app.set('etag', false);
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
+
 const store = new ExpressBrute.MemoryStore();
 const bruteForce = new ExpressBrute(store);
 const startTime = Date.now();

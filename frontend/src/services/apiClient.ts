@@ -86,7 +86,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     const fullUrl = `${baseUrl}${sep}${finalPath}`;
 
     console.debug(`[API] ${options.method || 'GET'} ${fullUrl}`, options.body ? JSON.parse(String(options.body)) : '');
-    const response = await fetch(fullUrl, { ...options, headers });
+    const response = await fetch(fullUrl, { cache: 'no-store', ...options, headers });
 
     if (response.status === 401) {
         // Token inválido — limpa sessão e redireciona para login
