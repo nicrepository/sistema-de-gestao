@@ -108,7 +108,6 @@ export function mapDbTaskToTask(row: any, userMap?: Map<string, any>, projectNam
         clientName: clientName,
         developer: developerName,
         developerId: row.colaborador_id ? safeString(row.colaborador_id) : undefined,
-        collaboratorIds: [],
         status: status,
         estimatedDelivery: formatDate(row.entrega_estimada),
         actualDelivery: row.entrega_real || undefined,

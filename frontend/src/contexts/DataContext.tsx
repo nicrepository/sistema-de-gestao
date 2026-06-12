@@ -103,7 +103,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setTasks(prev => {
                             const exists = prev.find(t => t.id === normalizedTask.id);
                             if (exists) {
-                                return prev.map(t => t.id === normalizedTask.id ? { ...t, ...normalizedTask } : t);
+                                // Preserve collaboratorIds: the realtime task payload comes from v_tarefas
+                                // which doesn't include tarefa_colaboradores data. Overwriting with []
+                                // would clear all collaborators from the store.
+                                return prev.map(t => t.id === normalizedTask.id
+                                    ? { ...t, ...normalizedTask, collaboratorIds: t.collaboratorIds }
+                                    : t);
                             }
                             return [...prev, normalizedTask];
                         });

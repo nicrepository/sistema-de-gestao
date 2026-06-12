@@ -491,7 +491,7 @@ const TaskDetail: React.FC = () => {
         // Link members to project if not already linked
         const teamIds = Array.from(new Set([payload.developerId, ...(payload.collaboratorIds || [])])).filter(Boolean);
         const autoLinkPromises = teamIds.map(async (uid) => {
-          const pm = projectMembers.find((member: ProjectMember) => String(member.id_projeto) === String(formData.projectId) && String(member.id_colaborador) === String(formData.developerId));
+          const pm = projectMembers.find((member: ProjectMember) => String(member.id_projeto) === String(formData.projectId) && String(member.id_colaborador) === String(uid));
           if (!pm) { // Changed from `!isLinked` to `!pm` to ensure syntactic correctness
             console.log(`Auto-linking member ${uid} to project ${formData.projectId}`);
             try {
